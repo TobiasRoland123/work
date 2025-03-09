@@ -1,9 +1,6 @@
-name: Test workflow
+name: Greeting from Mona
 
-on:
-  pull_request:
-    branches:
-      - main
+on: push
 
 jobs:
   my-job:
