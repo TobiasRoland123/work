@@ -1,3 +1,6 @@
+## Bachelor docs
+https://docs.google.com/document/d/1-Pcko4L51awdj_o72inqvJ-Nlt44I2JKbsJnGuULhcE/edit?usp=sharing
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
