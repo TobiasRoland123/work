@@ -35,4 +35,3 @@ steps:
 
   - script: pnpm run build
     displayName: 'Build the application'
-
