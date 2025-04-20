@@ -8,7 +8,7 @@ pool:
   vmImage: 'ubuntu-latest'
 
 variables:
-  NODE_ENV: 'production'
+  NODE_ENV: 'test'
 
 steps:
   - task: UseNode@1
@@ -24,7 +24,6 @@ steps:
   - script: pnpm install --frozen-lockfile
     displayName: 'Install dependencies'
 
-  - script: pnpm install --save-dev typescript @types/react @types/node
   - script: pnpm run lint
     displayName: 'Run ESLint'
 
