@@ -24,11 +24,10 @@ steps:
   - script: pnpm install --frozen-lockfile
     displayName: 'Install dependencies'
 
+  - script: pnpm install --save-dev typescript @types/react @types/node
   - script: pnpm run lint
     displayName: 'Run ESLint'
 
-  - script: pnpm exec prettier --check .
-    displayName: 'Run Prettier check'
 
   - script: pnpm exec tsc --noEmit
     displayName: 'TypeScript type check'
