@@ -36,7 +36,5 @@ steps:
   - script: rm -rf .next
     displayName: 'Remove .next folder'
 
-
-
   - script: pnpm run build
     displayName: 'Build the application'
