@@ -26,7 +26,7 @@ const variants = cva(
     },
   }
 );
-export function Button({ label, variant, link, children, className }: ButtonProps) {
+export function LinkButton({ label, variant, link, children, className }: ButtonProps) {
   // if (!label || !link || !children) return null;
 
   if ((link && link?.href && link?.label) || (link && link.href && children)) {

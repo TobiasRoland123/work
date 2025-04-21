@@ -27,7 +27,6 @@ steps:
   - script: pnpm run lint
     displayName: 'Run ESLint'
 
-
   - script: pnpm exec tsc --noEmit
     displayName: 'TypeScript type check'
 

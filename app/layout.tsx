@@ -2,6 +2,16 @@ import type { Metadata } from 'next';
 import localFont from 'next/font/local';
 import './globals.css';
 import { Logo } from '@/components/ui/Logo/Logo';
+import {
+  Sidebar,
+  SidebarContent,
+  SidebarGroup,
+  SidebarHeader,
+  SidebarProvider,
+  SidebarTrigger,
+} from '@/components/ui/Sidebar/sidebar';
+import Link from 'next/link';
+
 const monumentGrotesk = localFont({
   src: [
     {
@@ -42,7 +52,24 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${monumentGrotesk.variable} ${ibxMono.variable} font-sans antialiased`}>
-        <Logo />
+        <SidebarProvider>
+          <Sidebar>
+            <SidebarHeader>
+              <Logo />
+            </SidebarHeader>
+
+            <SidebarContent className={'mt-auto'}>
+              <SidebarGroup>
+                <Link href="/">Test</Link>
+                <Link href="/">Test</Link>
+                <Link href="/">Test</Link>
+                <Link href="/">Test</Link>
+                <Link href="/">Test</Link>
+              </SidebarGroup>
+            </SidebarContent>
+          </Sidebar>
+          <SidebarTrigger />
+        </SidebarProvider>
         {children}
       </body>
     </html>
