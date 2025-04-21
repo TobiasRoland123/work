@@ -1,3 +1,3 @@
 export function Test() {
-  return <div className={'p-8 bg-blue-400 rounded-3xl'}>Test</div>;
+  return <div className={'p-8 bg-black text-6xl text-white rounded-3xl'}>Test</div>;
 }

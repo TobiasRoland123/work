@@ -1,15 +1,31 @@
 import type { Metadata } from 'next';
-import { Geist, Geist_Mono } from 'next/font/google';
+import localFont from 'next/font/local';
 import './globals.css';
-
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
+const monumentGrotesk = localFont({
+  src: [
+    {
+      path: '../public/fonts/monument-grotesk/ABCMonumentGrotesk-Light-Trial.woff2',
+      weight: '300',
+      style: 'normal',
+    },
+  ],
+  variable: '--font-monument-grotesk',
 });
 
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
+const ibxMono = localFont({
+  src: [
+    {
+      path: '../public/fonts/IBMPlexMono/IBMPlexMono-Light.ttf',
+      weight: '300',
+      style: 'normal',
+    },
+    {
+      path: '../public/fonts/IBMPlexMono/IBMPlexMono-Regular.ttf',
+      weight: '350',
+      style: 'normal',
+    },
+  ],
+  variable: '--font-ibx-mono', // CSS variable for the font
 });
 
 export const metadata: Metadata = {
@@ -24,7 +40,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased`}>{children}</body>
+      <body className={`${monumentGrotesk.variable} ${ibxMono.variable} font-sans antialiased`}>
+        {children}
+      </body>
     </html>
   );
 }
