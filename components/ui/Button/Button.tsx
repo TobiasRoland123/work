@@ -2,13 +2,13 @@ import { linkProps } from '@/types/link';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { cva } from 'class-variance-authority';
+import React from 'react';
 
 type ButtonProps = {
   label?: string;
-  children?: ReactNode;
+  children?: React.ReactNode;
   variant?: 'default' | 'large';
-  link?: linkProps;
-
+  link?: linkProps; // If link is present, then the button component will render as a Link
   className?: string;
 };
 
