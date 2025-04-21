@@ -53,7 +53,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${monumentGrotesk.variable} ${ibxMono.variable} font-sans antialiased`}>
         <SidebarProvider>
-          <Sidebar>
+          <Sidebar className={'font-mono'}>
             <SidebarHeader>
               <Logo />
             </SidebarHeader>
