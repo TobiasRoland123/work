@@ -3,11 +3,9 @@
 import * as React from 'react';
 import { Slot } from '@radix-ui/react-slot';
 import { VariantProps, cva } from 'class-variance-authority';
-import { PanelLeftIcon } from 'lucide-react';
-
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
-import { Button } from '@/components/ui/Button/button';
+import { LinkButton, LinkButtonProps } from '@/components/ui/LinkButton/LinkButton';
 import { Input } from '@/components/ui/Input/input';
 import { Separator } from '@/components/ui/Separator/separator';
 import {
@@ -250,25 +248,22 @@ function Sidebar({
   );
 }
 
-function SidebarTrigger({ className, onClick, ...props }: React.ComponentProps<typeof Button>) {
+function SidebarTrigger({ className, ...props }: LinkButtonProps) {
   const { toggleSidebar } = useSidebar();
 
   return (
-    <Button
+    <LinkButton
       data-sidebar="trigger"
       data-slot="sidebar-trigger"
-      variant="ghost"
-      size="icon"
-      className={cn('size-7', className)}
-      onClick={(event) => {
-        onClick?.(event);
+      variant={'default'}
+      className={cn('', className)}
+      handleClick={() => {
         toggleSidebar();
       }}
       {...props}
     >
-      <PanelLeftIcon />
-      <span className="sr-only">Toggle Sidebar</span>
-    </Button>
+      report status
+    </LinkButton>
   );
 }
 

@@ -54,21 +54,22 @@ export default function RootLayout({
       <body className={`${monumentGrotesk.variable} ${ibxMono.variable} font-sans antialiased`}>
         <SidebarProvider>
           <Sidebar className={'font-mono'}>
-            <SidebarHeader>
-              <Logo />
-            </SidebarHeader>
-
-            <SidebarContent className={'mt-auto'}>
-              <SidebarGroup>
-                <Link href="/">Test</Link>
-                <Link href="/">Test</Link>
-                <Link href="/">Test</Link>
-                <Link href="/">Test</Link>
-                <Link href="/">Test</Link>
-              </SidebarGroup>
-            </SidebarContent>
+            <div className={'p-5 h-full flex justify-between flex-col'}>
+              <SidebarHeader>
+                <Logo />
+              </SidebarHeader>
+              <SidebarContent className={'mt-auto'}>
+                <SidebarGroup className={'gap-4'}>
+                  <Link href="/">Test</Link>
+                  <Link href="/">Test</Link>
+                  <Link href="/">Test</Link>
+                  <Link href="/">Test</Link>
+                  <Link href="/">Test</Link>
+                </SidebarGroup>
+              </SidebarContent>
+            </div>
           </Sidebar>
-          <SidebarTrigger />
+          <SidebarTrigger className={'absolute bottom-5 right-4'} />
         </SidebarProvider>
         {children}
       </body>
