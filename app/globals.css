@@ -41,21 +41,78 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+
+  /*            FONT SIZES                      */
+  --text-10: 0.625rem;
+  --text-12: 0.75rem;
+  --text-14: 0.875rem;
+  --text-20: 1.25rem;
+  --text-22: 1.375rem;
+  --text-24: 1.5rem;
+  --text-32: 2rem;
+  --text-40: 2.5rem;
+  --text-48: 3rem;
+  --text-64: 4rem;
+  --text-72: 4.5rem;
+
+  /*             DESIGN COLORS                 */
   --color-light-green: var(--light-green);
+  --color-light-green-hover: color-mix(in srgb, var(--light-green) 90%, black);
+  --color-light-green-pressed: color-mix(in srgb, var(--light-green) 80%, black);
+  --color-light-green-focus: color-mix(in srgb, var(--light-green) 50%, black);
+
   --color-green: var(--green);
+  --color-green-hover: color-mix(in srgb, var(--green) 90%, black);
+  --color-green-pressed: color-mix(in srgb, var(--green) 80%, black);
+  --color-green-focus: color-mix(in srgb, var(--green) 50%, black);
+
   --color-blue: var(--blue);
+  --color-blue-hover: color-mix(in srgb, var(--blue) 90%, black);
+  --color-blue-pressed: color-mix(in srgb, var(--blue) 80%, black);
+  --color-blue-focus: color-mix(in srgb, var(--blue) 50%, white);
+
   --color-light-blue: var(--light-blue);
+  --color-light-blue-hover: color-mix(in srgb, var(--light-blue) 90%, black);
+  --color-light-blue-pressed: color-mix(in srgb, var(--light-blue) 80%, black);
+  --color-light-blue-focus: color-mix(in srgb, var(--light-blue) 50%, black);
+
   --color-dark-blue: var(--dark-blue);
+  --color-dark-blue-hover: color-mix(in srgb, var(--dark-blue) 90%, white);
+  --color-dark-blue-pressed: color-mix(in srgb, var(--dark-blue) 80%, white);
+  --color-dark-blue-focus: color-mix(in srgb, var(--dark-blue) 50%, white);
+
   --color-light-red: var(--light-red);
+  --color-light-red-hover: color-mix(in srgb, var(--light-red) 90%, black);
+  --color-light-red-pressed: color-mix(in srgb, var(--light-red) 80%, black);
+  --color-light-red-focus: color-mix(in srgb, var(--light-red) 50%, black);
+
   --color-red: var(--red);
+  --color-red-hover: color-mix(in srgb, var(--red) 90%, black);
+  --color-red-pressed: color-mix(in srgb, var(--red) 80%, black);
+  --color-red-focus: color-mix(in srgb, var(--red) 50%, white);
+
   --color-light-mud: var(--light-mud);
+  --color-light-mud-hover: color-mix(in srgb, var(--light-mud) 90%, black);
+  --color-light-mud-pressed: color-mix(in srgb, var(--light-mud) 80%, black);
+  --color-light-mud-focus: color-mix(in srgb, var(--light-mud) 50%, black);
+
   --color-mud: var(--mud);
+  --color-mud-hover: color-mix(in srgb, var(--mud) 90%, black);
+  --color-mud-pressed: color-mix(in srgb, var(--mud) 80%, black);
+  --color-mud-focus: color-mix(in srgb, var(--mud) 50%, black);
+
   --color-white-blue: var(--white-blue);
+  --color-white-blue-hover: color-mix(in srgb, var(--white-blue) 90%, black);
+  --color-white-blue-pressed: color-mix(in srgb, var(--white-blue) 80%, black);
+  --color-white-blue-focus: color-mix(in srgb, var(--white-blue) 50%, black);
+
   --color-white: var(--white);
   --color-black: var(--black);
 }
 
 :root {
+  box-sizing: border-box;
+  margin: 0;
   --radius: 0.625rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
