@@ -61,6 +61,72 @@ export const Default: Story = {
         phoneNumber: '+45 87 18 91 28',
         email: 'anders@work.com',
       },
+      {
+        profilePicture: 'https://picsum.photos/200',
+        name: 'Anders Christensen',
+        title: 'UI Designer',
+        status: {
+          message: 'From home',
+        },
+        phoneNumber: '+45 87 18 91 28',
+        email: 'anders@work.com',
+      },
+    ],
+  },
+};
+
+export const OddList: Story = {
+  args: {
+    profiles: [
+      {
+        profilePicture: 'https://picsum.photos/200',
+        name: 'Anders Christensen',
+        title: 'UI Designer',
+        status: {
+          message: 'From home',
+        },
+        phoneNumber: '+45 87 18 91 28',
+        email: 'anders@work.com',
+      },
+      {
+        profilePicture: 'https://picsum.photos/200',
+        name: 'Anders Christensen',
+        title: 'UI Designer',
+        status: {
+          message: 'From home',
+        },
+        phoneNumber: '+45 87 18 91 28',
+        email: 'anders@work.com',
+      },
+      {
+        profilePicture: 'https://picsum.photos/200',
+        name: 'Anders Christensen',
+        title: 'UI Designer',
+        status: {
+          message: 'From home',
+        },
+        phoneNumber: '+45 87 18 91 28',
+        email: 'anders@work.com',
+      },
+      {
+        profilePicture: 'https://picsum.photos/200',
+        name: 'Anders Christensen',
+        title: 'UI Designer',
+        status: {
+          message: 'From home',
+        },
+        phoneNumber: '+45 87 18 91 28',
+        email: 'anders@work.com',
+      },
+      {
+        name: 'Anders Christensen',
+        title: 'UI Designer',
+        status: {
+          message: 'From home',
+        },
+        phoneNumber: '+45 87 18 91 28',
+        email: 'anders@work.com',
+      },
     ],
   },
 };
