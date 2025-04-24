@@ -136,6 +136,18 @@ export const Default: Story = {
   },
 };
 
+export const NoPicture: Story = {
+  args: {
+    name: 'Anders Christensen',
+    title: 'UI Designer',
+    status: {
+      message: 'From home',
+    },
+    phoneNumber: '+45 87 18 91 28',
+    email: 'anders@work.com',
+  },
+};
+
 export const SingleColList: Story = {
   render: () => singleColList(),
 };
