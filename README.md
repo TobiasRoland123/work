@@ -23,14 +23,38 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-
 ## Branch strategy
+
 We use main as our production branch, but development will happen by merging into the `develop` branch.
+
 ## Deploy on Vercel
 
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 
+# Start PostgreSQL database container
+
+npm run db:up
+
+# Stop PostgreSQL database container
+
+npm run db:down
+
+# Generate migration files based on schema changes
+
+npm run db:generate
+
+# Push schema changes directly to the database
+
+npm run db:push
+
+# Open Drizzle Studio web UI to browse and manage data
+
+npm run db:studio
+
+# Seed database with sample data
+
+npm run db:seed
 
 hej Fillip
