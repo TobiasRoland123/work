@@ -8,9 +8,6 @@ pool:
   vmImage: 'ubuntu-latest'
   clean: true
 
-variables:
-  NODE_ENV: 'test'
-
 steps:
   - task: UseNode@1
     inputs:
