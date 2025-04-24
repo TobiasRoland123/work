@@ -1,5 +1,5 @@
 {
-  "name": "bachelor-2025",
+  "name": "work",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -14,7 +14,8 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx scripts/seed.ts",
-    "db:migrate": "tsx scripts/migrate.ts"
+    "db:migrate": "tsx scripts/migrate.ts",
+    "typecheck": "tsc --noEmit"
   },
   "dependencies": {
     "@radix-ui/react-slot": "^1.2.0",
@@ -23,7 +24,7 @@
     "dotenv": "^16.5.0",
     "drizzle-orm": "^0.42.0",
     "lucide-react": "^0.488.0",
-    "next": "15.2.1",
+    "next": "15.3",
     "pg": "^8.15.5",
     "prettier": "^3.5.3",
     "react": "^19.0.0",
@@ -48,7 +49,10 @@
     "typescript": "^5"
   },
   "lint-staged": {
-    "app/**/*.{js,jsx,ts,tsx}": "eslint",
+    "*.{js,jsx,ts,tsx}": [
+      "eslint"
+    ],
+    "*": "sh -c 'pnpm run typecheck'",
     "app/**/*.{js,jsx,ts,tsx,css}": "prettier --write"
   },
   "packageManager": "pnpm@9.15.5+sha512.845196026aab1cc3f098a0474b64dfbab2afe7a1b4e91dd86895d8e4aa32a7a6d03049e2d0ad770bbe4de023a7122fb68c1a1d6e0d033c7076085f9d5d4800d4"
