@@ -17,6 +17,7 @@ const allVariants = () => {
       <Status message="At client" />
       <Status message="Sick" absent={true} />
       <Status message="Vacation" absent={true} />
+      <Status message="Custom" />
     </div>
   );
 };
@@ -53,6 +54,13 @@ export const Sick: Story = {
 export const Vacation: Story = {
   args: {
     message: 'Vacation',
+    absent: true,
+  },
+};
+
+export const Custom: Story = {
+  args: {
+    message: 'Custom',
     absent: true,
   },
 };
