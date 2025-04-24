@@ -19,19 +19,12 @@ steps:
       corepack prepare pnpm@9.15.5 --activate
     displayName: 'Enable Corepack & Setup pnpm'
 
-  - task: Cache@2
-    inputs:
-      key: 'pnpm | "$(Agent.OS)" | pnpm-lock.yaml'
-      restoreKeys: |
-        pnpm | "$(Agent.OS)"
-      path: ~/.pnpm-store
-    displayName: 'Cache pnpm store'
-
-  - script: pnpm install --frozen-lockfile --store ~/.pnpm-store
+  - script: pnpm install --frozen-lockfile
     displayName: 'Install dependencies'
 
   - script: pnpm run lint
     displayName: 'Run ESLint'
+
 
   - script: pnpm exec tsc --noEmit
     displayName: 'TypeScript type check'
