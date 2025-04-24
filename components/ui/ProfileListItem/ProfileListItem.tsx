@@ -2,7 +2,7 @@ import Image from 'next/image';
 import { Status, StatusProps } from '../Status/Status';
 
 type ProfileListItemProps = {
-  profilePicture: string;
+  profilePicture?: string;
   name: string;
   title: string;
   status: StatusProps;
@@ -20,13 +20,18 @@ export function ProfileListItem({
 }: ProfileListItemProps) {
   return (
     <div className="flex items-center gap-3 px-2 py-1 border-gray-400">
-      <Image
-        src={profilePicture}
-        alt="ProfilePicture"
-        width={60}
-        height={1}
-        className="rounded-full relative bottom-2"
-      />
+      {profilePicture ? (
+        <Image
+          src={profilePicture}
+          alt="Profile picture"
+          width={60}
+          height={1}
+          className="rounded-full relative bottom-2"
+        />
+      ) : (
+        <div className="size-15 bg-gray-400 rounded-full flex items-center justify-center relative bottom-2"></div>
+      )}
+      {/* Profile picture */}
       <div className="flex flex-col gap-1">
         <h2 className="text-lg font-semibold">{name}</h2>
         <div className="flex items-center gap-2">
@@ -34,8 +39,8 @@ export function ProfileListItem({
           <Status message={status.message} absent={status.absent} />
         </div>
         <div className="flex gap-2">
-          <p className="text-sm underline text-blue">{phoneNumber}</p>
-          <p className="text-sm underline text-blue">{email}</p>
+          <p className="text-sm underline text-blue-600">{phoneNumber}</p>
+          <p className="text-sm underline text-blue-600">{email}</p>
         </div>
       </div>
     </div>

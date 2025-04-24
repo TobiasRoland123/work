@@ -45,7 +45,7 @@ const singleColList = () => {
         email="børge@work.com"
       />
       <ProfileListItem
-        profilePicture="https://picsum.photos/200"
+        // profilePicture="https://picsum.photos/200"
         name="Fiona Jensen"
         title="Junior Developer"
         status={{ message: 'At client' }}
