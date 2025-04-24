@@ -1,7 +1,7 @@
 import Image from 'next/image';
 import { Status, StatusProps } from '../Status/Status';
 
-type ProfileListItemProps = {
+export type ProfileListItemProps = {
   profilePicture?: string;
   name: string;
   title: string;
@@ -33,7 +33,7 @@ export function ProfileListItem({
       )}
       {/* Profile picture */}
       <div className="flex flex-col gap-1">
-        <h2 className="text-lg font-semibold">{name}</h2>
+        <h2 className="text-lg font">{name}</h2>
         <div className="flex items-center gap-2">
           <p className="text-sm">{title}</p>
           <Status message={status.message} absent={status.absent} />
