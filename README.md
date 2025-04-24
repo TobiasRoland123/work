@@ -33,4 +33,28 @@ The easiest way to deploy your Next.js app is to use the [Vercel Platform](https
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
 
+# Start PostgreSQL database container
+
+npm run db:up
+
+# Stop PostgreSQL database container
+
+npm run db:down
+
+# Generate migration files based on schema changes
+
+npm run db:generate
+
+# Push schema changes directly to the database
+
+npm run db:push
+
+# Open Drizzle Studio web UI to browse and manage data
+
+npm run db:studio
+
+# Seed database with sample data
+
+npm run db:seed
+
 hej Fillip

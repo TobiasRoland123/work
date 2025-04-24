@@ -6,9 +6,7 @@ trigger:
 
 pool:
   vmImage: 'ubuntu-latest'
-
-variables:
-  NODE_ENV: 'test'
+  clean: true
 
 steps:
   - task: UseNode@1
@@ -30,9 +28,6 @@ steps:
 
   - script: pnpm exec tsc --noEmit
     displayName: 'TypeScript type check'
-
-  - script: rm -rf .next
-    displayName: 'Remove .next folder'
 
   - script: pnpm run build
     displayName: 'Build the application'
