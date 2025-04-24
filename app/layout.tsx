@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import localFont from 'next/font/local';
 import './globals.css';
+import { Logo } from '@/components/ui/Logo/Logo';
 const monumentGrotesk = localFont({
   src: [
     {
@@ -41,6 +42,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${monumentGrotesk.variable} ${ibxMono.variable} font-sans antialiased`}>
+        <Logo />
         {children}
       </body>
     </html>
