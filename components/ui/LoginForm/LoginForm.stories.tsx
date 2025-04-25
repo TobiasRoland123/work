@@ -8,6 +8,13 @@ const meta: Meta<typeof LoginForm> = {
   parameters: {
     layout: 'fullscreen',
   },
+  decorators: [
+    (Story) => (
+      <main>
+        <Story />
+      </main>
+    ),
+  ],
 };
 
 export default meta;
