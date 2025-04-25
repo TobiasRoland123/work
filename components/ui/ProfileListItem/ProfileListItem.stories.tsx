@@ -16,7 +16,7 @@ const singleColList = () => {
         profilePicture="https://picsum.photos/200"
         name="Anders Christensen"
         title="UI Designer"
-        status={{ message: 'From home' }}
+        status="from home"
         phoneNumber="+45 87 18 91 28"
         email="anders@work.com"
       />
@@ -24,7 +24,7 @@ const singleColList = () => {
         profilePicture="https://picsum.photos/200"
         name="Jon Doe"
         title="Technical Lead"
-        status={{ message: 'At work' }}
+        status="in office"
         phoneNumber="+45 22 50 50 44"
         email="jondoe@work.com"
       />
@@ -32,7 +32,7 @@ const singleColList = () => {
         profilePicture="https://picsum.photos/200"
         name="Jane Doe"
         title="Team Lead"
-        status={{ message: 'At work' }}
+        status="in office"
         phoneNumber="+45 24 60 51 84"
         email="janedoe@work.com"
       />
@@ -40,7 +40,7 @@ const singleColList = () => {
         profilePicture="https://picsum.photos/200"
         name="Børge Hansen"
         title="Intern"
-        status={{ message: 'Sick', absent: true }}
+        status="sick"
         phoneNumber="+45 22 50 50 44"
         email="børge@work.com"
       />
@@ -48,7 +48,7 @@ const singleColList = () => {
         // profilePicture="https://picsum.photos/200"
         name="Fiona Jensen"
         title="Junior Developer"
-        status={{ message: 'At client' }}
+        status="at client"
         phoneNumber="+45 44 55 50 44"
         email="fiona@work.com"
       />
@@ -56,7 +56,7 @@ const singleColList = () => {
         profilePicture="https://picsum.photos/200"
         name="Karl Emil"
         title="Boss"
-        status={{ message: 'Vacation', absent: true }}
+        status="vacation"
         phoneNumber="+45 80 00 08 13"
         email="MrMoney@work.com"
       />
@@ -72,7 +72,7 @@ const doubleColList = () => {
           profilePicture="https://picsum.photos/200"
           name="Anders Christensen"
           title="UI Designer"
-          status={{ message: 'From home' }}
+          status="from home"
           phoneNumber="+45 87 18 91 28"
           email="anders@work.com"
         />
@@ -80,7 +80,7 @@ const doubleColList = () => {
           profilePicture="https://picsum.photos/200"
           name="Jon Doe"
           title="Technical Lead"
-          status={{ message: 'At work' }}
+          status="in office"
           phoneNumber="+45 22 50 50 44"
           email="jondoe@work.com"
         />
@@ -88,7 +88,7 @@ const doubleColList = () => {
           profilePicture="https://picsum.photos/200"
           name="Jane Doe"
           title="Team Lead"
-          status={{ message: 'At work' }}
+          status="in office"
           phoneNumber="+45 24 60 51 84"
           email="janedoe@work.com"
         />
@@ -98,7 +98,7 @@ const doubleColList = () => {
           profilePicture="https://picsum.photos/200"
           name="Børge Hansen"
           title="Intern"
-          status={{ message: 'Sick', absent: true }}
+          status="sick"
           phoneNumber="+45 22 50 50 44"
           email="børge@work.com"
         />
@@ -106,7 +106,7 @@ const doubleColList = () => {
           profilePicture="https://picsum.photos/200"
           name="Fiona Jensen"
           title="Junior Developer"
-          status={{ message: 'At client' }}
+          status="at client"
           phoneNumber="+45 44 55 50 44"
           email="fiona@work.com"
         />
@@ -114,7 +114,7 @@ const doubleColList = () => {
           profilePicture="https://picsum.photos/200"
           name="Karl Emil"
           title="Boss"
-          status={{ message: 'Vacation', absent: true }}
+          status="vacation"
           phoneNumber="+45 80 00 08 13"
           email="MrMoney@work.com"
         />
@@ -128,9 +128,7 @@ export const Default: Story = {
     profilePicture: 'https://picsum.photos/200',
     name: 'Anders Christensen',
     title: 'UI Designer',
-    status: {
-      message: 'From home',
-    },
+    status: 'from home',
     phoneNumber: '+45 87 18 91 28',
     email: 'anders@work.com',
   },
@@ -140,9 +138,7 @@ export const NoPicture: Story = {
   args: {
     name: 'Anders Christensen',
     title: 'UI Designer',
-    status: {
-      message: 'From home',
-    },
+    status: 'from home',
     phoneNumber: '+45 87 18 91 28',
     email: 'anders@work.com',
   },
