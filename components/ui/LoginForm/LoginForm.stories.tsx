@@ -44,6 +44,28 @@ export const WithValues: Story = {
   },
 };
 
+export const ValidationErrors: Story = {
+  render: () => (
+    <div className="relative min-h-[600px]">
+      <LoginForm />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    // Get form fields by their labels
+    const nameInput = canvas.getByLabelText('Name');
+    // const passwordInput = canvas.getByLabelText('Password');
+
+    // Fill in with invalid data (username too short, empty password)
+    await userEvent.type(nameInput, 'A');
+
+    // Find and click the submit button
+    const submitButton = canvas.getByRole('button', { name: /log ind/i });
+    await userEvent.click(submitButton);
+  },
+};
+
 export const MobileView: Story = {
   parameters: {
     viewport: {
