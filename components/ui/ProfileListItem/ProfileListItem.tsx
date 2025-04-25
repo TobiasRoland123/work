@@ -23,13 +23,17 @@ export function ProfileListItem({
       {profilePicture ? (
         <Image
           src={profilePicture}
-          alt="Profile picture"
+          alt={`Profile picture of ${name}`}
           width={60}
           height={1}
           className="rounded-full relative bottom-2"
         />
       ) : (
-        <div className="size-15 bg-gray-400 rounded-full flex items-center justify-center relative bottom-2"></div>
+        <div
+          className="size-15 bg-gray-400 rounded-full flex items-center justify-center relative bottom-2"
+          role="img"
+          aria-label={`Default profile picture for ${name}`}
+        ></div>
       )}
       <div className="flex flex-col gap-1">
         <h2 className="text-lg font">{name}</h2>
@@ -38,8 +42,12 @@ export function ProfileListItem({
           <Status status={status} />
         </div>
         <div className="flex gap-2">
-          <p className="text-sm underline text-blue-600">{phoneNumber}</p>
-          <p className="text-sm underline text-blue-600">{email}</p>
+          <a href={`tel:${phoneNumber}`} className="text-sm underline text-blue-600">
+            {phoneNumber}
+          </a>
+          <a href={`mailto:${email}`} className="text-sm underline text-blue-600">
+            {email}
+          </a>
         </div>
       </div>
     </div>
