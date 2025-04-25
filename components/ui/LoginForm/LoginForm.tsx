@@ -33,7 +33,7 @@ const LoginForm = () => {
   });
 
   return (
-    <div className=" w-full h-80 lg:absolute lg:w-[503px] lg:h-full lg:right-0 lg:top-0 px-4 py-10 bg-white flex flex-col gap-20 lg:pb-0">
+    <section className=" w-full h-80 lg:absolute lg:w-[503px] lg:h-full lg:right-0 lg:top-0 px-4 py-10 bg-white flex flex-col gap-20 lg:pb-0">
       <Form {...form}>
         <form
           className="h-full flex flex-col"
@@ -94,7 +94,7 @@ const LoginForm = () => {
           </div>
         </form>
       </Form>
-    </div>
+    </section>
   );
 };
 
