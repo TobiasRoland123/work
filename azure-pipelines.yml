@@ -3,7 +3,6 @@ trigger:
     include:
       - main
       - develop
-      - feat-profile-list-item-component
 
 pool:
   vmImage: 'ubuntu-latest'
