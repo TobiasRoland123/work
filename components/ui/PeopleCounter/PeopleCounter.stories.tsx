@@ -1,5 +1,18 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import PeopleCounter from './PeopleCounter';
+import { useState } from 'react';
+
+const PeopleCounterWrapper = (props: { people: number; initialOfficeStatus?: boolean }) => {
+  const [officeStatus, setOfficeStatus] = useState(props.initialOfficeStatus || false);
+
+  return (
+    <PeopleCounter
+      officeStatus={officeStatus}
+      setOfficeStatus={setOfficeStatus}
+      people={props.people}
+    />
+  );
+};
 
 const meta: Meta<typeof PeopleCounter> = {
   component: PeopleCounter,
@@ -16,9 +29,9 @@ export default meta;
 type Story = StoryObj<typeof PeopleCounter>;
 
 export const Default: Story = {
-  render: () => (
-    <div>
-      <PeopleCounter />
-    </div>
-  ),
+  render: () => <PeopleCounterWrapper people={5} />,
+};
+
+export const InOffice: Story = {
+  render: () => <PeopleCounterWrapper people={12} initialOfficeStatus={true} />,
 };

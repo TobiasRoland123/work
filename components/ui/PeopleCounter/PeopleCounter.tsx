@@ -1,11 +1,15 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import OfficeSwitch from '../OfficeSwitch/OfficeSwitch';
 
-const PeopleCounter = () => {
-  const [officeStatus, setOfficeStatus] = useState(false);
-  const people = 5;
+interface PeopleCounterProps {
+  officeStatus?: boolean;
+  setOfficeStatus?: (status: boolean) => void;
+  people: number;
+}
+
+const PeopleCounter = ({ officeStatus, setOfficeStatus, people }: PeopleCounterProps) => {
   return (
     <div className="flex justify-between">
       <div className="flex flex-col items-start">
