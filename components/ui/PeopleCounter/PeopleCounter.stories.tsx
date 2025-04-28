@@ -29,9 +29,6 @@ export default meta;
 type Story = StoryObj<typeof PeopleCounter>;
 
 export const Default: Story = {
+  name: 'PeopleCounter',
   render: () => <PeopleCounterWrapper people={5} />,
-};
-
-export const InOffice: Story = {
-  render: () => <PeopleCounterWrapper people={12} initialOfficeStatus={true} />,
 };
