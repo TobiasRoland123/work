@@ -3,20 +3,31 @@ import { ProfileList } from '../ProfileList/ProfileList';
 import { ProfileListItemProps } from '../ProfileListItem/ProfileListItem';
 import PeopleCounter from '../PeopleCounter/PeopleCounter';
 
-type PeopleInOfficeProps = {
+type PeopleOverviewProps = {
   officeStatus?: boolean;
   setOfficeStatus?: (status: boolean) => void;
   profiles: ProfileListItemProps[];
+
 };
 
-const PeopleInOffice = ({ officeStatus, setOfficeStatus, profiles }: PeopleInOfficeProps) => {
+const PeopleOverview = ({ officeStatus, setOfficeStatus, profiles }: PeopleOverviewProps) => {
+  const peopleInOffice = profiles.map((profile)=>{
+    if(profile.status === 'in office'){return profile}
+  })
+
+  const peopleOutOfOffice = profiles.map((profile)=>{
+    if(profile.status !== 'in office'){return profile}
+  })
+
+
   return (
     <div>
       <div className="px-3 pt-4 pb-7">
         <PeopleCounter
           officeStatus={officeStatus}
           setOfficeStatus={setOfficeStatus}
-          people={profiles.length}
+          peopleInOffice={peopleInOffice.length}
+          peopleOutOfOffice={peopleOutOfOffice.length }
         />
       </div>
       <ProfileList profiles={profiles} />
@@ -24,4 +35,4 @@ const PeopleInOffice = ({ officeStatus, setOfficeStatus, profiles }: PeopleInOff
   );
 };
 
-export default PeopleInOffice;
+export default PeopleOverview;

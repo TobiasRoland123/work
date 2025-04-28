@@ -1,5 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/react';
-import PeopleInOffice from './PeopleInOffice';
+import PeopleOverview from './PeopleOverview';
 import { useState } from 'react';
 import { ProfileListItemProps } from '../ProfileListItem/ProfileListItem';
 import { StatusType } from '../Status/Status';
@@ -33,7 +33,7 @@ const sampleProfiles = [
 ];
 
 // Wrapper component to handle state
-const PeopleInOfficeWrapper = (props: {
+const PeopleOverviewWrapper = (props: {
   initialProfiles: ProfileListItemProps[];
   initialOfficeStatus?: boolean;
 }) => {
@@ -45,7 +45,7 @@ const PeopleInOfficeWrapper = (props: {
     : profiles.filter((profile) => profile.status !== 'in office');
 
   return (
-    <PeopleInOffice
+    <PeopleOverview
       profiles={filteredProfiles}
       officeStatus={officeStatus}
       setOfficeStatus={setOfficeStatus}
@@ -53,8 +53,8 @@ const PeopleInOfficeWrapper = (props: {
   );
 };
 
-const meta: Meta<typeof PeopleInOffice> = {
-  component: PeopleInOffice,
+const meta: Meta<typeof PeopleOverview> = {
+  component: PeopleOverview,
   decorators: [
     (Story) => (
       <main>
@@ -65,20 +65,20 @@ const meta: Meta<typeof PeopleInOffice> = {
 };
 
 export default meta;
-type Story = StoryObj<typeof PeopleInOffice>;
+type Story = StoryObj<typeof PeopleOverview>;
 
 export const Default: Story = {
-  render: () => <PeopleInOfficeWrapper initialProfiles={sampleProfiles} />,
+  render: () => <PeopleOverviewWrapper initialProfiles={sampleProfiles} />,
 };
 
 export const InOffice: Story = {
   render: () => (
-    <PeopleInOfficeWrapper initialProfiles={sampleProfiles} initialOfficeStatus={true} />
+    <PeopleOverviewWrapper initialProfiles={sampleProfiles} initialOfficeStatus={true} />
   ),
 };
 
 export const OutOfOffice: Story = {
   render: () => (
-    <PeopleInOfficeWrapper initialProfiles={sampleProfiles} initialOfficeStatus={false} />
+    <PeopleOverviewWrapper initialProfiles={sampleProfiles} initialOfficeStatus={false} />
   ),
 };
