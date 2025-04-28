@@ -16,6 +16,7 @@ export default meta;
 type Story = StoryObj<typeof OfficeSwitch>;
 
 export const Default: Story = {
+  name: 'OfficeSwitch',
   render: () => (
     <div>
       <OfficeSwitch />
