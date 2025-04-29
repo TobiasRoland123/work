@@ -4,13 +4,13 @@ import { cn } from '@/lib/utils';
 import { cva } from 'class-variance-authority';
 import React from 'react';
 
-export type LinkButtonProps = {
+export type ButtonProps = {
   label?: string;
   children?: React.ReactNode;
   variant?: 'default' | 'large';
   link?: linkProps; // If link is present, then the button component will render as a Link
   className?: string;
-  handleClick?: () => void | undefined;
+  handleClick?: () => void;
 };
 
 const variants = cva(
@@ -27,16 +27,7 @@ const variants = cva(
     },
   }
 );
-export function LinkButton({
-  label,
-  variant,
-  link,
-  children,
-  className,
-  handleClick,
-}: LinkButtonProps) {
-  // if (!label || !link || !children) return null;
-
+export function Button({ label, variant, link, children, className, handleClick }: ButtonProps) {
   if ((link && link?.href && link?.label) || (link && link.href && children)) {
     return (
       <Link
@@ -48,16 +39,5 @@ export function LinkButton({
       </Link>
     );
   }
-  return (
-    <button
-      onClick={() => {
-        if (handleClick) {
-          handleClick();
-        }
-      }}
-      className={cn(variants({ variant, className }))}
-    >
-      {label || children}
-    </button>
-  );
+  return <button onClick={handleClick} className={cn(variants({ variant, className }))}>{label || children}</button>;
 }

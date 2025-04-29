@@ -5,7 +5,7 @@ import { Slot } from '@radix-ui/react-slot';
 import { VariantProps, cva } from 'class-variance-authority';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
-import { LinkButton, LinkButtonProps } from '@/components/ui/LinkButton/LinkButton';
+import { Button, ButtonProps } from '@/components/ui/Button/Button';
 import { Input } from '@/components/ui/Input/input';
 import { Separator } from '@/components/ui/Separator/separator';
 import {
@@ -248,11 +248,11 @@ function Sidebar({
   );
 }
 
-function SidebarTrigger({ className, ...props }: LinkButtonProps) {
+function SidebarTrigger({ className, ...props }: ButtonProps) {
   const { toggleSidebar } = useSidebar();
 
   return (
-    <LinkButton
+    <Button
       data-sidebar="trigger"
       data-slot="sidebar-trigger"
       variant={'default'}
@@ -263,7 +263,7 @@ function SidebarTrigger({ className, ...props }: LinkButtonProps) {
       {...props}
     >
       report status
-    </LinkButton>
+    </Button>
   );
 }
 

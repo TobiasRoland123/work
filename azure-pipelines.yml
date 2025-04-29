@@ -4,11 +4,15 @@ trigger:
       - main
       - develop
 
+pr:
+  branches:
+    include:
+      - main
+      - develop
+
 pool:
   vmImage: 'ubuntu-latest'
-
-variables:
-  NODE_ENV: 'test'
+  clean: true
 
 steps:
   - task: UseNode@1
@@ -29,9 +33,18 @@ steps:
 
   - script: pnpm exec tsc --noEmit
     displayName: 'TypeScript type check'
+  - script: |
+      npx playwright install --with-deps
+    displayName: 'Install Playwright'
 
-  - script: rm -rf .next
-    displayName: 'Remove .next folder'
+  - script: |
+      pnpm build-storybook --quiet
+    displayName: 'Build Storybook'
 
-  - script: pnpm run build
-    displayName: 'Build the application'
+  - script: |
+      npm install -g wait-on concurrently http-server
+      npx concurrently -k -s first -n "SB,TEST" -c "magenta,blue" \
+        "npx http-server storybook-static --port 6006 --silent" \
+        "npx wait-on tcp:127.0.0.1:6006 && pnpm test-storybook"
+    displayName: 'Serve Storybook and run tests'
+    timeoutInMinutes: 60
