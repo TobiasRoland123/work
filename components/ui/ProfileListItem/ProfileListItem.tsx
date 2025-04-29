@@ -42,10 +42,16 @@ export function ProfileListItem({
           <Status status={status} />
         </div>
         <div className="flex gap-2">
-          <a href={`tel:${phoneNumber}`} className="text-sm underline text-blue-600">
+          <a
+            href={`tel:${phoneNumber}`}
+            className="text-[16px] font-sans leading-5 underline text-blue-600"
+          >
             {phoneNumber}
           </a>
-          <a href={`mailto:${email}`} className="text-sm underline text-blue-600">
+          <a
+            href={`mailto:${email}`}
+            className="text-[16px] font-sans leading-5 underline text-blue-600"
+          >
             {email}
           </a>
         </div>
