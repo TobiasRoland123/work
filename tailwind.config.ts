@@ -38,6 +38,11 @@ const config: Config = {
         'dark-blue-pressed': 'var(--color-dark-blue-pressed)',
         'dark-blue-focus': 'var(--color-dark-blue-focus)',
 
+        'link-blue': 'var(--color-link-blue)',
+        'link-blue-hover': 'var(--color-link-blue-hover)',
+        'link-blue-pressed': 'var(--color-link-blue-pressed)',
+        'link-blue-focus': 'var(--color-link-blue-focus)',
+
         'light-red': 'var(--color-light-red)',
         'light-red-hover': 'var(--color-light-red-hover)',
         'light-red-pressed': 'var(--color-light-red-pressed)',
