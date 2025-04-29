@@ -30,7 +30,7 @@ export function ProfileListItem({
         />
       ) : (
         <div
-          className="size-15 bg-gray-400 rounded-full flex items-center justify-center relative bottom-2"
+          className="size-15 aspect-square bg-gray-400 rounded-full flex items-center justify-center relative bottom-2"
           role="img"
           aria-label={`Default profile picture for ${name}`}
         ></div>
@@ -41,7 +41,7 @@ export function ProfileListItem({
           <p className="text-[16px]">{title}</p>
           <Status status={status} />
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <a
             href={`tel:${phoneNumber}`}
             className="text-[16px] font-sans font-light leading-5 underline text-link-blue hover:text-light-blue-hover"
