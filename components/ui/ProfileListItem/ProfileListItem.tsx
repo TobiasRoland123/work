@@ -36,7 +36,7 @@ export function ProfileListItem({
         ></div>
       )}
       <div className="flex flex-col gap-1">
-        <h2 className="text-lg font">{name}</h2>
+        <h2 className="text-24 leading-[30px] font-mono">{name}</h2>
         <div className="flex items-center gap-2">
           <p className="text-[16px]">{title}</p>
           <Status status={status} />
