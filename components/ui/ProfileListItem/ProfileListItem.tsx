@@ -44,13 +44,13 @@ export function ProfileListItem({
         <div className="flex gap-2">
           <a
             href={`tel:${phoneNumber}`}
-            className="text-[16px] font-sans leading-5 underline text-blue-600"
+            className="text-[16px] font-sans font-light leading-5 underline text-link-blue hover:text-light-blue-hover"
           >
             {phoneNumber}
           </a>
           <a
             href={`mailto:${email}`}
-            className="text-[16px] font-sans leading-5 underline text-blue-600"
+            className="text-[16px] font-sans font-light leading-5 underline text-link-blue hover:text-light-blue-hover"
           >
             {email}
           </a>
