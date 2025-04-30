@@ -29,5 +29,11 @@ const profiles = [
 ];
 
 export default function Home() {
-  return <PeopleOverviewWrapper initialProfiles={profiles} />;
+  return (
+    <div>
+      {/* Add sidebar nav */}
+      <PeopleOverviewWrapper initialProfiles={profiles} />
+      {/* Add 'Report Status Button' */}
+    </div>
+  );
 }
