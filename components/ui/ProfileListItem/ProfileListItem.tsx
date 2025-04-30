@@ -41,7 +41,7 @@ export function ProfileListItem({
           <p className="text-base">{title}</p>
           <Status status={status} />
         </div>
-        <div className="flex flex-col sm:flex-row gap-2">
+        <div className="flex flex-col sm:flex-row gap-2 mt-3">
           <a
             href={`tel:${phoneNumber}`}
             className="text-base font-sans font-light leading-5 underline text-link-blue hover:text-light-blue-hover"
