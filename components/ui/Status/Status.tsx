@@ -18,7 +18,7 @@ export function Status({ status }: StatusProps) {
 
   return (
     <div className={`w-fit px-1.5 py-0.5 ${color} rounded-md`} role="status">
-      <p className="text-sm">{message}</p>
+      <p className="text-sm font-mono">{message}</p>
     </div>
   );
 }

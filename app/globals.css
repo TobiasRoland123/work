@@ -81,6 +81,11 @@
   --color-dark-blue-pressed: color-mix(in srgb, var(--dark-blue) 80%, white);
   --color-dark-blue-focus: color-mix(in srgb, var(--dark-blue) 50%, white);
 
+  --color-link-blue: var(--link-blue);
+  --color-link-blue-hover: color-mix(in srgb, var(--link-blue) 90%, black);
+  --color-link-blue-pressed: color-mix(in srgb, var(--link-blue) 80%, black);
+  --color-link-blue-focus: color-mix(in srgb, var(--link-blue) 50%, white);
+
   --color-light-red: var(--light-red);
   --color-light-red-hover: color-mix(in srgb, var(--light-red) 90%, black);
   --color-light-red-pressed: color-mix(in srgb, var(--light-red) 80%, black);
@@ -148,6 +153,7 @@
   --light-green: #a9daa9;
   --green: #439c43;
   --blue: #3d88cb;
+  --link-blue: #2d6ea8;
   --light-blue: #a5cdf0;
   --dark-blue: #0b1014;
   --light-red: #fdbab9;

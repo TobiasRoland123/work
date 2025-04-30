@@ -30,22 +30,28 @@ export function ProfileListItem({
         />
       ) : (
         <div
-          className="size-15 bg-gray-400 rounded-full flex items-center justify-center relative bottom-2"
+          className="size-15 aspect-square bg-gray-400 rounded-full flex items-center justify-center relative bottom-2"
           role="img"
           aria-label={`Default profile picture for ${name}`}
         ></div>
       )}
       <div className="flex flex-col gap-1">
-        <h2 className="text-lg font">{name}</h2>
+        <h2 className="text-24 leading-8 font-mono">{name}</h2>
         <div className="flex items-center gap-2">
-          <p className="text-sm">{title}</p>
+          <p className="text-base">{title}</p>
           <Status status={status} />
         </div>
-        <div className="flex gap-2">
-          <a href={`tel:${phoneNumber}`} className="text-sm underline text-blue-600">
+        <div className="flex flex-col sm:flex-row gap-2">
+          <a
+            href={`tel:${phoneNumber}`}
+            className="text-base font-sans font-light leading-5 underline text-link-blue hover:text-light-blue-hover"
+          >
             {phoneNumber}
           </a>
-          <a href={`mailto:${email}`} className="text-sm underline text-blue-600">
+          <a
+            href={`mailto:${email}`}
+            className="text-base font-sans font-light leading-5 underline text-link-blue hover:text-light-blue-hover"
+          >
             {email}
           </a>
         </div>
