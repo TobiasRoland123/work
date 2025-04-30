@@ -47,11 +47,11 @@ const LoginForm = () => {
               name="name"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
-                  <div className="flex justify-between">
-                    <div className="mt-6">
-                      <FormLabel className="font-mono">Name</FormLabel>
+                  <div className="flex gap-20 justify-between">
+                    <div className="mt-5">
+                      <FormLabel className="font-mono w-24 text-base">Name</FormLabel>
                     </div>
-                    <div className="flex flex-col w-full max-w-60 lg:max-w-[348px]">
+                    <div className="flex flex-col w-full lg:max-w-[348px]">
                       <FormControl>
                         <Input
                           className="rounded-none border-t-0 border-l-0 border-r-0 border-b-1 border-b-black font-normal text-24 w-full focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 pl-0"
@@ -70,11 +70,11 @@ const LoginForm = () => {
               name="password"
               render={({ field }) => (
                 <FormItem className="flex flex-col">
-                  <div className="flex justify-between">
-                    <div className="mt-6">
-                      <FormLabel className=" font-mono">Password</FormLabel>
+                  <div className="flex gap-20 justify-between">
+                    <div className="mt-5">
+                      <FormLabel className="font-mono w-24 text-base">Password</FormLabel>
                     </div>
-                    <div className="flex flex-col w-full max-w-60 lg:max-w-[348px]">
+                    <div className="flex flex-col w-full lg:max-w-[348px]">
                       <FormControl>
                         <Input
                           className="rounded-none border-t-0 border-l-0 border-r-0 border-b-1 border-b-black font-normal text-2xl lg:text-2xl w-full focus:outline-none focus:ring-0 focus-visible:ring-0 focus-visible:ring-offset-0 pl-0"
