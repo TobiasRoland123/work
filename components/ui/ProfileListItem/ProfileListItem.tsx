@@ -36,21 +36,21 @@ export function ProfileListItem({
         ></div>
       )}
       <div className="flex flex-col gap-1">
-        <h2 className="text-24 leading-[30px] font-mono">{name}</h2>
+        <h2 className="text-24 leading-8 font-mono">{name}</h2>
         <div className="flex items-center gap-2">
-          <p className="text-[16px]">{title}</p>
+          <p className="text-base">{title}</p>
           <Status status={status} />
         </div>
         <div className="flex flex-col sm:flex-row gap-2">
           <a
             href={`tel:${phoneNumber}`}
-            className="text-[16px] font-sans font-light leading-5 underline text-link-blue hover:text-light-blue-hover"
+            className="text-base font-sans font-light leading-5 underline text-link-blue hover:text-light-blue-hover"
           >
             {phoneNumber}
           </a>
           <a
             href={`mailto:${email}`}
-            className="text-[16px] font-sans font-light leading-5 underline text-link-blue hover:text-light-blue-hover"
+            className="text-base font-sans font-light leading-5 underline text-link-blue hover:text-light-blue-hover"
           >
             {email}
           </a>
