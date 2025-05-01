@@ -1,10 +1,12 @@
 import LoginForm from '@/components/ui/LoginForm/LoginForm';
+import { Logo } from '@/components/ui/Logo/Logo';
 import React from 'react';
 
 const Login = () => {
   return (
     <div className="flex flex-col justify-between h-screen lg:flex-row lg:justify-between">
-      <div className="grow flex justify-end p-5 font-light text-white  lg:self-end max-w-[591px] lg:p-4 lg:pb-5">
+      <div className="grow flex flex-col justify-between p-5 font-light text-white max-w-[591px] lg:p-4 lg:pb-5">
+        <Logo />
         <h1 className="place-content-end text-4xl lg:text-5xl leading-14">
           Make sure your colleagues knows how to get a hold of you!
         </h1>
