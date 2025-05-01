@@ -1,16 +1,7 @@
 import type { Metadata } from 'next';
 import localFont from 'next/font/local';
 import './globals.css';
-import { Logo } from '@/components/ui/Logo/Logo';
-import {
-  Sidebar,
-  SidebarContent,
-  SidebarGroup,
-  SidebarHeader,
-  SidebarProvider,
-  SidebarTrigger,
-} from '@/components/ui/Sidebar/sidebar';
-import Link from 'next/link';
+import { DesktopSidebars } from '@/components/ui/DesktopSidebars/DesktopSidebars';
 
 const monumentGrotesk = localFont({
   src: [
@@ -52,25 +43,7 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${monumentGrotesk.variable} ${ibxMono.variable} font-sans antialiased`}>
-        <SidebarProvider>
-          <Sidebar className={'font-mono'}>
-            <div className={'p-5 h-full flex justify-between flex-col'}>
-              <SidebarHeader>
-                <Logo />
-              </SidebarHeader>
-              <SidebarContent className={'mt-auto'}>
-                <SidebarGroup className={'gap-4'}>
-                  <Link href="/">Test</Link>
-                  <Link href="/">Test</Link>
-                  <Link href="/">Test</Link>
-                  <Link href="/">Test</Link>
-                  <Link href="/">Test</Link>
-                </SidebarGroup>
-              </SidebarContent>
-            </div>
-          </Sidebar>
-          <SidebarTrigger className={'absolute bottom-5 right-4'} />
-        </SidebarProvider>
+        <DesktopSidebars className={'hidden md:block'} />
         {children}
       </body>
     </html>
