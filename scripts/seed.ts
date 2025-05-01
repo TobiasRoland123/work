@@ -8,6 +8,7 @@ import {
 } from '../db/schema';
 import { NewUser } from '../db/types';
 import * as dotenv from 'dotenv';
+import bcrypt from 'bcrypt';
 
 dotenv.config();
 
@@ -35,6 +36,10 @@ async function seed() {
 
     console.log(`Seeded ${orgIds.length} organisations`);
 
+    const saltRounds = 10;
+    const plainPassword = '123456';
+    const hashedPassword = await bcrypt.hash(plainPassword, saltRounds);
+
     // 2. Create sample users with proper typing and organisation reference
     console.log('Seeding users...');
     const sampleUsers: NewUser[] = [
@@ -42,6 +47,7 @@ async function seed() {
         firstName: 'John',
         lastName: 'Doe',
         email: 'john.doe@example.com',
+        password: hashedPassword,
         systemRole: 'ADMIN',
         organisationId: orgIds[0].id,
       },
@@ -49,6 +55,7 @@ async function seed() {
         firstName: 'Jane',
         lastName: 'Smith',
         email: 'jane.smith@example.com',
+        password: hashedPassword,
         systemRole: 'USER',
         organisationId: orgIds[0].id,
       },
@@ -56,6 +63,7 @@ async function seed() {
         firstName: 'Alice',
         lastName: 'Johnson',
         email: 'alice@example.com',
+        password: hashedPassword,
         systemRole: 'USER',
         organisationId: orgIds[1].id,
       },
@@ -63,6 +71,7 @@ async function seed() {
         firstName: 'Bob',
         lastName: 'Brown',
         email: 'bob@example.com',
+        password: hashedPassword,
         systemRole: 'GUEST',
         organisationId: orgIds[2].id,
       },
@@ -101,7 +110,7 @@ async function seed() {
     await db.insert(status).values([
       {
         userID: userIds[0].id,
-        status: 'IN_OFFICE', // Ensure these match your enum values exactly
+        status: 'IN_OFFICE',
         details: 'Working on project X',
         time: new Date().toISOString(),
       },
