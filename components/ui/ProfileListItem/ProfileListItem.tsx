@@ -8,6 +8,7 @@ export type ProfileListItemProps = {
   status: StatusType;
   phoneNumber: string;
   email: string;
+  department?: string;
 };
 
 export function ProfileListItem({
