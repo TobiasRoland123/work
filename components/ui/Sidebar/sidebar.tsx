@@ -5,7 +5,6 @@ import { Slot } from '@radix-ui/react-slot';
 import { VariantProps, cva } from 'class-variance-authority';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { cn } from '@/lib/utils';
-import { Button, ButtonProps } from '@/components/ui/Button/Button';
 import { Input } from '@/components/ui/Input/input';
 import { Separator } from '@/components/ui/Separator/separator';
 import {
@@ -22,6 +21,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/Tooltip/tooltip';
+import { Button } from '@/components/ui/Button/Button';
 
 const SIDEBAR_COOKIE_NAME = 'sidebar_state';
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
@@ -248,24 +248,27 @@ function Sidebar({
   );
 }
 
-function SidebarTrigger({ className, ...props }: ButtonProps) {
+const SidebarTrigger = React.forwardRef<
+  React.ElementRef<typeof Button>,
+  React.ComponentProps<typeof Button>
+>(({ className, ...props }) => {
   const { toggleSidebar } = useSidebar();
 
   return (
     <Button
       data-sidebar="trigger"
-      data-slot="sidebar-trigger"
-      variant={'default'}
-      className={cn('', className)}
+      variant="default"
+      className={cn('h-7 w-7', className)}
       handleClick={() => {
         toggleSidebar();
       }}
       {...props}
     >
-      report status
+      <span className="sr-only">Toggle Sidebar</span>
     </Button>
   );
-}
+});
+SidebarTrigger.displayName = 'SidebarTrigger';
 
 function SidebarRail({ className, ...props }: React.ComponentProps<'button'>) {
   const { toggleSidebar } = useSidebar();
