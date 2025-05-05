@@ -9,11 +9,15 @@ import {
 
 type StatusSidebarProps = {
   open: string;
+  setOpen: (value: string) => void;
 };
 
-export function StatusSidebar({ open }: StatusSidebarProps) {
+export function StatusSidebar({ open, setOpen }: StatusSidebarProps) {
   return (
-    <Sheet open={open === 'status'}>
+    <Sheet
+      open={open === 'status'}
+      onOpenChange={() => setOpen(open === 'navigation' ? 'status' : 'navigation')}
+    >
       <SheetTrigger>Open</SheetTrigger>
       <SheetContent className={'bg-black'}>
         <SheetHeader>

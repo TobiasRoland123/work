@@ -248,26 +248,26 @@ function Sidebar({
   );
 }
 
-const SidebarTrigger = React.forwardRef<
-  React.ElementRef<typeof Button>,
-  React.ComponentProps<typeof Button>
->(({ className, ...props }) => {
-  const { toggleSidebar } = useSidebar();
+type SidebarTriggerProps = {
+  className?: string;
+  open: string;
+  setOpen: (value: string) => void;
+};
 
+const SidebarTrigger = ({ className, setOpen, open }: SidebarTriggerProps) => {
   return (
     <Button
       data-sidebar="trigger"
       variant="default"
-      className={cn('h-7 w-7', className)}
+      className={cn(className)}
       handleClick={() => {
-        toggleSidebar();
+        setOpen(open === 'navigation' ? 'status' : 'navigation');
       }}
-      {...props}
     >
-      <span className="sr-only">Toggle Sidebar</span>
+      Toggle Sidebar
     </Button>
   );
-});
+};
 SidebarTrigger.displayName = 'SidebarTrigger';
 
 function SidebarRail({ className, ...props }: React.ComponentProps<'button'>) {
