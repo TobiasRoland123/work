@@ -5,7 +5,6 @@ import { MobileNavigation } from '@/components/ui/MobileNavigation/Mobilenavigat
 import { linkProps } from '@/types/link';
 import type * as React from 'react';
 import { SidebarProviderWrapper } from '@/components/SidebarProviderWrapper/SidebarProviderWrapper';
-
 const monumentGrotesk = localFont({
   src: [
     {

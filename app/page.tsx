@@ -1,38 +1,14 @@
-import PeopleOverview from '@/components/ui/PeopleOverview/PeopleOverview';
-import { StatusType } from '@/components/ui/Status/Status';
-import type * as React from 'react';
+import { getSession } from '@/utils/validateSession';
+import { redirect } from 'next/navigation';
 
 export default async function Home() {
-  const sampleProfiles = [
-    {
-      profilePicture: 'https://picsum.photos/200',
-      name: 'Anders Christensen',
-      title: 'UI Designer',
-      status: 'from home' as StatusType,
-      phoneNumber: '+45 87 18 91 28',
-      email: 'anders@work.com',
-    },
-    {
-      profilePicture: 'https://picsum.photos/201',
-      name: 'Maria Jensen',
-      title: 'Frontend Developer',
-      status: 'in office' as StatusType,
-      phoneNumber: '+45 23 45 67 89',
-      email: 'maria@work.com',
-    },
-    {
-      profilePicture: 'https://picsum.photos/202',
-      name: 'Peter Nielsen',
-      title: 'Product Manager',
-      status: 'in office' as StatusType,
-      phoneNumber: '+45 32 14 76 98',
-      email: 'peter@work.com',
-    },
-  ];
+  const session = await getSession();
 
-  return (
-    <div>
-      <PeopleOverview profiles={sampleProfiles} />
-    </div>
-  );
+  if (session.isLoggedIn) {
+    redirect('/today');
+  } else {
+    redirect('/login');
+  }
+
+  return null;
 }
