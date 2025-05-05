@@ -3,15 +3,8 @@ import type * as React from 'react';
 import {
   Sidebar,
   SidebarContent,
-  SidebarGroup,
-  SidebarGroupContent,
-  SidebarGroupLabel,
   SidebarHeader,
-  SidebarMenu,
-  SidebarMenuButton,
-  SidebarMenuItem,
   SidebarRail,
-  useSidebar,
 } from '@/components/ui/Sidebar/sidebar';
 import { Logo } from '@/components/ui/Logo/Logo';
 import Link from 'next/link';

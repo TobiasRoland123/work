@@ -250,7 +250,7 @@ function Sidebar({
 
 type SidebarTriggerProps = {
   className?: string;
-  open: string;
+  open?: string;
   setOpen: (value: string) => void;
 };
 

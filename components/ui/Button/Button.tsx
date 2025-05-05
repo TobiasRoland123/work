@@ -14,12 +14,12 @@ export type ButtonProps = {
 };
 
 const variants = cva(
-  'bg-light-blue text-black font-mono px-5 py-3.5 hover:bg-light-blue-hover active:bg-light-blue-pressed text-center w-fit focus:outline-light-blue-focus',
+  'bg-light-blue text-black font-mono px-5 py-3.5 h-14 flex items-center justify-center hover:bg-light-blue-hover active:bg-light-blue-pressed text-center w-fit focus:outline-light-blue-focus',
   {
     variants: {
       variant: {
         default: 'rounded-[35px] text-base',
-        large: 'text-24 rounded-[48px] w-full',
+        large: 'text-24 rounded-[48px] w-full ',
       },
     },
     defaultVariants: {
@@ -39,5 +39,9 @@ export function Button({ label, variant, link, children, className, handleClick 
       </Link>
     );
   }
-  return <button onClick={handleClick} className={cn(variants({ variant, className }))}>{label || children}</button>;
+  return (
+    <button onClick={handleClick} className={cn(variants({ variant, className }))}>
+      {label || children}
+    </button>
+  );
 }
