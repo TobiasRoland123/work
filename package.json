@@ -12,6 +12,7 @@
     "build-storybook": "storybook build",
     "test-storybook": "test-storybook",
     "prepare": "husky install",
+    "db:start": "pnpm db:up && pnpm db:generate && pnpm db:push && pnpm db:seed && pnpm db:studio",
     "db:up": "docker-compose up -d",
     "db:down": "docker-compose down",
     "db:generate": "drizzle-kit generate",
