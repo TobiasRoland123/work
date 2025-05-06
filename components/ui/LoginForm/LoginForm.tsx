@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Button } from '../Button/Button';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useRouter } from 'next/navigation';
@@ -16,6 +16,8 @@ import {
 import { Input } from '@/components/ui/input';
 import { useForm } from 'react-hook-form';
 
+import Image from 'next/image';
+
 const formSchema = z.object({
   email: z.string().email({ message: 'Please enter a valid email address.' }),
   password: z.string().min(1, { message: 'Password is required.' }),
@@ -25,6 +27,7 @@ const LoginForm = () => {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [csrfToken, setCsrfToken] = useState<string>('');
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -63,6 +66,32 @@ const LoginForm = () => {
       setIsSubmitting(false);
     }
   };
+
+  useEffect(() => {
+    const getCsrfToken = () => {
+      const cookies = document.cookie.split(';');
+      const csrfCookie = cookies.find((cookie) =>
+        cookie.trim().startsWith('next-auth.csrf-token=')
+      );
+
+      if (csrfCookie) {
+        const token = csrfCookie.split('=')[1].split('%')[0];
+        setCsrfToken(token);
+      } else {
+        // Fetch token from API if not in cookies
+        fetch('/api/auth/csrf')
+          .then((res) => res.json())
+          .then((data) => {
+            if (data.csrfToken) {
+              setCsrfToken(data.csrfToken);
+            }
+          })
+          .catch((err) => console.error('Failed to fetch CSRF token:', err));
+      }
+    };
+
+    getCsrfToken();
+  }, []);
 
   return (
     <section className="w-full h-80 lg:w-[503px] lg:h-full lg:right-0 lg:top-0 px-4 py-10 bg-white flex flex-col gap-20 lg:pb-0">
@@ -127,6 +156,30 @@ const LoginForm = () => {
           </div>
         </form>
       </Form>
+      <div>
+        <form
+          action="http://localhost:3000/api/auth/signin/microsoft-entra-id"
+          method="POST"
+          className="w-full"
+        >
+          <input type="hidden" name="csrfToken" value={csrfToken} />
+          <input type="hidden" name="callbackUrl" value="/" />
+          <button
+            type="submit"
+            className="w-full flex items-center justify-center gap-2 border border-gray-300 bg-white py-3 px-4 text-black hover:bg-gray-50 transition-colors rounded-2xl"
+          >
+            <span>Sign in with Microsoft Entra ID</span>
+            <Image
+              loading="lazy"
+              height="24"
+              width="24"
+              src="https://authjs.dev/img/providers/microsoft-entra-id.svg"
+              alt="Microsoft logo"
+              className="mr-2"
+            />
+          </button>
+        </form>
+      </div>
     </section>
   );
 };

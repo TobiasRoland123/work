@@ -1,7 +1,7 @@
-import { NextAuth, NextAuthConfig } from '@auth/nextjs';
-import MicrosoftEntraID from '@auth/core/providers/microsoft-entra-id';
+import NextAuth from 'next-auth';
+import MicrosoftEntraID from 'next-auth/providers/microsoft-entra-id';
 
-export const authConfig: NextAuthConfig = {
+export const { auth, handlers, signIn, signOut } = NextAuth({
   providers: [
     MicrosoftEntraID({
       clientId: process.env.AUTH_MICROSOFT_ENTRA_ID_ID!,
@@ -9,23 +9,44 @@ export const authConfig: NextAuthConfig = {
       issuer: `https://login.microsoftonline.com/${process.env.AUTH_MICROSOFT_ENTRA_ID_TENANT_ID}/v2.0`,
       authorization: {
         params: {
-          scope: 'openid profile email User.Read',
+          scope: 'openid profile email User.Read User.Read.All',
         },
       },
-    }) as any,
+    }),
   ],
-  debug: process.env.NODE_ENV === 'development',
-  callbacks: {
-    async redirect({ url, baseUrl }) {
-      return baseUrl;
-    },
-    async session({ session, token }) {
-      return session;
-    },
-    authorized({ auth, request }) {
-      return !!auth;
+  session: {
+    strategy: 'jwt',
+  },
+  cookies: {
+    sessionToken: {
+      name: 'next-auth.session-token',
+      options: {
+        httpOnly: true,
+        sameSite: 'lax',
+        path: '/',
+        secure: process.env.NODE_ENV === 'production',
+      },
     },
   },
-};
+  callbacks: {
+    async jwt({ token, account }) {
+      if (account?.access_token) {
+        token.access_token = account.access_token;
+      }
+      return token;
+    },
+    async authorized({ auth }) {
+      // Basic implementation - customize based on your requirements
+      return !!auth; // Only allows authenticated users
+    },
 
-export const { auth, handlers } = NextAuth(authConfig);
+    async session({ session, token }) {
+      console.log('✅ AUTH SESSION');
+      return {
+        ...session,
+        accessToken: token.access_token as string,
+      };
+    },
+  },
+  secret: process.env.AUTH_SECRET,
+});
