@@ -1,10 +1,7 @@
 import type { Metadata } from 'next';
 import localFont from 'next/font/local';
 import './globals.css';
-import { MobileNavigation } from '@/components/ui/MobileNavigation/Mobilenavigation';
-import { linkProps } from '@/types/link';
 import type * as React from 'react';
-import { SidebarProviderWrapper } from '@/components/SidebarProviderWrapper/SidebarProviderWrapper';
 const monumentGrotesk = localFont({
   src: [
     {
@@ -42,18 +39,10 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const links: Array<linkProps> = [
-    { href: '#', label: 'Today' },
-    { href: '#', label: 'Contact' },
-    { href: '#', label: 'Profile' },
-  ];
-
   return (
     <html lang="en">
       <body className={`${monumentGrotesk.variable} ${ibxMono.variable} font-sans antialiased`}>
-        <SidebarProviderWrapper links={links}>{children}</SidebarProviderWrapper>
-
-        <MobileNavigation linkList={links} />
+        {children}
       </body>
     </html>
   );
