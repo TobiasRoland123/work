@@ -264,7 +264,7 @@ const SidebarTrigger = ({ className, setOpen, open }: SidebarTriggerProps) => {
         setOpen(open === 'navigation' ? 'status' : 'navigation');
       }}
     >
-      Toggle Sidebar
+      Report status
     </Button>
   );
 };
