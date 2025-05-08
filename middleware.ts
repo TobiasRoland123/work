@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { getIronSession } from 'iron-session';
 import { sessionOptions, SessionData } from './utils/validateSession';
+import { auth } from './auth';
 
 // Single public path
 const PUBLIC_PATH = '/login';
@@ -13,21 +14,26 @@ export async function middleware(request: NextRequest) {
   // Check if the path is the login page
   const isLoginPage = request.nextUrl.pathname === PUBLIC_PATH;
 
+  const authData = await auth();
+
   // Create a response object we'll use for redirection if needed
   const response = NextResponse.next();
 
   try {
-    // Get the session using iron-session
-    const session = await getIronSession<SessionData>(request, response, sessionOptions);
+    // Get the iron session
+    const ironSession = await getIronSession<SessionData>(request, response, sessionOptions);
+
+    // User is authenticated if either Auth.js has a user OR iron session is logged in
+    const isAuthenticated = !!authData?.user || ironSession.isLoggedIn;
 
     // If user is not logged in and trying to access a protected route
-    if (!session.isLoggedIn && !isLoginPage) {
+    if (!isAuthenticated && !isLoginPage) {
       const url = new URL(PUBLIC_PATH, request.url);
       return NextResponse.redirect(url);
     }
 
     // If user is logged in and trying to access login page
-    if (session.isLoggedIn && isLoginPage) {
+    if (isAuthenticated && isLoginPage) {
       const url = new URL(PROTECTED_PATH, request.url);
       return NextResponse.redirect(url);
     }

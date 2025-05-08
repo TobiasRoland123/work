@@ -13,8 +13,6 @@ import bcrypt from 'bcrypt';
 dotenv.config();
 
 async function seed() {
-  console.log('Seeding database...');
-
   try {
     // Clear existing data (order matters due to foreign key constraints)
     await db.delete(status);
@@ -24,7 +22,7 @@ async function seed() {
     await db.delete(organisations);
 
     // 1. Seed organisations
-    console.log('Seeding organisations...');
+
     const orgIds = await db
       .insert(organisations)
       .values([
@@ -34,14 +32,12 @@ async function seed() {
       ])
       .returning({ id: organisations.id });
 
-    console.log(`Seeded ${orgIds.length} organisations`);
-
     const saltRounds = 10;
     const plainPassword = '123456';
     const hashedPassword = await bcrypt.hash(plainPassword, saltRounds);
 
     // 2. Create sample users with proper typing and organisation reference
-    console.log('Seeding users...');
+
     const sampleUsers: NewUser[] = [
       {
         firstName: 'John',
@@ -80,7 +76,7 @@ async function seed() {
     const userIds = await db.insert(users).values(sampleUsers).returning({ id: users.id });
 
     // 3. Seed organization roles
-    console.log('Seeding organisation roles...');
+
     const roleIds = await db
       .insert(organisation_roles)
       .values([
@@ -92,7 +88,7 @@ async function seed() {
       .returning({ id: organisation_roles.id });
 
     // 4. Seed users_organisation_roles (connections between users and roles)
-    console.log('Seeding user organisation roles...');
+
     await db.insert(users_organisation_roles).values([
       { userId: userIds[0].id, organisationRoleId: roleIds[3].id }, // John is a Team Lead
       { userId: userIds[1].id, organisationRoleId: roleIds[2].id }, // Jane is a PM
@@ -102,7 +98,7 @@ async function seed() {
     ]);
 
     // 5. Seed status records
-    console.log('Seeding status records...');
+
     const today = new Date();
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
@@ -137,24 +133,6 @@ async function seed() {
         toDate: new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(), // Convert to string
       },
     ]);
-
-    console.log('Seeding completed successfully');
-
-    // Verify seeded data
-    const allUsers = await db.select().from(users);
-    console.log(`Seeded ${allUsers.length} users`);
-
-    const allOrgs = await db.select().from(organisations);
-    console.log(`Seeded ${allOrgs.length} organisations`);
-
-    const allRoles = await db.select().from(organisation_roles);
-    console.log(`Seeded ${allRoles.length} roles`);
-
-    const allUserRoles = await db.select().from(users_organisation_roles);
-    console.log(`Seeded ${allUserRoles.length} user-role assignments`);
-
-    const allStatuses = await db.select().from(status);
-    console.log(`Seeded ${allStatuses.length} status records`);
   } catch (error) {
     console.error('Error seeding database:', error);
   } finally {
