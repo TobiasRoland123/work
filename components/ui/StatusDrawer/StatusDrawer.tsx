@@ -19,6 +19,7 @@ export function StatusDrawer() {
       <DrawerTrigger asChild>
         <Button
           variant={'default'}
+          ariaLabel="Report status"
           handleClick={() => {
             setOpen(true);
           }}
@@ -49,12 +50,24 @@ export function StatusDrawer() {
         </DrawerHeader>
         <div className={'gap-4 flex flex-col'}>
           {/* DUMMY DATA*/}
-          <Button variant={'large'}>Statis option</Button>
-          <Button variant={'large'}>Statis option</Button>
-          <Button variant={'large'}>Statis option</Button>
-          <Button variant={'large'}>Statis option</Button>
-          <Button variant={'large'}>Statis option</Button>
-          <Button variant={'large'}>Statis option</Button>
+          <Button variant={'large'} ariaLabel="Statis option">
+            Statis option
+          </Button>
+          <Button variant={'large'} ariaLabel="Statis option">
+            Statis option
+          </Button>
+          <Button variant={'large'} ariaLabel="Statis option">
+            Statis option
+          </Button>
+          <Button variant={'large'} ariaLabel="Statis option">
+            Statis option
+          </Button>
+          <Button variant={'large'} ariaLabel="Statis option">
+            Statis option
+          </Button>
+          <Button variant={'large'} ariaLabel="Statis option">
+            Statis option
+          </Button>
           {/* DUMMY DATA*/}{' '}
         </div>
       </DrawerContent>

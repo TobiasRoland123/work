@@ -34,7 +34,7 @@ export function StatusSidebar({ open, setOpen }: StatusSidebarProps) {
           <InsetSheetTitle className={'text-white font-mono font-light'}>
             Are you absolutely sure?
           </InsetSheetTitle>
-          <InsetSheetClose className="bg-none">
+          <InsetSheetClose className="bg-none" aria-label="Close sidebar">
             <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none">
               <path fill="#0B1014" d="M0 0h20v20H0z" />
               <path
@@ -51,11 +51,13 @@ export function StatusSidebar({ open, setOpen }: StatusSidebarProps) {
             </svg>
           </InsetSheetClose>
         </InsetSheetHeader>
-        <InsetSheetDescription className={'pt-14'}>
+        <InsetSheetDescription className={'pt-14 text-white'}>
           TODO: Add confirmation details for the account deletion process here.
         </InsetSheetDescription>
         <InsetSheetFooter>
-          <Button variant={'large'}>Register</Button>
+          <Button variant={'large'} ariaLabel="Register account">
+            Register
+          </Button>
         </InsetSheetFooter>
       </InsetSheetContent>
     </InsetSheet>

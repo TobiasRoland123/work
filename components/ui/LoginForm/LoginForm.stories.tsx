@@ -8,13 +8,6 @@ const meta: Meta<typeof LoginForm> = {
   parameters: {
     layout: 'fullscreen',
   },
-  decorators: [
-    (Story) => (
-      <main>
-        <Story />
-      </main>
-    ),
-  ],
 };
 
 export default meta;
@@ -57,14 +50,14 @@ export const ValidationErrors: Story = {
     const canvas = within(canvasElement);
 
     // Get form fields by their labels
-    const nameInput = canvas.getByLabelText('Name');
+    const nameInput = canvas.getByLabelText('Email');
     // const passwordInput = canvas.getByLabelText('Password');
 
-    // Fill in with invalid data (username too short, empty password)
+    // Fill in with invalid data (email too short, empty password)
     await userEvent.type(nameInput, 'A');
 
     // Find and click the submit button
-    const submitButton = canvas.getByRole('button', { name: /log ind/i });
+    const submitButton = canvas.getByRole('button', { name: /log in/i });
     await userEvent.click(submitButton);
   },
 };

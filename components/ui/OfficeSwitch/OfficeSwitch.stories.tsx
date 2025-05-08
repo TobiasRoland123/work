@@ -3,13 +3,6 @@ import OfficeSwitch from './OfficeSwitch';
 
 const meta: Meta<typeof OfficeSwitch> = {
   component: OfficeSwitch,
-  decorators: [
-    (Story) => (
-      <main>
-        <Story />
-      </main>
-    ),
-  ],
 };
 
 export default meta;
