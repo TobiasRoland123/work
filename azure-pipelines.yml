@@ -28,6 +28,11 @@ steps:
   - script: pnpm install --frozen-lockfile
     displayName: 'Install dependencies'
 
+  - script: pnpm run lint
+    displayName: 'Run ESLint'
+
+  - script: pnpm exec tsc --noEmit
+    displayName: 'TypeScript type check'
   - script: |
       npx playwright install --with-deps
     displayName: 'Install Playwright'

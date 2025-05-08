@@ -4,21 +4,22 @@ import { cn } from '@/lib/utils';
 import { cva } from 'class-variance-authority';
 import React from 'react';
 
-type ButtonProps = {
+export type ButtonProps = {
   label?: string;
   children?: React.ReactNode;
   variant?: 'default' | 'large';
   link?: linkProps; // If link is present, then the button component will render as a Link
   className?: string;
+  handleClick?: () => void;
 };
 
 const variants = cva(
-  'bg-light-blue text-black font-mono px-5 py-3.5 hover:bg-light-blue-hover active:bg-light-blue-pressed text-center w-fit focus:outline-light-blue-focus',
+  'bg-light-blue text-black font-mono px-5 py-3.5 h-14 flex items-center justify-center hover:bg-light-blue-hover active:bg-light-blue-pressed text-center w-fit focus:outline-light-blue-focus',
   {
     variants: {
       variant: {
         default: 'rounded-[35px] text-base',
-        large: 'text-24 rounded-[48px] w-full',
+        large: 'text-24 rounded-[48px] w-full ',
       },
     },
     defaultVariants: {
@@ -26,7 +27,7 @@ const variants = cva(
     },
   }
 );
-export function Button({ label, variant, link, children, className }: ButtonProps) {
+export function Button({ label, variant, link, children, className, handleClick }: ButtonProps) {
   if ((link && link?.href && link?.label) || (link && link.href && children)) {
     return (
       <Link
@@ -38,5 +39,9 @@ export function Button({ label, variant, link, children, className }: ButtonProp
       </Link>
     );
   }
-  return <button className={cn(variants({ variant, className }))}>{label || children}</button>;
+  return (
+    <button onClick={handleClick} className={cn(variants({ variant, className }))}>
+      {label || children}
+    </button>
+  );
 }
