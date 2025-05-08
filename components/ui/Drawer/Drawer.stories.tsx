@@ -29,9 +29,11 @@ const DrawerExample = () => {
           <DrawerDescription>This action cannot be undone.</DrawerDescription>
         </DrawerHeader>
         <DrawerFooter>
-          <Button>Submit</Button>
+          <Button ariaLabel="Submit">Submit</Button>
           <DrawerClose>
-            <Button variant="default">Cancel</Button>
+            <Button ariaLabel="Cancel" variant="default">
+              Cancel
+            </Button>
           </DrawerClose>
         </DrawerFooter>
       </DrawerContent>

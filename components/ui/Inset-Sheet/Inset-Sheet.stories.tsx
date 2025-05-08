@@ -15,8 +15,8 @@ import {
 } from './inset-sheet';
 
 const meta = {
-  title: 'UI/InsetSheet',
   component: InsetSheet,
+  title: 'UI/InsetSheet',
   parameters: {
     layout: 'fullscreen',
   },
@@ -47,9 +47,7 @@ const InsetSheetDemo = ({
             This content will be pushed aside when the sheet is open. Try opening the sheet to see
             how this content adjusts.
           </p>
-          <InsetSheetTrigger asChild>
-            <Button>Open Sheet</Button>
-          </InsetSheetTrigger>
+          <InsetSheetTrigger>Open sheet</InsetSheetTrigger>
         </div>
       </InsetSheetWrapper>
 
@@ -64,10 +62,8 @@ const InsetSheetDemo = ({
         {children}
 
         <InsetSheetFooter>
-          <InsetSheetClose asChild>
-            <Button>Cancel</Button>
-          </InsetSheetClose>
-          <Button>Save Changes</Button>
+          <InsetSheetClose>Close</InsetSheetClose>
+          <Button ariaLabel="Save Changes">Save Changes</Button>
         </InsetSheetFooter>
       </InsetSheetContent>
     </InsetSheet>
@@ -130,9 +126,7 @@ export const CustomStyling: Story = {
         <InsetSheet open={open} onOpenChange={setOpen}>
           <InsetSheetWrapper>
             <div className="p-6 min-h-screen">
-              <InsetSheetTrigger>
-                <Button>Open Custom Sheet</Button>
-              </InsetSheetTrigger>
+              <InsetSheetTrigger>Open sheet</InsetSheetTrigger>
             </div>
           </InsetSheetWrapper>
 
@@ -149,9 +143,7 @@ export const CustomStyling: Story = {
             </div>
 
             <InsetSheetFooter className="border-t border-gray-700">
-              <InsetSheetClose asChild>
-                <Button className="border-gray-700 text-white hover:bg-gray-800">Close</Button>
-              </InsetSheetClose>
+              <InsetSheetClose>Close</InsetSheetClose>
             </InsetSheetFooter>
           </InsetSheetContent>
         </InsetSheet>
@@ -170,7 +162,6 @@ export const ProgrammaticControl: Story = {
 
       const handleAction = () => {
         // Do something
-
         // Then close the sheet
         setOpen(false);
       };
@@ -179,7 +170,9 @@ export const ProgrammaticControl: Story = {
         <InsetSheet open={open} onOpenChange={setOpen}>
           <InsetSheetWrapper>
             <div className="p-6 min-h-screen">
-              <Button handleClick={() => setOpen(true)}>Open Programmatic Sheet</Button>
+              <Button ariaLabel="Open programmatic sheet" handleClick={() => setOpen(true)}>
+                Open Programmatic Sheet
+              </Button>
             </div>
           </InsetSheetWrapper>
 
@@ -191,7 +184,9 @@ export const ProgrammaticControl: Story = {
             <div className="p-4">
               <p>This sheet is controlled programmatically.</p>
               <div className="mt-4">
-                <Button handleClick={handleAction}>Perform Action & Close</Button>
+                <Button ariaLabel="Perform action and close sheet" handleClick={handleAction}>
+                  Perform Action & Close
+                </Button>
               </div>
             </div>
           </InsetSheetContent>

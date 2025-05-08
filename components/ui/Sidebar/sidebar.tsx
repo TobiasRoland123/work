@@ -259,6 +259,7 @@ const SidebarTrigger = ({ className, setOpen, open }: SidebarTriggerProps) => {
     <Button
       data-sidebar="trigger"
       variant="default"
+      ariaLabel="Report status"
       className={cn(className)}
       handleClick={() => {
         setOpen(open === 'navigation' ? 'status' : 'navigation');
