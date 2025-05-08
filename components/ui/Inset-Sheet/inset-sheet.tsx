@@ -173,11 +173,11 @@ function InsetSheetContent({
 }
 
 interface InsetSheetTriggerProps {
-  text: string;
+  children: React.ReactNode;
   asChild?: boolean;
 }
 
-function InsetSheetTrigger({ text, ...props }: InsetSheetTriggerProps) {
+function InsetSheetTrigger({ children, ...props }: InsetSheetTriggerProps) {
   const { onOpenChange } = useInsetSheet();
   return (
     <Button
@@ -186,7 +186,7 @@ function InsetSheetTrigger({ text, ...props }: InsetSheetTriggerProps) {
       handleClick={() => onOpenChange(true)}
       {...props}
     >
-      {text}
+      {children}
     </Button>
   );
 }

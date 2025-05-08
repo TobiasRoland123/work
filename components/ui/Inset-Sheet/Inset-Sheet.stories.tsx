@@ -47,7 +47,7 @@ const InsetSheetDemo = ({
             This content will be pushed aside when the sheet is open. Try opening the sheet to see
             how this content adjusts.
           </p>
-          <InsetSheetTrigger text="Open sheet" />
+          <InsetSheetTrigger>Open sheet</InsetSheetTrigger>
         </div>
       </InsetSheetWrapper>
 
@@ -126,7 +126,7 @@ export const CustomStyling: Story = {
         <InsetSheet open={open} onOpenChange={setOpen}>
           <InsetSheetWrapper>
             <div className="p-6 min-h-screen">
-              <InsetSheetTrigger text="Open sheet" />
+              <InsetSheetTrigger>Open sheet</InsetSheetTrigger>
             </div>
           </InsetSheetWrapper>
 
