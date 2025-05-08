@@ -51,11 +51,13 @@ export const ButtonLargeVariantTests: Story = {
   args: {
     variant: 'large',
     children: 'I should be large variant',
+    ariaLabel: 'aria label text',
   },
 
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
 
     await expect(canvas.getByRole('button')).toHaveClass('w-full');
+    await expect(canvas.getByRole('button')).toHaveAttribute('aria-label', 'aria label text');
   },
 };

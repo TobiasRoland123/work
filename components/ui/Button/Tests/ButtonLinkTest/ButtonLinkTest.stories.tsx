@@ -18,6 +18,6 @@ export const AsLinkDefault: Story = {
     const canvas = within(canvasElement);
 
     // 👇 Assert DOM structure
-    await expect(canvas.getByRole('link')).toHaveAttribute('href', '/#');
+    await expect(canvas.getByRole('link')).toHaveAttribute('href', '#');
   },
 };
