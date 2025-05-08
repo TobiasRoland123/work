@@ -4,13 +4,6 @@ import { ProfileList } from './ProfileList';
 
 const meta: Meta<typeof ProfileList> = {
   component: ProfileList,
-  decorators: [
-    (Story) => (
-      <main>
-        <Story />
-      </main>
-    ),
-  ],
 };
 
 export default meta;
