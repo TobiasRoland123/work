@@ -1,15 +1,23 @@
 import type { Preview } from '@storybook/react';
 import '../app/globals.css';
-import withPseudo from 'storybook-addon-pseudo-states';
+import React from 'react';
+
 const preview: Preview = {
   parameters: {
+    nextjs: {
+      appDirectory: true,
+      navigation: {
+        pathname: '/',
+        push: () => {},
+      },
+    },
     controls: {
       matchers: {
         color: /(background|color)$/i,
         date: /Date$/i,
       },
     },
-    decorators: [withPseudo],
+
     a11y: {
       // 'todo' - show a11y violations in the test UI only
       // 'error' - fail CI on a11y violations
@@ -17,6 +25,8 @@ const preview: Preview = {
       test: 'todo',
     },
   },
+
+  decorators: [(Story) => React.createElement('main', {}, React.createElement(Story))],
 };
 
 export default preview;

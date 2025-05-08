@@ -55,13 +55,6 @@ const PeopleOverviewWrapper = (props: {
 
 const meta: Meta<typeof PeopleOverview> = {
   component: PeopleOverview,
-  decorators: [
-    (Story) => (
-      <main>
-        <Story />
-      </main>
-    ),
-  ],
 };
 
 export default meta;

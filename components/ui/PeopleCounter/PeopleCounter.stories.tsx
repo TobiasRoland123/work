@@ -2,7 +2,11 @@ import type { Meta, StoryObj } from '@storybook/react';
 import PeopleCounter from './PeopleCounter';
 import { useState } from 'react';
 
-const PeopleCounterWrapper = (props: { peopleInOffice: number; peopleOutOfOffice:number,initialOfficeStatus?: boolean }) => {
+const PeopleCounterWrapper = (props: {
+  peopleInOffice: number;
+  peopleOutOfOffice: number;
+  initialOfficeStatus?: boolean;
+}) => {
   const [officeStatus, setOfficeStatus] = useState(props.initialOfficeStatus || false);
 
   return (
@@ -17,13 +21,6 @@ const PeopleCounterWrapper = (props: { peopleInOffice: number; peopleOutOfOffice
 
 const meta: Meta<typeof PeopleCounter> = {
   component: PeopleCounter,
-  decorators: [
-    (Story) => (
-      <main>
-        <Story />
-      </main>
-    ),
-  ],
 };
 
 export default meta;

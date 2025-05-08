@@ -12,13 +12,20 @@ type Story = StoryObj<typeof Button>;
 const allVariants = () => {
   return (
     <div className={'flex gap-4 flex-col'}>
-      <Button>Button</Button>
-      <Button variant={'large'}>Button</Button>
-      <Button link={{ href: '#', label: ' im a link' }} />
-      <Button variant={'large'} link={{ href: '#', label: ' im a link, but large' }} />
+      <Button ariaLabel="Button">Button</Button>
+      <Button variant={'large'} ariaLabel="Large button">
+        Button
+      </Button>
+      <Button link={{ href: '#', label: ' im a link' }} ariaLabel="Link type button" />
+      <Button
+        variant={'large'}
+        link={{ href: '#', label: ' im a link, but large' }}
+        ariaLabel="Large link type button"
+      />
       <Button
         variant={'large'}
         link={{ href: '#', label: ' im a link, but open in new tab', target: '_blank' }}
+        ariaLabel="Large link type button with target new tab"
       />
     </div>
   );

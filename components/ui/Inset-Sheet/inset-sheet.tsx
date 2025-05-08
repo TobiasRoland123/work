@@ -4,6 +4,7 @@ import * as React from 'react';
 import { XIcon } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
+import { Button } from '../Button/Button';
 
 // Context to manage the sheet state
 interface InsetSheetContextValue {
@@ -157,6 +158,7 @@ function InsetSheetContent({
         {children}
         {!hideCloseButton && (
           <button
+            aria-label="Close inset sheet button"
             type="button"
             onClick={() => onOpenChange(false)}
             className="ring-offset-background focus:ring-ring absolute right-4 top-4 rounded-xs opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:pointer-events-none"
@@ -178,14 +180,14 @@ interface InsetSheetTriggerProps {
 function InsetSheetTrigger({ children, ...props }: InsetSheetTriggerProps) {
   const { onOpenChange } = useInsetSheet();
   return (
-    <button
-      type="button"
+    <Button
       data-slot="inset-sheet-trigger"
-      onClick={() => onOpenChange(true)}
+      ariaLabel="Open status sheet"
+      handleClick={() => onOpenChange(true)}
       {...props}
     >
       {children}
-    </button>
+    </Button>
   );
 }
 
@@ -274,15 +276,15 @@ interface InsetSheetCloseProps {
 function InsetSheetClose({ children, className, ...props }: InsetSheetCloseProps) {
   const { onOpenChange } = useInsetSheet();
   return (
-    <button
-      type="button"
+    <Button
       className={className}
+      ariaLabel="Close inset sheet button"
       data-slot="inset-sheet-close"
-      onClick={() => onOpenChange(false)}
+      handleClick={() => onOpenChange(false)}
       {...props}
     >
       {children}
-    </button>
+    </Button>
   );
 }
 
