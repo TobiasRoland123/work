@@ -267,15 +267,16 @@ function InsetSheetDescription({
 interface InsetSheetCloseProps {
   children: React.ReactNode;
   asChild?: boolean;
+  className?: string;
   // other props
 }
 
-function InsetSheetClose({ children, ...props }: InsetSheetCloseProps) {
+function InsetSheetClose({ children, className, ...props }: InsetSheetCloseProps) {
   const { onOpenChange } = useInsetSheet();
   return (
     <button
       type="button"
-      className="bg-white"
+      className={className}
       data-slot="inset-sheet-close"
       onClick={() => onOpenChange(false)}
       {...props}
