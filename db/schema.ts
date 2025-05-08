@@ -40,6 +40,8 @@ export const users = pgTable(
     systemRole: systemRole('system_role').default('USER').notNull(),
     createdAt: timestamp('created_at', { mode: 'string' }).defaultNow().notNull(),
     organisationId: integer('organisation_id').references(() => organisations.id),
+    mobilePhone: text('mobile_phone'),
+    profilePicture: text('profile_picture'),
   },
   (table) => [unique('users_email_unique').on(table.email)]
 );
@@ -57,6 +59,21 @@ export const users_organisation_roles = pgTable('users_organisation_roles', {
   organisationRoleId: integer('organisation_role_id')
     .notNull()
     .references(() => organisation_roles.id),
+});
+
+export const business_phone_numbers = pgTable('business_phone_numbers', {
+  id: serial().primaryKey().notNull(),
+  businessPhoneNumber: text('business_phone_numbers'),
+});
+
+export const users_business_phone_numbers = pgTable('users_business_phone_numbers', {
+  id: serial().primaryKey().notNull(),
+  userId: integer('user_id')
+    .notNull()
+    .references(() => users.id),
+  businessPhoneNumberId: integer('business_phone_numbers_id')
+    .notNull()
+    .references(() => business_phone_numbers.id),
 });
 
 export const status = pgTable('status', {

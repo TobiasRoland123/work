@@ -1,7 +1,12 @@
 import NextAuth from 'next-auth';
 import MicrosoftEntraID from 'next-auth/providers/microsoft-entra-id';
 
-export const { auth, handlers, signIn, signOut } = NextAuth({
+export const {
+  auth,
+  handlers, // Export the default handlers directly
+  signIn,
+  signOut,
+} = NextAuth({
   providers: [
     MicrosoftEntraID({
       clientId: process.env.AUTH_MICROSOFT_ENTRA_ID_ID!,
@@ -9,7 +14,7 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
       issuer: `https://login.microsoftonline.com/${process.env.AUTH_MICROSOFT_ENTRA_ID_TENANT_ID}/v2.0`,
       authorization: {
         params: {
-          scope: 'openid profile email User.Read User.Read.All',
+          scope: 'openid profile email User.Read User.Read.All Team.ReadBasic.All',
         },
       },
     }),

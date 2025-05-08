@@ -22,6 +22,27 @@
       "when": 1746005653654,
       "tag": "0002_bitter_paladin",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1746705399737,
+      "tag": "0003_bored_hex",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1746705456056,
+      "tag": "0004_daffy_boomerang",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1746705572890,
+      "tag": "0005_sad_big_bertha",
+      "breakpoints": true
     }
   ]
 }
