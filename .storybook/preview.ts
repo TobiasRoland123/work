@@ -1,6 +1,6 @@
 import type { Preview } from '@storybook/react';
 import '../app/globals.css';
-
+import withPseudo from 'storybook-addon-pseudo-states';
 const preview: Preview = {
   parameters: {
     controls: {
@@ -9,7 +9,7 @@ const preview: Preview = {
         date: /Date$/i,
       },
     },
-
+    decorators: [withPseudo],
     a11y: {
       // 'todo' - show a11y violations in the test UI only
       // 'error' - fail CI on a11y violations

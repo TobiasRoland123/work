@@ -4,13 +4,6 @@ import { Button } from './Button';
 
 const meta: Meta<typeof Button> = {
   component: Button,
-  decorators: [
-    (Story) => (
-      <main>
-        <Story />
-      </main>
-    ),
-  ],
 };
 
 export default meta;
