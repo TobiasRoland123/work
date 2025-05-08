@@ -7,7 +7,7 @@ import React from 'react';
 export type ButtonProps = {
   label?: string;
   children?: React.ReactNode;
-  ariaLabel?: string;
+  ariaLabel: string;
   variant?: 'default' | 'large';
   link?: linkProps; // If link is present, then the button component will render as a Link
   className?: string;
