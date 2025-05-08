@@ -23,7 +23,10 @@
     "chromatic": "npx chromatic --project-token=chpt_91242e07e9e9dc0"
   },
   "dependencies": {
+    "@auth/core": "^0.39.0",
+    "@auth/nextjs": "0.0.0-380f8d56",
     "@hookform/resolvers": "^5.0.1",
+    "@microsoft/microsoft-graph-client": "^3.0.7",
     "@radix-ui/react-label": "^2.1.4",
     "@radix-ui/react-slot": "^1.2.0",
     "@radix-ui/react-switch": "^1.2.2",
@@ -35,6 +38,7 @@
     "iron-session": "^8.0.4",
     "lucide-react": "^0.488.0",
     "next": "15.3",
+    "next-auth": "5.0.0-beta.27",
     "pg": "^8.15.5",
     "prettier": "^3.5.3",
     "react": "^19.0.0",
