@@ -1,5 +1,6 @@
 import type { Preview } from '@storybook/react';
 import '../app/globals.css';
+import React from 'react';
 
 const preview: Preview = {
   parameters: {
@@ -10,7 +11,6 @@ const preview: Preview = {
         push: () => {},
       },
     },
-    actions: { argTypesRegex: '^on[A-Z].*' },
     controls: {
       matchers: {
         color: /(background|color)$/i,
@@ -25,6 +25,8 @@ const preview: Preview = {
       test: 'todo',
     },
   },
+
+  decorators: [(Story) => React.createElement('main', {}, React.createElement(Story))],
 };
 
 export default preview;
