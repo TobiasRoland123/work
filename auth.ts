@@ -41,7 +41,6 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
     },
 
     async session({ session, token }) {
-      console.log('✅ AUTH SESSION');
       return {
         ...session,
         accessToken: token.access_token as string,

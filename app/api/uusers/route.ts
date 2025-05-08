@@ -5,11 +5,7 @@ import 'next-auth';
 export async function GET() {
   const session = await auth();
 
-  console.log('--------------SESSION------------');
-  console.log(session);
-
   if (!session?.accessToken) {
-    console.error('Ingen accessToken i session');
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
   }
 

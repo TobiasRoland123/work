@@ -26,12 +26,6 @@ export async function middleware(request: NextRequest) {
     // User is authenticated if either Auth.js has a user OR iron session is logged in
     const isAuthenticated = !!authData?.user || ironSession.isLoggedIn;
 
-    console.log('Auth status:', {
-      authDataUser: !!authData?.user,
-      ironSessionLoggedIn: ironSession.isLoggedIn,
-      isAuthenticated,
-    });
-
     // If user is not logged in and trying to access a protected route
     if (!isAuthenticated && !isLoginPage) {
       const url = new URL(PUBLIC_PATH, request.url);
