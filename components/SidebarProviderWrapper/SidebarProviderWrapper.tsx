@@ -8,9 +8,14 @@ import { linkProps } from '@/types/link';
 type SidebarProviderWrapperProps = {
   children: ReactNode;
   links: Array<linkProps>;
+  showStatusSidebar?: boolean;
 };
 
-export function SidebarProviderWrapper({ children, links }: SidebarProviderWrapperProps) {
+export function SidebarProviderWrapper({
+  children,
+  links,
+  showStatusSidebar,
+}: SidebarProviderWrapperProps) {
   const [open, setOpen] = useState('navigation');
 
   return (
@@ -19,15 +24,17 @@ export function SidebarProviderWrapper({ children, links }: SidebarProviderWrapp
       onOpenChange={() => setOpen(open === 'navigation' ? 'status' : 'navigation')}
     >
       <AppSidebar className={'md:block hidden'} linkList={links} />
-      <SidebarInset className={'relative'}>
-        {children}
-        <SidebarTrigger
-          open={open}
-          setOpen={setOpen}
-          className="fixed bottom-5 right-3.5 hidden md:block"
-        />
-      </SidebarInset>
-      <StatusSidebar open={open} setOpen={setOpen} />
+      <SidebarInset className={'relative'}>{children}</SidebarInset>
+      {showStatusSidebar && (
+        <>
+          <SidebarTrigger
+            open={open}
+            setOpen={setOpen}
+            className="fixed bottom-5 right-3.5 hidden md:block"
+          />
+          <StatusSidebar open={open} setOpen={setOpen} />
+        </>
+      )}
     </SidebarProvider>
   );
 }
