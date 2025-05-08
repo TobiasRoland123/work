@@ -28,10 +28,5 @@ export async function GET() {
 
   const user = await res.json();
 
-  return NextResponse.json({
-    name: user.displayName,
-    email: user.mail,
-    department: user.department,
-    jobTitle: user.jobTitle,
-  });
+  return NextResponse.json(user);
 }
