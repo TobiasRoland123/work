@@ -56,7 +56,7 @@ export const users_organisation_roles = pgTable('users_organisation_roles', {
   id: serial().primaryKey().notNull(),
   userId: integer('user_id')
     .notNull()
-    .references(() => users.id),
+    .references(() => users.id, { onDelete: 'cascade' }),
   organisationRoleId: integer('organisation_role_id')
     .notNull()
     .references(() => organisation_roles.id),
@@ -71,7 +71,7 @@ export const users_business_phone_numbers = pgTable('users_business_phone_number
   id: serial().primaryKey().notNull(),
   userId: integer('user_id')
     .notNull()
-    .references(() => users.id),
+    .references(() => users.id, { onDelete: 'cascade' }),
   businessPhoneNumberId: integer('business_phone_numbers_id')
     .notNull()
     .references(() => business_phone_numbers.id),
@@ -81,7 +81,7 @@ export const status = pgTable('status', {
   id: serial().primaryKey().notNull(),
   userID: integer('user_id')
     .notNull()
-    .references(() => users.id),
+    .references(() => users.id, { onDelete: 'cascade' }),
   status: userStatus('status').default('IN_OFFICE').notNull(),
   details: text('details'),
   time: timestamp('time', { mode: 'string' }),
