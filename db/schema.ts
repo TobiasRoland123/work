@@ -33,6 +33,7 @@ export const users = pgTable(
   'users',
   {
     id: serial().primaryKey().notNull(),
+    userId: text('user_id'),
     firstName: varchar('first_name', { length: 20 }),
     password: varchar('password', { length: 60 }),
     lastName: text('last_name'),

@@ -14,7 +14,7 @@ export const {
       issuer: `https://login.microsoftonline.com/${process.env.AUTH_MICROSOFT_ENTRA_ID_TENANT_ID}/v2.0`,
       authorization: {
         params: {
-          scope: 'openid profile email User.Read User.Read.All Team.ReadBasic.All',
+          scope: 'openid profile email User.Read User.Read.All',
         },
       },
     }),

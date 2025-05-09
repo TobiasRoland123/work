@@ -10,9 +10,15 @@ const PUBLIC_PATH = '/login';
 // Single protected path
 const PROTECTED_PATH = '/today';
 
+// Protected API paths
+const PROTECTED_API_PATHS = ['/api/uuser', '/api/me', '/api/auth/session'];
+
 export async function middleware(request: NextRequest) {
   // Check if the path is the login page
   const isLoginPage = request.nextUrl.pathname === PUBLIC_PATH;
+
+  // Check if the path is a protected API route
+  const isProtectedApi = PROTECTED_API_PATHS.includes(request.nextUrl.pathname);
 
   const authData = await auth();
 
@@ -25,6 +31,16 @@ export async function middleware(request: NextRequest) {
 
     // User is authenticated if either Auth.js has a user OR iron session is logged in
     const isAuthenticated = !!authData?.user || ironSession.isLoggedIn;
+
+    // If user is not logged in and trying to access a protected API route
+    if (!isAuthenticated && isProtectedApi) {
+      return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    }
 
     // If user is not logged in and trying to access a protected route
     if (!isAuthenticated && !isLoginPage) {
@@ -39,6 +55,16 @@ export async function middleware(request: NextRequest) {
     }
   } catch (error) {
     console.error('Middleware authentication error:', error);
+
+    // Return 401 for protected API routes on error
+    if (isProtectedApi) {
+      return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    }
 
     // On error, redirect non-public paths to login
     if (!isLoginPage) {
@@ -55,12 +81,15 @@ export const config = {
   matcher: [
     /*
      * Match all request paths except:
-     * - api routes (starting with /api/)
+     * - other api routes (starting with /api/ but not in our protected list)
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
      * - public files (images, etc.)
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!api/(?!uuser|me|auth/session)|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/api/uuser',
+    '/api/me',
+    '/api/auth/session',
   ],
 };

@@ -83,7 +83,7 @@ async function getGraphUsers() {
       nextLink = userData['@odata.nextLink'] || null;
     }
 
-    return allUsers;
+    return { allUsers, accessToken };
   } catch (error) {
     console.error('Error fetching users from Graph API:', error);
     throw error;
@@ -91,9 +91,9 @@ async function getGraphUsers() {
 }
 
 async function seedGraphUsers() {
-  const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3000/api';
+  // const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3000/api';
   try {
-    const graphUsers = await getGraphUsers();
+    const { allUsers: graphUsers, accessToken } = await getGraphUsers();
 
     let [organisation] = await db
       .select()
@@ -114,15 +114,25 @@ async function seedGraphUsers() {
       let profilePicture = null;
 
       try {
-        const profileResponse = await fetch(
-          `${apiUrl}/auth/session?email=${encodeURIComponent(graphUser.mail)}`
+        // Try to get profile picture directly from Graph API
+        const photoResponse = await fetch(
+          `https://graph.microsoft.com/v1.0/users/${graphUser.id}/photo/$value`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`, // You'll need to pass the accessToken to this function
+            },
+          }
         );
-        if (profileResponse.ok) {
-          const sessionData = await profileResponse.json();
-          profilePicture = sessionData?.user?.image || null;
+
+        if (photoResponse.ok) {
+          // Get photo as binary data
+          const photoBuffer = await photoResponse.arrayBuffer();
+          // Convert to base64 string for storage
+          profilePicture = `data:image/jpeg;base64,${Buffer.from(photoBuffer).toString('base64')}`;
+        } else {
         }
       } catch (error) {
-        console.error(`Failed to fetch profile for ${graphUser.mail}:`, error);
+        console.error(`Failed to fetch profile photo for ${graphUser.mail}:`, error);
       }
 
       const userData = {
@@ -134,6 +144,7 @@ async function seedGraphUsers() {
         organisationId: organisation.id,
         mobilePhone: graphUser.mobilePhone || null, // Store mobile phone directly on user
         profilePicture: profilePicture,
+        userId: graphUser.id,
       };
 
       let user;
@@ -151,6 +162,7 @@ async function seedGraphUsers() {
             lastName: graphUser.surname,
             mobilePhone: graphUser.mobilePhone || null,
             ...(profilePicture && profilePicture !== user.profilePicture ? { profilePicture } : {}),
+            userId: graphUser.id,
           })
           .where(eq(users.id, user.id));
       }
