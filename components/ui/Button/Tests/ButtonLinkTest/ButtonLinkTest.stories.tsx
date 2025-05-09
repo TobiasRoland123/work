@@ -9,15 +9,16 @@ const meta: Meta<typeof Button> = {
 export default meta;
 type Story = StoryObj<typeof Button>;
 
-export const AsLinkDefault: Story = {
+export const ButtonLinkPropsPresent: Story = {
   args: {
     variant: 'default',
     link: { href: '#', label: 'Button as Link' },
+    ariaLabel: 'Button Link ariaLabel',
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
 
-    // 👇 Assert DOM structure
+    await expect(canvas.getByRole('link')).toHaveAttribute('aria-label', 'Button Link ariaLabel');
     await expect(canvas.getByRole('link')).toHaveAttribute('href', '#');
   },
 };

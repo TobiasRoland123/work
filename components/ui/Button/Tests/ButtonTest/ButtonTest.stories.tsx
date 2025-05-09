@@ -61,3 +61,13 @@ export const ButtonLargeVariantTests: Story = {
     await expect(canvas.getByRole('button')).toHaveAttribute('aria-label', 'aria label text');
   },
 };
+
+export const ButtonPropsPresentTest: Story = {
+  args: { children: 'im a button with props', ariaLabel: 'aria label text' },
+
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+
+    await expect(canvas.getByRole('button')).toHaveAttribute('aria-label', 'aria label text');
+  },
+};
