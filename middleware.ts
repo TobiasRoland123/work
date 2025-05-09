@@ -11,7 +11,7 @@ const PUBLIC_PATH = '/login';
 const PROTECTED_PATH = '/today';
 
 // Protected API paths
-const PROTECTED_API_PATHS = ['/api/uuser', '/api/me', '/api/auth/session'];
+const PROTECTED_API_PATHS = ['/api/uusers', '/api/me', '/api/auth/session'];
 
 export async function middleware(request: NextRequest) {
   // Check if the path is the login page
@@ -33,13 +33,25 @@ export async function middleware(request: NextRequest) {
     const isAuthenticated = !!authData?.user || ironSession.isLoggedIn;
 
     // If user is not logged in and trying to access a protected API route
-    if (!isAuthenticated && isProtectedApi) {
-      return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+    // if (!isAuthenticated && isProtectedApi) {
+    //   return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
+    //     status: 401,
+    //     headers: {
+    //       'Content-Type': 'application/json',
+    //     },
+    //   });
+    // }
+
+    if (isProtectedApi && request.headers.get('sec-fetch-dest') === 'document') {
+      return new NextResponse(
+        JSON.stringify({ error: 'API endpoints cannot be accessed directly from browser' }),
+        {
+          status: 403,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
     }
 
     // If user is not logged in and trying to access a protected route
@@ -88,7 +100,7 @@ export const config = {
      * - public files (images, etc.)
      */
     '/((?!api/(?!uuser|me|auth/session)|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
-    '/api/uuser',
+    '/api/uusers',
     '/api/me',
     '/api/auth/session',
   ],
