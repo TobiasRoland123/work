@@ -31,6 +31,12 @@ export default defineConfig({
         },
       },
       {
+        extends: true,
+        resolve: {
+          alias: {
+            '@': path.resolve(dirname, '.'),
+          },
+        },
         test: {
           exclude: ['**/*.stories.tsx'],
           include: ['tests/backend/*.test.ts'],
