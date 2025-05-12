@@ -6,19 +6,18 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 // Create a PostgreSQL connection pool
-const pool = new Pool({
+const pool = new Pool(process.env.NODE_ENV === 'production'?{  connectionString: process.env.DATABASE_URL,
+}: {
   user: process.env.PGUSER,
   password: process.env.PGPASSWORD,
   host: process.env.PGHOST,
   port: Number(process.env.POSTGRES_PORT),
   database: process.env.PGDATABASE,
-  ssl: {
-    rejectUnauthorized: false,
-  },
+
 });
 
 // Create a Drizzle ORM instance with the schema
-export const db = drizzle(pool, { schema });
+export const db =  drizzle(pool, { schema });
 
 // Export the pool for direct queries if needed
 export { pool };
