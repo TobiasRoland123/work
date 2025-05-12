@@ -33,7 +33,7 @@ export default defineConfig({
       {
         test: {
           exclude: ['**/*.stories.tsx'],
-          include: ['tests/*.test.ts'],
+          include: ['tests/backend/*.test.ts'],
           name: 'backend',
           environment: 'node',
         },
