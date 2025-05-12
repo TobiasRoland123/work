@@ -9,8 +9,6 @@ const config: StorybookConfig = {
     '@chromatic-com/storybook',
     '@storybook/experimental-addon-test',
     '@storybook/addon-a11y',
-    '@storybook/addon-pseudo-states',
-    'storybook-addon-pseudo-states',
   ],
 
   framework: {
