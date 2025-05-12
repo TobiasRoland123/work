@@ -6,8 +6,7 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 // Create a PostgreSQL connection pool
-const pool = new Pool(process.env.NODE_ENV === 'production'?{  connectionString: process.env.DATABASE_URL,
-}: {
+const pool = new Pool( {
   user: process.env.PGUSER,
   password: process.env.PGPASSWORD,
   host: process.env.PGHOST,
