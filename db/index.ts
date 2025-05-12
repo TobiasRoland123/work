@@ -7,11 +7,14 @@ dotenv.config();
 
 // Create a PostgreSQL connection pool
 const pool = new Pool({
-  user: process.env.POSTGRES_USER,
-  password: process.env.POSTGRES_PASSWORD,
-  host: process.env.POSTGRES_HOST,
+  user: process.env.PGUSER,
+  password: process.env.PGPASSWORD,
+  host: process.env.PGHOST,
   port: Number(process.env.POSTGRES_PORT),
-  database: process.env.POSTGRES_DB,
+  database: process.env.PGDATABASE,
+  ssl: {
+    rejectUnauthorized: false,
+  },
 });
 
 // Create a Drizzle ORM instance with the schema

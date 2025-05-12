@@ -8,6 +8,6 @@ export default {
   out: './db',
   dialect: 'postgresql',
   dbCredentials: {
-    url: `${process.env.DATABASE_URL!}${process.env.POSTGRES_PORT}/${process.env.POSTGRES_DB}`,
+    url: `${process.env.DATABASE_URL}` ,
   },
 } satisfies Config;
