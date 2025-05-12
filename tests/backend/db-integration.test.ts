@@ -9,8 +9,6 @@ const pool = new Pool({
   database: process.env.POSTGRES_DB,
 });
 
-// const db = drizzle(pool)
-
 describe('Database Integration Tests', () => {
   afterAll(async () => {
     await pool.end();
@@ -25,5 +23,22 @@ describe('Database Integration Tests', () => {
   test('Should be able to query a table', async () => {
     const result = await pool.query('SELECT * FROM users LIMIT 1');
     expect(result.rows.length).toBeGreaterThan(0);
+  });
+
+  test('Should handle transactions correctly', async () => {
+    const client = await pool.connect();
+
+    try {
+      await client.query('BEGIN');
+      const result = await client.query('SELECT 1 as test');
+      await client.query('COMMIT');
+
+      expect(result.rows[0].test).toBe(1);
+    } catch (e) {
+      console.error('Error starting transaction', e);
+      throw e;
+    } finally {
+      client.release();
+    }
   });
 });
