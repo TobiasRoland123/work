@@ -34,7 +34,7 @@ export const users = pgTable(
   {
     id: serial().primaryKey().notNull(),
     firstName: varchar('first_name', { length: 20 }),
-    password: varchar('password', { length: 60 }),
+    password: varchar('password', { length: 60 }).notNull(),
     lastName: text('last_name'),
     email: text().notNull(),
     systemRole: systemRole('system_role').default('USER').notNull(),
