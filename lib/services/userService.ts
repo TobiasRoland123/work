@@ -1,7 +1,6 @@
 import { NewUser } from '@/db/types';
 import { users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import bcrypt from 'bcrypt';
 import { db } from '@/db';
 
 // This will be our user service, which will handle all user-related database operations.
@@ -26,28 +25,19 @@ export const userService = {
   // POST METHODS
   // Create user method also goes here
   async createUser(user: NewUser) {
-    const hashedPassword = await bcrypt.hash(user.password || '', 10);
-    const newUser = {
-      ...user,
-      password: hashedPassword,
-    };
-    const createdUser = await db.insert(users).values(newUser).returning();
+    const createdUser = await db.insert(users).values(user).returning();
     return createdUser[0];
   },
 
-  async loginUser(email: string, password: string) {
-    const user = await this.getUserByEmail(email);
-    if (!user) {
-      throw new Error('User not found');
-    }
+  /* * * * * * THIS METHDOD HAS BEEN COMMENTED OUT DUE TO NOT NEEDING TO CREATE LOGIN LOGIC CAUSE OF THE ENTRA IMPLEMENTATION * * * * * */
+  // async loginUser(email: string, password: string) {
+  //   const user = await this.getUserByEmail(email);
+  //   if (!user) {
+  //     throw new Error('User not found');
+  //   }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password || '');
-    if (!isPasswordValid) {
-      throw new Error('Invalid credentials');
-    }
-
-    return user;
-  },
+  //   return user;
+  // },
 
   // PUT METHODS
   // Can be added when the profile picture feature is implemented

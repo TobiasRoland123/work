@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { getIronSession } from 'iron-session';
-import { sessionOptions, SessionData } from './utils/validateSession';
 import { auth } from './auth';
 
 // Single public path
@@ -21,10 +19,9 @@ export async function middleware(request: NextRequest) {
 
   try {
     // Get the iron session
-    const ironSession = await getIronSession<SessionData>(request, response, sessionOptions);
 
     // User is authenticated if either Auth.js has a user OR iron session is logged in
-    const isAuthenticated = !!authData?.user || ironSession.isLoggedIn;
+    const isAuthenticated = !!authData?.user;
 
     // If user is not logged in and trying to access a protected route
     if (!isAuthenticated && !isLoginPage) {

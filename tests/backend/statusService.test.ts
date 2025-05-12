@@ -19,7 +19,6 @@ describe('StatusService Tests', () => {
     firstName: 'Test',
     lastName: 'User',
     email: 'testuser@example.com',
-    password: 'password123',
     systemRole: 'USER',
   };
 
