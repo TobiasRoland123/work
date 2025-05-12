@@ -13,6 +13,22 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 # Branch strategy
 We use main as our production branch, but development will happen by merging into the `develop` branch.
+## Linking to AzureDevOps tasks
+We are using AzureDevOps for managing our tasks and therefore we need to link our branches, commits and pr's to the correct task when working on a feature or bug. 
+### Task linking overview
+read more here: [Link GitHub commits, pull requests, branches, and issues to work items in Azure Boards](http://learn.microsoft.com/en-us/azure/devops/boards/github/link-to-from-github?view=azure-devops)
+To link a task to a commit, include the task id in the commit message using the format `AB#{ID}`.
+If linking a Pr or Issue, then add `AB#{ID}` to either the title or description. 
+
+| Commit or pull request message                            | Action                                                                                                                                              |
+|-----------------------------------------------------------|-----------------------------------------------------------------------------------------------------------------------------------------------------|
+| Fixed AB#123                                              | Links and transitions the work item to the Resolved workflow state category or, if none is defined, then the Completed workflow state category.    |
+| Closed AB#123                                             | Links and transitions the work item to the Closed workflow state. If none is defined, no transitions are made.                                     |
+| Adds a new feature, fixes AB#123.                         | Links and transitions the work item to the Resolved workflow state category or, if none is defined, then the Completed workflow state category.    |
+| Fixes AB#123, AB#124, and AB#126                          | Links to Azure Boards work items 123, 124, and 126. Transitions only the first item, 123 to the Resolved workflow state category or, if none is defined, then the Completed workflow state category. |
+| Fixes AB#123, Fixes AB#124, Fixes AB#125                  | Links to Azure Boards work items 123, 124, and 126. Transitions all items to either the Resolved workflow state category or, if none is defined, then the Completed workflow state category. |
+| Fixing multiple bugs: issue #123 and user story AB#234    | Links to GitHub issue 123 and Azure Boards work item 234. No transitions are made.                                                                  |
+
 ## Branch naming
 When creating new branches they should always be solving a task or bug, which is listed in Azure DevOps. When crating branches they should include the id of the task, so that it's easy to see what task this branch is solving:
 ### Feature branch example:
