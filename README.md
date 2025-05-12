@@ -14,7 +14,7 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 # Branch strategy
 We use main as our production branch, but development will happen by merging into the `develop` branch.
 ## Linking to AzureDevOps tasks
-We are using AzureDevOps for maneging our tasks and therefore we need to link our branches, commits and pr's to the correct task when working on a feature or bug. 
+We are using AzureDevOps for managing our tasks and therefore we need to link our branches, commits and pr's to the correct task when working on a feature or bug. 
 ### Task linking overview
 read more here: [Link GitHub commits, pull requests, branches, and issues to work items in Azure Boards](http://learn.microsoft.com/en-us/azure/devops/boards/github/link-to-from-github?view=azure-devops)
 In order to add a task add this to link a task to a commit add this to the commit  message where ID is the task id `AB#{ID}`
