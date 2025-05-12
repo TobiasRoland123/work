@@ -1,10 +1,7 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/db';
-import { users } from '@/db/schema';
-import { eq } from 'drizzle-orm';
-import bcrypt from 'bcrypt';
 import { cookies } from 'next/headers';
 import { getIronSession } from 'iron-session';
+import { userService } from '@/lib/services/userService';
 
 // Define session options - move this to a shared config file in production
 const sessionOptions = {
@@ -34,40 +31,41 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Email and password are required' }, { status: 400 });
     }
 
-    // Find user by email
-    const user = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    try {
+      // Use the userService to validate credentials
+      const user = await userService.loginUser(email, password);
 
-    if (user.length === 0) {
-      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
+      // Create and set session using iron-session
+      const session = await getIronSession<SessionData>(await cookies(), sessionOptions);
+
+      // Update session data
+      session.userId = user.id;
+      session.email = user.email;
+      session.role = user.systemRole;
+      session.isLoggedIn = true;
+
+      // Save session
+      await session.save();
+
+      // Return user information (excluding password)
+      const { password: _password, ...userWithoutPassword } = user;
+      void _password; //ignore this
+
+      return NextResponse.json({
+        user: userWithoutPassword,
+        success: true,
+      });
+    } catch (error: unknown) {
+      // Handle specific errors from userService
+      if (error instanceof Error) {
+        if (error.message === 'User not found') {
+          return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
+        } else if (error.message === 'Invalid credentials') {
+          return NextResponse.json({ error: 'Invalid email or password' }, { status: 401 });
+        }
+      }
+      throw error; // Re-throw unexpected errors
     }
-
-    // Compare password
-    const isPasswordValid = await bcrypt.compare(password, user[0].password || '');
-
-    if (!isPasswordValid) {
-      return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
-    }
-
-    // Create and set session using iron-session
-    const session = await getIronSession<SessionData>(await cookies(), sessionOptions);
-
-    // Update session data
-    session.userId = user[0].id;
-    session.email = user[0].email;
-    session.role = user[0].systemRole;
-    session.isLoggedIn = true;
-
-    // Save session
-    await session.save();
-
-    // Return user information (excluding password)
-    const { password: _password, ...userWithoutPassword } = user[0];
-    void _password; //ignore this
-
-    return NextResponse.json({
-      user: userWithoutPassword,
-      success: true,
-    });
   } catch (error) {
     console.error('Login error:', error);
     return NextResponse.json({ error: 'Authentication failed' }, { status: 500 });
