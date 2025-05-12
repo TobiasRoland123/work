@@ -67,3 +67,6 @@ Alongside visual testing, we perform component-level tests to verify that:
 - The core functionality and behavior of each component work as intended.
 
 This combination of visual and functional testing helps us maintain a high level of quality, confidence in changes, and a smooth developer experience.
+
+
+im testing github integration
