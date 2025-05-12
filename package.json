@@ -85,7 +85,6 @@
     "lint-staged": "^15.4.3",
     "playwright": "^1.52.0",
     "storybook": "^8.6.12",
-    "storybook-addon-pseudo-states": "^4.0.4",
     "tailwindcss": "^4",
     "tsx": "^4.19.3",
     "typescript": "^5",
