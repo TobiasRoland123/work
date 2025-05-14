@@ -159,7 +159,7 @@ const LoginForm = () => {
         </form>
       </Form>
       <form
-        action="http://localhost:3000/api/auth/signin/microsoft-entra-id"
+        action="/api/auth/signin/microsoft-entra-id"
         method="POST"
         className="w-full"
       >

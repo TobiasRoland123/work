@@ -35,7 +35,7 @@ export async function POST(request: Request) {
     }
 
     // Find user by email
-    const user = await db.select().from(users).where(eq(users.email, email)).limit(1);
+    const user = await db?.select().from(users).where(eq(users.email, email)).limit(1);
 
     if (user.length === 0) {
       return NextResponse.json({ error: 'Invalid credentials' }, { status: 401 });
