@@ -152,11 +152,12 @@ const LoginForm = () => {
             />
           </div>
           <div className="mt-auto py-5">
-            <Button variant="large">{isSubmitting ? 'Logging in...' : 'Log ind'}</Button>
+            <Button ariaLabel="log in" variant="large">
+              {isSubmitting ? 'Logging in...' : 'Log ind'}
+            </Button>
           </div>
         </form>
       </Form>
-
       <form
         action="http://localhost:3000/api/auth/signin/microsoft-entra-id"
         method="POST"
@@ -165,6 +166,7 @@ const LoginForm = () => {
         <input type="hidden" name="csrfToken" value={csrfToken} />
         <input type="hidden" name="callbackUrl" value="/" />
         <button
+          aria-label="log-in with Microsoft Entra ID"
           type="submit"
           className="w-full flex items-center justify-center gap-2 border border-gray-300 bg-white py-3 px-4 text-black hover:bg-gray-50 transition-colors rounded-2xl"
         >

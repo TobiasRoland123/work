@@ -30,6 +30,14 @@ export default defineConfig({
           setupFiles: ['.storybook/vitest.setup.ts'],
         },
       },
+      {
+        test: {
+          exclude: ['**/*.stories.tsx'],
+          include: ['tests/backend/*.test.ts'],
+          name: 'backend',
+          environment: 'node',
+        },
+      },
     ],
   },
 });

@@ -3,10 +3,12 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { cva } from 'class-variance-authority';
 import React from 'react';
+import './button.css';
 
 export type ButtonProps = {
   label?: string;
   children?: React.ReactNode;
+  ariaLabel: string;
   variant?: 'default' | 'large';
   link?: linkProps; // If link is present, then the button component will render as a Link
   className?: string;
@@ -27,11 +29,20 @@ const variants = cva(
     },
   }
 );
-export function Button({ label, variant, link, children, className, handleClick }: ButtonProps) {
+export function Button({
+  label,
+  variant,
+  link,
+  ariaLabel,
+  children,
+  className,
+  handleClick,
+}: ButtonProps) {
   if ((link && link?.href && link?.label) || (link && link.href && children)) {
     return (
       <Link
         href={link.href}
+        aria-label={ariaLabel}
         target={link.target || '_self'}
         className={cn(variants({ variant, className }))}
       >
@@ -40,7 +51,11 @@ export function Button({ label, variant, link, children, className, handleClick 
     );
   }
   return (
-    <button onClick={handleClick} className={cn(variants({ variant, className }))}>
+    <button
+      aria-label={ariaLabel}
+      onClick={handleClick}
+      className={cn(variants({ variant, className }))}
+    >
       {label || children}
     </button>
   );
