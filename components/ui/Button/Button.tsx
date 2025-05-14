@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { cn } from '@/lib/utils';
 import { cva } from 'class-variance-authority';
 import React from 'react';
+import './button.css';
 
 export type ButtonProps = {
   label?: string;
