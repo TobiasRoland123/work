@@ -28,7 +28,7 @@ const profiles = [
   },
 ];
 
-export default async function Home() {
+export default function Home() {
   return (
     <div>
       {/* Add sidebar nav */}
