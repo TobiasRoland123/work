@@ -1,7 +1,5 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { getIronSession } from 'iron-session';
-import { sessionOptions, SessionData } from './utils/validateSession';
 import { auth } from './auth';
 
 // Define public paths that don't require authentication
@@ -37,11 +35,16 @@ export async function middleware(request: NextRequest) {
   const response = NextResponse.next();
 
   try {
-    // Get the iron session
-    const ironSession = await getIronSession<SessionData>(request, response, sessionOptions);
-
     // User is authenticated if either Auth.js has a user OR iron session is logged in
-    const isAuthenticated = !!authData?.user || ironSession.isLoggedIn;
+    const isAuthenticated = !!authData?.user;
+
+    // Check if session has expired
+    let isSessionExpired = false;
+    if (authData?.expires) {
+      const now = Date.now();
+      const expiresAt = new Date(authData.expires).getTime();
+      isSessionExpired = expiresAt < now;
+    }
 
     // Protect API routes that aren't explicitly public
     if (isApiRoute && !isPublicPath) {
@@ -70,13 +73,13 @@ export async function middleware(request: NextRequest) {
     }
 
     // If user is not logged in and trying to access a protected route
-    if (!isAuthenticated && !isPublicPath) {
+    if (!isAuthenticated && isSessionExpired && !isPublicPath) {
       const url = new URL(DEFAULT_UNAUTH_REDIRECT, request.url);
       return NextResponse.redirect(url);
     }
 
     // If user is logged in and trying to access a public-only path
-    if (isAuthenticated && isPublicPath && !isExemptApiEndpoint) {
+    if (isAuthenticated && !isSessionExpired && isPublicPath && !isExemptApiEndpoint) {
       const url = new URL(DEFAULT_AUTH_REDIRECT, request.url);
       return NextResponse.redirect(url);
     }
