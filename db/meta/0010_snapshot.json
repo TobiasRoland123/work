@@ -1,6 +1,6 @@
 {
-  "id": "039c59e0-5f67-4192-b370-7c4503b0e256",
-  "prevId": "4b64215a-0d35-442a-a4e0-a083e045fd18",
+  "id": "079b8785-5e3f-4728-99c5-010d6260b044",
+  "prevId": "7643b6e3-cb4c-4f40-9037-498aaa6e64ec",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -41,7 +41,7 @@
         },
         "role_name": {
           "name": "role_name",
-          "type": "text",
+          "type": "varchar(255)",
           "primaryKey": false,
           "notNull": false
         }
@@ -66,7 +66,7 @@
         },
         "organisation_name": {
           "name": "organisation_name",
-          "type": "text",
+          "type": "varchar(255)",
           "primaryKey": false,
           "notNull": false
         },
@@ -141,9 +141,13 @@
           "name": "status_user_id_users_id_fk",
           "tableFrom": "status",
           "tableTo": "users",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
-          "onDelete": "no action",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -163,21 +167,33 @@
           "primaryKey": true,
           "notNull": true
         },
+        "user_id": {
+          "name": "user_id",
+          "type": "varchar(36)",
+          "primaryKey": false,
+          "notNull": false
+        },
         "first_name": {
           "name": "first_name",
-          "type": "varchar(20)",
+          "type": "varchar(60)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "password": {
+          "name": "password",
+          "type": "varchar(60)",
           "primaryKey": false,
           "notNull": false
         },
         "last_name": {
           "name": "last_name",
-          "type": "text",
+          "type": "varchar(255)",
           "primaryKey": false,
           "notNull": false
         },
         "email": {
           "name": "email",
-          "type": "text",
+          "type": "varchar(100)",
           "primaryKey": false,
           "notNull": true
         },
@@ -221,8 +237,12 @@
           "name": "users_organisation_id_organisations_id_fk",
           "tableFrom": "users",
           "tableTo": "organisations",
-          "columnsFrom": ["organisation_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "organisation_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -232,7 +252,9 @@
         "users_email_unique": {
           "name": "users_email_unique",
           "nullsNotDistinct": false,
-          "columns": ["email"]
+          "columns": [
+            "email"
+          ]
         }
       },
       "policies": {},
@@ -268,17 +290,25 @@
           "name": "users_business_phone_numbers_user_id_users_id_fk",
           "tableFrom": "users_business_phone_numbers",
           "tableTo": "users",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
-          "onDelete": "no action",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
         "users_business_phone_numbers_business_phone_numbers_id_business_phone_numbers_id_fk": {
           "name": "users_business_phone_numbers_business_phone_numbers_id_business_phone_numbers_id_fk",
           "tableFrom": "users_business_phone_numbers",
           "tableTo": "business_phone_numbers",
-          "columnsFrom": ["business_phone_numbers_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "business_phone_numbers_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -318,17 +348,25 @@
           "name": "users_organisation_roles_user_id_users_id_fk",
           "tableFrom": "users_organisation_roles",
           "tableTo": "users",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
-          "onDelete": "no action",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
         "users_organisation_roles_organisation_role_id_organisation_roles_id_fk": {
           "name": "users_organisation_roles_organisation_role_id_organisation_roles_id_fk",
           "tableFrom": "users_organisation_roles",
           "tableTo": "organisation_roles",
-          "columnsFrom": ["organisation_role_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "organisation_role_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -344,7 +382,11 @@
     "public.system_role": {
       "name": "system_role",
       "schema": "public",
-      "values": ["ADMIN", "USER", "GUEST"]
+      "values": [
+        "ADMIN",
+        "USER",
+        "GUEST"
+      ]
     },
     "public.user_status": {
       "name": "user_status",

@@ -38,7 +38,6 @@ async function seed() {
         firstName: 'John',
         lastName: 'Doe',
         email: 'john.doe@example.com',
-
         systemRole: 'ADMIN',
         organisationId: orgIds[0].id,
       },
@@ -46,7 +45,6 @@ async function seed() {
         firstName: 'Jane',
         lastName: 'Smith',
         email: 'jane.smith@example.com',
-
         systemRole: 'USER',
         organisationId: orgIds[0].id,
       },
@@ -54,7 +52,6 @@ async function seed() {
         firstName: 'Alice',
         lastName: 'Johnson',
         email: 'alice@example.com',
-
         systemRole: 'USER',
         organisationId: orgIds[1].id,
       },
@@ -62,7 +59,6 @@ async function seed() {
         firstName: 'Bob',
         lastName: 'Brown',
         email: 'bob@example.com',
-
         systemRole: 'GUEST',
         organisationId: orgIds[2].id,
       },

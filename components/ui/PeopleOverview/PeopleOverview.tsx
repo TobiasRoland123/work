@@ -7,18 +7,20 @@ type PeopleOverviewProps = {
   officeStatus?: boolean;
   setOfficeStatus?: (status: boolean) => void;
   profiles: ProfileListItemProps[];
-
 };
 
 const PeopleOverview = ({ officeStatus, setOfficeStatus, profiles }: PeopleOverviewProps) => {
-  const peopleInOffice = profiles.map((profile)=>{
-    if(profile.status === 'in office'){return profile}
-  })
+  const peopleInOffice = profiles.map((profile) => {
+    if (profile.status === 'in office') {
+      return profile;
+    }
+  });
 
-  const peopleOutOfOffice = profiles.map((profile)=>{
-    if(profile.status !== 'in office'){return profile}
-  })
-
+  const peopleOutOfOffice = profiles.map((profile) => {
+    if (profile.status !== 'in office') {
+      return profile;
+    }
+  });
 
   return (
     <div>
@@ -27,7 +29,7 @@ const PeopleOverview = ({ officeStatus, setOfficeStatus, profiles }: PeopleOverv
           officeStatus={officeStatus}
           setOfficeStatus={setOfficeStatus}
           peopleInOffice={peopleInOffice.length}
-          peopleOutOfOffice={peopleOutOfOffice.length }
+          peopleOutOfOffice={peopleOutOfOffice.length}
         />
       </div>
       <ProfileList profiles={profiles} />
