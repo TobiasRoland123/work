@@ -18,19 +18,25 @@ export async function middleware(request: NextRequest) {
   const response = NextResponse.next();
 
   try {
-    // Get the iron session
-
     // User is authenticated if either Auth.js has a user OR iron session is logged in
     const isAuthenticated = !!authData?.user;
 
+    // Check if session has expired
+    let isSessionExpired = false;
+    if (authData?.expires) {
+      const now = Date.now();
+      const expiresAt = new Date(authData.expires).getTime();
+      isSessionExpired = expiresAt < now;
+    }
+
     // If user is not logged in and trying to access a protected route
-    if (!isAuthenticated && !isLoginPage) {
+    if (!isAuthenticated && isSessionExpired && !isLoginPage) {
       const url = new URL(PUBLIC_PATH, request.url);
       return NextResponse.redirect(url);
     }
 
     // If user is logged in and trying to access login page
-    if (isAuthenticated && isLoginPage) {
+    if (isAuthenticated && !isSessionExpired && isLoginPage) {
       const url = new URL(PROTECTED_PATH, request.url);
       return NextResponse.redirect(url);
     }
