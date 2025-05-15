@@ -1,6 +1,6 @@
 {
-  "id": "039c59e0-5f67-4192-b370-7c4503b0e256",
-  "prevId": "4b64215a-0d35-442a-a4e0-a083e045fd18",
+  "id": "8e335846-11ac-4349-a121-5fd8e668c62b",
+  "prevId": "6be6a090-2d7e-4c43-a2a8-d48f800d8f6c",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -41,7 +41,7 @@
         },
         "role_name": {
           "name": "role_name",
-          "type": "text",
+          "type": "varchar(255)",
           "primaryKey": false,
           "notNull": false
         }
@@ -66,7 +66,7 @@
         },
         "organisation_name": {
           "name": "organisation_name",
-          "type": "text",
+          "type": "varchar(255)",
           "primaryKey": false,
           "notNull": false
         },
@@ -147,7 +147,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -167,6 +167,12 @@
           "primaryKey": true,
           "notNull": true
         },
+        "user_id": {
+          "name": "user_id",
+          "type": "varchar(36)",
+          "primaryKey": false,
+          "notNull": false
+        },
         "first_name": {
           "name": "first_name",
           "type": "varchar(20)",
@@ -181,13 +187,13 @@
         },
         "last_name": {
           "name": "last_name",
-          "type": "text",
+          "type": "varchar(255)",
           "primaryKey": false,
           "notNull": false
         },
         "email": {
           "name": "email",
-          "type": "text",
+          "type": "varchar(20)",
           "primaryKey": false,
           "notNull": true
         },
@@ -290,7 +296,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
         "users_business_phone_numbers_business_phone_numbers_id_business_phone_numbers_id_fk": {
@@ -348,7 +354,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
         "users_organisation_roles_organisation_role_id_organisation_roles_id_fk": {

@@ -1,6 +1,6 @@
 {
-  "id": "039c59e0-5f67-4192-b370-7c4503b0e256",
-  "prevId": "4b64215a-0d35-442a-a4e0-a083e045fd18",
+  "id": "6be6a090-2d7e-4c43-a2a8-d48f800d8f6c",
+  "prevId": "cc4cceaa-2733-47a0-9c70-3f06a92db3f0",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -16,7 +16,7 @@
         },
         "business_phone_numbers": {
           "name": "business_phone_numbers",
-          "type": "varchar(11)",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         }
@@ -147,7 +147,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -166,6 +166,12 @@
           "type": "serial",
           "primaryKey": true,
           "notNull": true
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
         },
         "first_name": {
           "name": "first_name",
@@ -214,7 +220,7 @@
         },
         "mobile_phone": {
           "name": "mobile_phone",
-          "type": "varchar(11)",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
@@ -290,7 +296,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
         "users_business_phone_numbers_business_phone_numbers_id_business_phone_numbers_id_fk": {
@@ -348,7 +354,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
         "users_organisation_roles_organisation_role_id_organisation_roles_id_fk": {

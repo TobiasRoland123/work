@@ -33,6 +33,7 @@ export default function Home() {
     <div>
       {/* Add sidebar nav */}
       <PeopleOverviewWrapper initialProfiles={profiles} />
+
       {/* Add 'Report Status Button' */}
     </div>
   );

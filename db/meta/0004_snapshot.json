@@ -1,6 +1,6 @@
 {
-  "id": "039c59e0-5f67-4192-b370-7c4503b0e256",
-  "prevId": "4b64215a-0d35-442a-a4e0-a083e045fd18",
+  "id": "a6d6efc2-56bc-47ce-ae99-835f24262bc1",
+  "prevId": "039c59e0-5f67-4192-b370-7c4503b0e256",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -16,7 +16,7 @@
         },
         "business_phone_numbers": {
           "name": "business_phone_numbers",
-          "type": "varchar(11)",
+          "type": "varchar(12)",
           "primaryKey": false,
           "notNull": false
         }
@@ -214,7 +214,7 @@
         },
         "mobile_phone": {
           "name": "mobile_phone",
-          "type": "varchar(11)",
+          "type": "varchar(12)",
           "primaryKey": false,
           "notNull": false
         },

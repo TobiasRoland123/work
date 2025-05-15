@@ -1,6 +1,6 @@
 {
-  "id": "039c59e0-5f67-4192-b370-7c4503b0e256",
-  "prevId": "4b64215a-0d35-442a-a4e0-a083e045fd18",
+  "id": "e060173b-19f9-4e7d-8a0d-b00b2841628f",
+  "prevId": "079b8785-5e3f-4728-99c5-010d6260b044",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -16,7 +16,7 @@
         },
         "business_phone_numbers": {
           "name": "business_phone_numbers",
-          "type": "varchar(11)",
+          "type": "varchar(14)",
           "primaryKey": false,
           "notNull": false
         }
@@ -41,7 +41,7 @@
         },
         "role_name": {
           "name": "role_name",
-          "type": "text",
+          "type": "varchar(255)",
           "primaryKey": false,
           "notNull": false
         }
@@ -66,7 +66,7 @@
         },
         "organisation_name": {
           "name": "organisation_name",
-          "type": "text",
+          "type": "varchar(255)",
           "primaryKey": false,
           "notNull": false
         },
@@ -147,7 +147,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },
@@ -167,9 +167,15 @@
           "primaryKey": true,
           "notNull": true
         },
+        "user_id": {
+          "name": "user_id",
+          "type": "varchar(36)",
+          "primaryKey": false,
+          "notNull": false
+        },
         "first_name": {
           "name": "first_name",
-          "type": "varchar(20)",
+          "type": "varchar(60)",
           "primaryKey": false,
           "notNull": false
         },
@@ -181,13 +187,13 @@
         },
         "last_name": {
           "name": "last_name",
-          "type": "text",
+          "type": "varchar(255)",
           "primaryKey": false,
           "notNull": false
         },
         "email": {
           "name": "email",
-          "type": "text",
+          "type": "varchar(100)",
           "primaryKey": false,
           "notNull": true
         },
@@ -214,7 +220,7 @@
         },
         "mobile_phone": {
           "name": "mobile_phone",
-          "type": "varchar(11)",
+          "type": "varchar(14)",
           "primaryKey": false,
           "notNull": false
         },
@@ -290,7 +296,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
         "users_business_phone_numbers_business_phone_numbers_id_business_phone_numbers_id_fk": {
@@ -348,7 +354,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         },
         "users_organisation_roles_organisation_role_id_organisation_roles_id_fk": {
