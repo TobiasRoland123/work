@@ -17,9 +17,9 @@ jobs:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_USER: testuser
-          POSTGRES_PASSWORD: testpass
-          POSTGRES_DB: testdb
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: work_db
         ports:
           - 5434:5432
         options: >-
@@ -77,12 +77,23 @@ jobs:
       #       "npx wait-on tcp:127.0.0.1:6006 && pnpm test-storybook"
       #   timeout-minutes: 60
 
+      - name: Run DB migrations
+        run: pnpm db:generate && pnpm db:push
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5434/work_db
+          PGUSER: postgres
+          PGPASSWORD: postgres
+          PGHOST: localhost
+          PGPORT: 5434
+          PGDATABASE: work_db
+
       - name: Test backend services
         run: pnpm test:backend
         env:
-          PGUSER: testuser
-          PGPASSWORD: testpass
+          PGUSER: postgres
+          PGPASSWORD: postgres
           PGHOST: localhost
           PGPORT: 5434
-          PGDATABASE: testdb
-          # POSTGRES_PORT: 5434 # maybe remove this line
+          PGDATABASE: work_db
+
+          #TODO: Try moving env to root of this yml build step so we dont have duplicate entries
