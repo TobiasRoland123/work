@@ -1,134 +1,254 @@
-import { db } from '../db';
+// Adjust path to your db client
 import {
   users,
   organisations,
-  organisation_roles,
-  users_organisation_roles,
-  status,
+  business_phone_numbers,
+  users_business_phone_numbers,
+  organisation_roles, // Add this
+  users_organisation_roles, // Add this
 } from '../db/schema';
-import { NewUser } from '../db/types';
-import * as dotenv from 'dotenv';
+import dotenv from 'dotenv';
+import { eq } from 'drizzle-orm';
+import { db } from '../db';
 
-dotenv.config();
+import path from 'path';
 
-async function seed() {
+// Install node-fetch if not already: npm install node-fetch
+
+dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+
+interface GraphUser {
+  businessPhones: string[];
+  displayName: string;
+  givenName: string;
+  jobTitle: string;
+  mail: string;
+  mobilePhone: string | null;
+  officeLocation: string;
+  preferredLanguage: string | null;
+  surname: string;
+  userPrincipalName: string;
+  id: string;
+}
+
+async function getAccessToken() {
+  const tenantId = process.env.AUTH_MICROSOFT_ENTRA_ID_TENANT_ID;
+  const clientId = process.env.AUTH_MICROSOFT_ENTRA_ID_ID;
+  const clientSecret = process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET;
+  const scope = 'https://graph.microsoft.com/.default';
+
+  const url = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
+
+  const params = new URLSearchParams();
+  params.append('client_id', clientId!);
+  params.append('client_secret', clientSecret!);
+  params.append('scope', scope);
+  params.append('grant_type', 'client_credentials');
+
+  const res = await fetch(url, {
+    method: 'POST',
+    body: params,
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to get access token: ${res.status} ${await res.text()}`);
+  }
+
+  const data = await res.json();
+  return data.access_token;
+}
+
+async function getGraphUsers() {
   try {
-    // Clear existing data (order matters due to foreign key constraints)
-    await db.delete(status);
-    await db.delete(users_organisation_roles);
-    await db.delete(organisation_roles);
-    await db.delete(users);
-    await db.delete(organisations);
+    const accessToken = await getAccessToken();
 
-    // 1. Seed organisations
+    // Use the session token to call Graph API
+    // Array to collect all users
+    let allUsers: GraphUser[] = [];
+    let nextLink = `https://graph.microsoft.com/v1.0/users?$filter=endswith(mail,'@charlietango.dk') and givenName ne null and jobTitle ne null&$count=true&$top=100`;
 
-    const orgIds = await db
-      .insert(organisations)
-      .values([
-        { organisationName: 'Charlie Tango' },
-        { organisationName: 'AKQA' },
-        { organisationName: 'Dept' },
-      ])
-      .returning({ id: organisations.id });
+    // Process all pages
+    while (nextLink) {
+      const res = await fetch(nextLink, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          ConsistencyLevel: 'eventual',
+        },
+      });
 
-    // 2. Create sample users with proper typing and organisation reference
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(`Graph API request failed: ${res.status} - ${errorText}`);
+      }
 
-    const sampleUsers: NewUser[] = [
-      {
-        firstName: 'John',
-        lastName: 'Doe',
-        email: 'john.doe@example.com',
-        systemRole: 'ADMIN',
-        organisationId: orgIds[0].id,
-      },
-      {
-        firstName: 'Jane',
-        lastName: 'Smith',
-        email: 'jane.smith@example.com',
-        systemRole: 'USER',
-        organisationId: orgIds[0].id,
-      },
-      {
-        firstName: 'Alice',
-        lastName: 'Johnson',
-        email: 'alice@example.com',
-        systemRole: 'USER',
-        organisationId: orgIds[1].id,
-      },
-      {
-        firstName: 'Bob',
-        lastName: 'Brown',
-        email: 'bob@example.com',
-        systemRole: 'GUEST',
-        organisationId: orgIds[2].id,
-      },
-    ];
+      const userData = await res.json();
 
-    const userIds = await db.insert(users).values(sampleUsers).returning({ id: users.id });
+      // Add current page of users to our collection
+      allUsers = allUsers.concat(userData.value);
 
-    // 3. Seed organization roles
+      // Check if there are more pages
+      nextLink = userData['@odata.nextLink'] || null;
+    }
 
-    const roleIds = await db
-      .insert(organisation_roles)
-      .values([
-        { role_name: 'Developer' },
-        { role_name: 'Designer' },
-        { role_name: 'Product Manager' },
-        { role_name: 'Team Lead' },
-      ])
-      .returning({ id: organisation_roles.id });
-
-    // 4. Seed users_organisation_roles (connections between users and roles)
-
-    await db.insert(users_organisation_roles).values([
-      { userId: userIds[0].id, organisationRoleId: roleIds[3].id }, // John is a Team Lead
-      { userId: userIds[1].id, organisationRoleId: roleIds[2].id }, // Jane is a PM
-      { userId: userIds[2].id, organisationRoleId: roleIds[0].id }, // Alice is a Developer
-      { userId: userIds[3].id, organisationRoleId: roleIds[1].id }, // Bob is a Designer
-      { userId: userIds[2].id, organisationRoleId: roleIds[3].id }, // Alice is also a Team Lead
-    ]);
-
-    // 5. Seed status records
-
-    const today = new Date();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(tomorrow.getDate() + 1);
-
-    await db.insert(status).values([
-      {
-        userID: userIds[0].id,
-        status: 'IN_OFFICE',
-        details: 'Working on project X',
-        time: new Date().toISOString(),
-      },
-      {
-        userID: userIds[1].id,
-        status: 'FROM_HOME',
-        details: 'Available on Slack',
-        time: new Date().toISOString(),
-      },
-      {
-        userID: userIds[2].id,
-        status: 'AT_CLIENT',
-        details: 'Client meeting',
-        time: new Date().toISOString(),
-        fromDate: today.toISOString(), // Convert to string
-        toDate: tomorrow.toISOString(), // Convert to string
-      },
-      {
-        userID: userIds[3].id,
-        status: 'VACATION',
-        details: 'Annual leave',
-        time: new Date().toISOString(),
-        fromDate: today.toISOString(), // Convert to string
-        toDate: new Date(today.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString(), // Convert to string
-      },
-    ]);
+    return { allUsers, accessToken };
   } catch (error) {
-    console.error('Error seeding database:', error);
-  } finally {
-    process.exit(0);
+    console.error('Error fetching users from Graph API:', error);
+    throw error;
   }
 }
 
-seed();
+async function seedGraphUsers() {
+  // const apiUrl = process.env.REACT_APP_API_URL || 'http://localhost:3000/api';
+  try {
+    const { allUsers: graphUsers, accessToken } = await getGraphUsers();
+
+    let [organisation] = await db
+      .select()
+      .from(organisations)
+      .where(eq(organisations.organisationName, 'Charlie Tango'));
+
+    if (!organisation) {
+      const result = await db
+        .insert(organisations)
+        .values({ organisationName: 'Charlie Tango' })
+        .returning();
+      organisation = result[0];
+    }
+
+    for (const graphUser of graphUsers) {
+      let profilePicture = null;
+
+      try {
+        // Try to get profile picture directly from Graph API
+        const photoResponse = await fetch(
+          `https://graph.microsoft.com/v1.0/users/${graphUser.id}/photo/$value`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`, // You'll need to pass the accessToken to this function
+            },
+          }
+        );
+
+        if (photoResponse.ok) {
+          // Get photo as binary data
+
+          const photoBuffer = await photoResponse.arrayBuffer();
+
+          // Convert to base64 string for storage
+          profilePicture = `data:image/jpeg;base64,${Buffer.from(photoBuffer).toString('base64')}`;
+        }
+      } catch (error) {
+        console.error(`Failed to fetch profile photo for ${graphUser.mail}:`, error);
+      }
+
+      const userData = {
+        firstName: graphUser.givenName,
+        lastName: graphUser.surname,
+        email: graphUser.mail,
+        systemRole: 'USER' as const, // Default role
+        organisationId: organisation.id,
+        mobilePhone: graphUser.mobilePhone?.replaceAll(' ', '') || null, // Store mobile phone directly on user
+        profilePicture: profilePicture,
+        userId: graphUser.id,
+      };
+
+      let user;
+      const existingUser = await db.select().from(users).where(eq(users.email, graphUser.mail));
+
+      if (existingUser.length === 0) {
+        const result = await db.insert(users).values(userData).returning();
+        user = result[0];
+      } else {
+        user = existingUser[0];
+        await db
+          .update(users)
+          .set({
+            firstName: graphUser.givenName,
+            lastName: graphUser.surname,
+            mobilePhone: graphUser.mobilePhone?.replaceAll(' ', '') || null,
+            ...(profilePicture && profilePicture !== user.profilePicture ? { profilePicture } : {}),
+            userId: graphUser.id,
+          })
+          .where(eq(users.id, user.id));
+      }
+
+      if (graphUser.jobTitle && graphUser.jobTitle.trim()) {
+        const roleName = graphUser.jobTitle.trim();
+
+        // Check if role exists
+        let [role] = await db
+          .select()
+          .from(organisation_roles)
+          .where(eq(organisation_roles.role_name, roleName));
+
+        // Insert role if it doesn't exist
+        if (!role) {
+          const roleResult = await db
+            .insert(organisation_roles)
+            .values({ role_name: roleName })
+            .returning();
+          role = roleResult[0];
+        }
+
+        // Check if the user already has this role
+        const existingRoleLink = await db
+          .select()
+          .from(users_organisation_roles)
+          .where(
+            (eq(users_organisation_roles.userId, user.id),
+            eq(users_organisation_roles.organisationRoleId, role.id))
+          );
+
+        if (existingRoleLink.length === 0) {
+          // Link user to role
+          await db.insert(users_organisation_roles).values({
+            userId: user.id,
+            organisationRoleId: role.id,
+          });
+        }
+      }
+
+      await db
+        .delete(users_business_phone_numbers)
+        .where(eq(users_business_phone_numbers.userId, user.id));
+
+      if (graphUser.businessPhones && graphUser.businessPhones.length > 0) {
+        for (const phoneNumber of graphUser.businessPhones) {
+          if (!phoneNumber) continue;
+
+          // Check if phone already exists in database
+          let [phoneRecord] = await db
+            .select()
+            .from(business_phone_numbers)
+            .where(eq(business_phone_numbers.businessPhoneNumber, phoneNumber));
+
+          // Create phone record if it doesn't exist
+          if (!phoneRecord) {
+            const phoneResult = await db
+              .insert(business_phone_numbers)
+              .values({ businessPhoneNumber: phoneNumber.replaceAll(' ', '') })
+              .returning();
+            phoneRecord = phoneResult[0];
+          }
+
+          // Create association between user and phone
+          await db.insert(users_business_phone_numbers).values({
+            userId: user.id,
+            businessPhoneNumberId: phoneRecord.id,
+          });
+        }
+      }
+    }
+  } catch (error) {
+    console.error('Error seeding users:', error);
+  } finally {
+  }
+}
+
+seedGraphUsers()
+  .then(() => process.exit(0))
+  .catch((error) => {
+    console.error('Fatal error during seeding:', error);
+    process.exit(1);
+  });
