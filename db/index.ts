@@ -15,7 +15,7 @@ const pool = new Pool(process.env.NODE_ENV === 'production' ? {connectionString:
 });
 
 // Create a Drizzle ORM instance with the schema
-export const db =  drizzle(pool, { schema });
+export const db = drizzle(pool, { schema });
 
 // Export the pool for direct queries if needed
 export { pool };

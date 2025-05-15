@@ -21,7 +21,6 @@
     "db:push": "drizzle-kit push",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx scripts/seed.ts",
-    "db:seed-graph-users": "tsx scripts/seedGraphUsers.ts",
     "db:migrate": "tsx scripts/migrate.ts",
     "chromatic": "npx chromatic --project-token=chpt_91242e07e9e9dc0"
   },
