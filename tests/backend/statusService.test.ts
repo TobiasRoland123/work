@@ -1,16 +1,17 @@
 import { db } from '@/db';
 import { users, status } from '@/db/schema';
 import { NewStatus, NewUser } from '@/db/types';
+import { statusService } from '@/lib/services/statusService';
 import { eq } from 'drizzle-orm';
 import { Pool } from 'pg';
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 
 const pool = new Pool({
-  user: process.env.POSTGRES_USER,
-  password: process.env.POSTGRES_PASSWORD,
-  host: process.env.POSTGRES_HOST,
-  port: Number(process.env.POSTGRES_PORT),
-  database: process.env.POSTGRES_DB,
+  user: process.env.PGUSER,
+  password: process.env.PGPASSWORD,
+  host: process.env.PGHOST,
+  port: Number(process.env.PGPORT),
+  database: process.env.PGDATABASE,
 });
 
 describe('StatusService Tests', () => {
@@ -22,9 +23,21 @@ describe('StatusService Tests', () => {
     systemRole: 'USER',
   };
 
+  const testStatus: NewStatus = {
+    userID: testUser.id!,
+    status: 'FROM_HOME',
+    details: 'Test status details',
+    time: new Date().toISOString(),
+    fromDate: new Date().toISOString().split('T')[0], // '2023-05-15' format
+    toDate: '2025-05-15', // Proper ISO date format (YYYY-MM-DD)
+  };
+
   beforeAll(async () => {
     await db.delete(users).where(eq(users.email, testUser.email));
+    await db.delete(status).where(eq(status.userID, testUser.id!));
+
     await db.insert(users).values(testUser);
+    await db.insert(status).values(testStatus);
   });
 
   afterAll(async () => {
@@ -34,7 +47,7 @@ describe('StatusService Tests', () => {
   });
 
   test('getAllStatuses should return all statuses', async () => {
-    const allStatuses = await db.select().from(status);
+    const allStatuses = await statusService.getAllStatuses();
     expect(allStatuses).toBeDefined();
     expect(allStatuses.length).toBeGreaterThan(0);
   });
@@ -49,9 +62,27 @@ describe('StatusService Tests', () => {
       toDate: '2025-05-15', // Proper ISO date format (YYYY-MM-DD)
     };
 
-    const createdStatus = await db.insert(status).values(newStatus).returning();
-    expect(createdStatus[0]).toBeDefined();
-    expect(createdStatus[0].details).toBe(newStatus.details);
-    expect(createdStatus[0].status).toBe(newStatus.status);
+    const createdStatus = await statusService.createNewStatus(newStatus);
+    expect(createdStatus).toBeDefined();
+    expect(createdStatus.details).toBe(newStatus.details);
+    expect(createdStatus.status).toBe(newStatus.status);
+  });
+
+  test('updateStatus should update an existing status', async () => {
+    const updatedStatus: Partial<NewStatus> = {
+      userID: testUser.id!,
+      status: 'IN_OFFICE',
+      details: 'Updated status details',
+      fromDate: new Date().toISOString().split('T')[0], // '2023-05-15' format
+      toDate: '2025-05-15', // Proper ISO date format (YYYY-MM-DD)
+    };
+
+    const updatedStatusResponse = await statusService.updateStatusByUserId(
+      testUser.id!,
+      updatedStatus
+    );
+    expect(updatedStatusResponse).toBeDefined();
+    expect(updatedStatusResponse.details).toBe(updatedStatus.details);
+    expect(updatedStatusResponse.status).toBe(updatedStatus.status);
   });
 });
