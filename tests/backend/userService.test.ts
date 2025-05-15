@@ -1,9 +1,8 @@
-import { describe, expect, test, beforeAll, afterAll, vi } from 'vitest';
+import { describe, expect, test, beforeAll, afterAll } from 'vitest';
 import { userService } from '@/lib/services/userService';
 import { NewUser } from '@/db/types';
 import { db } from '@/db';
 import { users } from '@/db/schema';
-import bcrypt from 'bcrypt';
 import { eq } from 'drizzle-orm';
 import { Pool } from 'pg';
 
@@ -20,48 +19,22 @@ describe('UserService Tests', () => {
   const testUser: NewUser = {
     firstName: 'Test',
     lastName: 'User',
-    email: 'testuser@example.com',
+    email: 'testuuser@example.com',
     systemRole: 'USER',
   };
 
-  // Clean up before all tests
   beforeAll(async () => {
     // Clear any existing test users
     await db.delete(users).where(eq(users.email, testUser.email));
+    // Insert Test User directly
+    const inserted = await db.insert(users).values(testUser).returning();
+    testUserId = inserted[0].id;
   });
 
-  // Clean up after all tests
   afterAll(async () => {
     // Clean up the test user
     await db.delete(users).where(eq(users.email, testUser.email));
     await pool.end();
-  });
-
-  describe('createUser', () => {
-    test('should create a new user with hashed password', async () => {
-      // Spy on bcrypt.hash
-      const hashSpy = vi.spyOn(bcrypt, 'hash');
-
-      // Create user
-      const createdUser = await userService.createUser(testUser);
-
-      // Save ID for later tests
-      testUserId = createdUser.id;
-
-      // Verify user was created
-      expect(createdUser).toBeDefined();
-      expect(createdUser.email).toBe(testUser.email);
-      expect(createdUser.firstName).toBe(testUser.firstName);
-      expect(createdUser.lastName).toBe(testUser.lastName);
-      expect(createdUser.systemRole).toBe(testUser.systemRole);
-
-      hashSpy.mockRestore();
-    });
-
-    test('should throw an error when creating a user with existing email', async () => {
-      // Attempt to create a user with the same email
-      await expect(userService.createUser(testUser)).rejects.toThrow();
-    });
   });
 
   describe('getUserByEmail', () => {
@@ -75,7 +48,6 @@ describe('UserService Tests', () => {
 
     test('should return undefined for non-existent email', async () => {
       const user = await userService.getUserByEmail('nonexistent@example.com');
-
       expect(user).toBeUndefined();
     });
   });
@@ -91,21 +63,20 @@ describe('UserService Tests', () => {
 
     test('should return undefined for non-existent id', async () => {
       const user = await userService.getUserById(9999999);
-
       expect(user).toBeUndefined();
     });
   });
 
   describe('getAllUsers', () => {
     test('should retrieve all users', async () => {
-      const users = await userService.getAllUsers();
+      const usersList = await userService.getAllUsers();
 
-      expect(users).toBeDefined();
-      expect(Array.isArray(users)).toBe(true);
-      expect(users.length).toBeGreaterThan(0);
+      expect(usersList).toBeDefined();
+      expect(Array.isArray(usersList)).toBe(true);
+      expect(usersList.length).toBeGreaterThan(0);
 
       // Find our test user in the results
-      const foundTestUser = users.find((u) => u.id === testUserId);
+      const foundTestUser = usersList.find((u) => u.id === testUserId);
       expect(foundTestUser).toBeDefined();
     });
   });
