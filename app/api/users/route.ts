@@ -18,11 +18,11 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const newUser = await userService.createUser(body);
-    if (!newUser) {
-      return NextResponse.json({ error: 'User already exists' }, { status: 409 });
-    }
     return NextResponse.json(newUser, { status: 201 });
   } catch (error) {
+    if (error instanceof Error && error.message === 'DUPLICATE_USER') {
+      return NextResponse.json({ error: 'User already exists' }, { status: 409 });
+    }
     console.error('Error creating user:', error);
     const message = error instanceof Error ? error.message : 'Failed to create user';
     return NextResponse.json({ error: message }, { status: 500 });

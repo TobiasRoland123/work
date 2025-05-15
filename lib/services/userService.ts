@@ -25,6 +25,10 @@ export const userService = {
   // POST METHODS
   // Create user method also goes here
   async createUser(user: NewUser) {
+    const existingUser = await this.getUserByEmail(user.email);
+    if (existingUser) {
+      throw new Error('User already exists');
+    }
     const createdUser = await db.insert(users).values(user).returning();
     return createdUser[0];
   },
