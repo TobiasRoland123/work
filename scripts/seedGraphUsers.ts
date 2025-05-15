@@ -8,7 +8,6 @@ import {
   users_organisation_roles, // Add this
 } from '../db/schema';
 import dotenv from 'dotenv';
-import crypto from 'crypto';
 import { eq } from 'drizzle-orm';
 import { db } from '../db';
 
@@ -109,8 +108,6 @@ async function seedGraphUsers() {
     }
 
     for (const graphUser of graphUsers) {
-      const tempPassword = crypto.randomBytes(8).toString('hex');
-
       let profilePicture = null;
 
       try {
@@ -126,10 +123,11 @@ async function seedGraphUsers() {
 
         if (photoResponse.ok) {
           // Get photo as binary data
+
           const photoBuffer = await photoResponse.arrayBuffer();
+
           // Convert to base64 string for storage
           profilePicture = `data:image/jpeg;base64,${Buffer.from(photoBuffer).toString('base64')}`;
-        } else {
         }
       } catch (error) {
         console.error(`Failed to fetch profile photo for ${graphUser.mail}:`, error);
@@ -139,10 +137,9 @@ async function seedGraphUsers() {
         firstName: graphUser.givenName,
         lastName: graphUser.surname,
         email: graphUser.mail,
-        password: tempPassword, // In production, use bcrypt to hash
         systemRole: 'USER' as const, // Default role
         organisationId: organisation.id,
-        mobilePhone: graphUser.mobilePhone || null, // Store mobile phone directly on user
+        mobilePhone: graphUser.mobilePhone?.replaceAll(' ', '') || null, // Store mobile phone directly on user
         profilePicture: profilePicture,
         userId: graphUser.id,
       };
@@ -160,7 +157,7 @@ async function seedGraphUsers() {
           .set({
             firstName: graphUser.givenName,
             lastName: graphUser.surname,
-            mobilePhone: graphUser.mobilePhone || null,
+            mobilePhone: graphUser.mobilePhone?.replaceAll(' ', '') || null,
             ...(profilePicture && profilePicture !== user.profilePicture ? { profilePicture } : {}),
             userId: graphUser.id,
           })
@@ -209,7 +206,7 @@ async function seedGraphUsers() {
 
       if (graphUser.businessPhones && graphUser.businessPhones.length > 0) {
         for (const phoneNumber of graphUser.businessPhones) {
-          if (!phoneNumber || !phoneNumber.trim()) continue;
+          if (!phoneNumber) continue;
 
           // Check if phone already exists in database
           let [phoneRecord] = await db
@@ -221,7 +218,7 @@ async function seedGraphUsers() {
           if (!phoneRecord) {
             const phoneResult = await db
               .insert(business_phone_numbers)
-              .values({ businessPhoneNumber: phoneNumber })
+              .values({ businessPhoneNumber: phoneNumber.replaceAll(' ', '') })
               .returning();
             phoneRecord = phoneResult[0];
           }
