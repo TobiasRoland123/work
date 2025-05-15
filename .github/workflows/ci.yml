@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+    branches:
+      - main
+      - develop
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: testuser
+          POSTGRES_PASSWORD: testpass
+          POSTGRES_DB: testdb
+        ports:
+          - 5434:5432
+        options: >-
+          --health-cmd="pg_isready -U testuser"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm (for act compatibility)
+        run: npm install -g pnpm@9.15.5
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Use Node.js 23.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: '23.x'
+          cache: 'pnpm'
+
+      - name: Enable Corepack & Setup pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.15.5 --activate
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run ESLint
+        run: pnpm run lint
+
+      - name: TypeScript type check
+        run: pnpm exec tsc --noEmit
+
+      # - name: Install Playwright
+      #   run: npx playwright install --with-deps
+
+      # - name: Build Storybook
+      #   run: pnpm build-storybook --quiet
+
+      # - name: Serve Storybook and run tests
+      #   run: |
+      #     npm install -g wait-on concurrently http-server
+      #     npx concurrently -k -s first -n "SB,TEST" -c "magenta,blue" \
+      #       "npx http-server storybook-static --port 6006 --silent" \
+      #       "npx wait-on tcp:127.0.0.1:6006 && pnpm test-storybook"
+      #   timeout-minutes: 60
+
+      - name: Test backend services
+        run: pnpm test:backend
+        env:
+          PGUSER: testuser
+          PGPASSWORD: testpass
+          PGHOST: localhost
+          PGPORT: 5434
+          PGDATABASE: testdb
+          # POSTGRES_PORT: 5434 # maybe remove this line

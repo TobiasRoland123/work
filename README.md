@@ -118,3 +118,13 @@ Alongside visual testing, we perform component-level tests to verify that:
 - The core functionality and behavior of each component work as intended.
 
 This combination of visual and functional testing helps us maintain a high level of quality, confidence in changes, and a smooth developer experience.
+
+# Developing on CI/CD yml files
+
+When working on this projects CI/CD pipeline, it's a good idea to test the pipeline locally before pushing it up to the cloud-runners in GitHub.
+To test it locally, we recommend using Act.
+`brew install act`
+To use act, you simply navigate to the root of the project directory you want to rune a pipeline test on and run the command:
+`act <job_name>`
+where <job_name> can be "push", "pull_request" etc.
+This will run the pipeline locally, and you can see the output in your terminal.

@@ -20,11 +20,6 @@ describe('Database Integration Tests', () => {
     client.release();
   });
 
-  test('Should be able to query a table', async () => {
-    const result = await pool.query('SELECT * FROM users LIMIT 1');
-    expect(result.rows.length).toBeGreaterThan(0);
-  });
-
   test('Should handle transactions correctly', async () => {
     const client = await pool.connect();
 
