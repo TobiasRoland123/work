@@ -14,7 +14,7 @@
     "test": "vitest",
     "test:backend": "vitest --project backend",
     "prepare": "husky install",
-    "db:start": "pnpm db:up && pnpm db:generate && pnpm db:push && pnpm db:seed && pnpm db:studio",
+    "db:start": "pnpm db:up && pnpm db:generate && pnpm db:push && pnpm db:seed-graph-users && pnpm db:studio",
     "db:up": "docker compose up -d",
     "db:down": "docker compose down",
     "db:generate": "drizzle-kit generate",
