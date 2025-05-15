@@ -13,6 +13,8 @@ import { db } from '../db';
 
 import path from 'path';
 
+// Install node-fetch if not already: npm install node-fetch
+
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 
 interface GraphUser {
@@ -29,30 +31,37 @@ interface GraphUser {
   id: string;
 }
 
+async function getAccessToken() {
+  const tenantId = process.env.AUTH_MICROSOFT_ENTRA_ID_TENANT_ID;
+  const clientId = process.env.AUTH_MICROSOFT_ENTRA_ID_ID;
+  const clientSecret = process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET;
+  const scope = 'https://graph.microsoft.com/.default';
+
+  const url = `https://login.microsoftonline.com/${tenantId}/oauth2/v2.0/token`;
+
+  const params = new URLSearchParams();
+  params.append('client_id', clientId!);
+  params.append('client_secret', clientSecret!);
+  params.append('scope', scope);
+  params.append('grant_type', 'client_credentials');
+
+  const res = await fetch(url, {
+    method: 'POST',
+    body: params,
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+  });
+
+  if (!res.ok) {
+    throw new Error(`Failed to get access token: ${res.status} ${await res.text()}`);
+  }
+
+  const data = await res.json();
+  return data.access_token;
+}
+
 async function getGraphUsers() {
   try {
-    // Get session token from your Next.js API
-    const sessionResponse = await fetch('http://localhost:3000/api/auth/session', {
-      headers: {
-        Cookie: `authjs.session-token=${process.env.AUTH_SESSION_TOKEN}`,
-      },
-    });
-    const sessionData = await sessionResponse.json();
-
-    if (!sessionData || !sessionData.accessToken) {
-      throw new Error(`accessToken missing. Full session response: ${JSON.stringify(sessionData)}`);
-    }
-
-    const accessToken = sessionData.accessToken;
-
-    if (!sessionResponse.ok) {
-      const errorText = await sessionResponse.text();
-      throw new Error(`Session fetch failed: ${sessionResponse.status} - ${errorText}`);
-    }
-
-    if (!accessToken) {
-      throw new Error('No access token found in session data');
-    }
+    const accessToken = await getAccessToken();
 
     // Use the session token to call Graph API
     // Array to collect all users
