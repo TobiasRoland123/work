@@ -29,7 +29,7 @@ export const RendersAllFields: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByText('Your information')).toBeInTheDocument();
-    await expect(canvas.getByText(mockUser.name)).toBeInTheDocument();
+    await expect(canvas.getByRole('heading', { name: mockUser.name })).toBeInTheDocument();
     await expect(canvas.getByText('Department')).toBeInTheDocument();
     await expect(canvas.getByText(mockUser.department)).toBeInTheDocument();
     await expect(canvas.getByText('Title')).toBeInTheDocument();
@@ -53,7 +53,7 @@ export const RendersWithMissingOptionalFields: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByText('John Smith')).toBeInTheDocument();
+    await expect(canvas.getByRole('heading', { level: 1 })).toBeInTheDocument();
     // Department and Title labels should not be rendered
     expect(canvas.queryByText('Department')).toBeNull();
     expect(canvas.queryByText('Title')).toBeNull();
