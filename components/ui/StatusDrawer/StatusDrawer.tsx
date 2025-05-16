@@ -11,6 +11,7 @@ import {
   DrawerTrigger,
 } from '@/components/ui/Drawer/drawer';
 import { useState } from 'react';
+import {StatusForm} from "@/components/StatusForm/StatusForm";
 
 export function StatusDrawer() {
   const [open, setOpen] = useState(false);
@@ -49,26 +50,7 @@ export function StatusDrawer() {
           </DrawerClose>
         </DrawerHeader>
         <div className={'gap-4 flex flex-col'}>
-          {/* DUMMY DATA*/}
-          <Button variant={'large'} ariaLabel="Statis option">
-            Statis option
-          </Button>
-          <Button variant={'large'} ariaLabel="Statis option">
-            Statis option
-          </Button>
-          <Button variant={'large'} ariaLabel="Statis option">
-            Statis option
-          </Button>
-          <Button variant={'large'} ariaLabel="Statis option">
-            Statis option
-          </Button>
-          <Button variant={'large'} ariaLabel="Statis option">
-            Statis option
-          </Button>
-          <Button variant={'large'} ariaLabel="Statis option">
-            Statis option
-          </Button>
-          {/* DUMMY DATA*/}{' '}
+         <StatusForm/>
         </div>
       </DrawerContent>
     </Drawer>

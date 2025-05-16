@@ -10,6 +10,7 @@ import {
   InsetSheetTitle,
   InsetSheetWrapper,
 } from '../Inset-Sheet/inset-sheet';
+import {StatusForm} from "@/components/StatusForm/StatusForm";
 
 type StatusSidebarProps = {
   open: string;
@@ -52,7 +53,8 @@ export function StatusSidebar({ open, setOpen }: StatusSidebarProps) {
           </InsetSheetClose>
         </InsetSheetHeader>
         <InsetSheetDescription className={'pt-14 text-white'}>
-          TODO: Add confirmation details for the account deletion process here.
+
+          <StatusForm/>
         </InsetSheetDescription>
         <InsetSheetFooter>
           <Button variant={'large'} ariaLabel="Register account">
