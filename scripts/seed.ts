@@ -170,7 +170,7 @@ async function seedGraphUsers() {
             ...(profilePicture && profilePicture !== user.profilePicture ? { profilePicture } : {}),
             userId: graphUser.id,
           })
-          .where(eq(users.id, user.id));
+          .where(eq(users.userId, user.userId!));
       }
 
       if (graphUser.jobTitle && graphUser.jobTitle.trim()) {
@@ -196,14 +196,14 @@ async function seedGraphUsers() {
           .select()
           .from(users_organisation_roles)
           .where(
-            (eq(users_organisation_roles.userId, user.id),
+            (eq(users_organisation_roles.userId, user.userId!),
             eq(users_organisation_roles.organisationRoleId, role.id))
           );
 
         if (existingRoleLink.length === 0) {
           // Link user to role
           await db.insert(users_organisation_roles).values({
-            userId: user.id,
+            userId: user.userId!,
             organisationRoleId: role.id,
           });
         }
@@ -211,7 +211,7 @@ async function seedGraphUsers() {
 
       await db
         .delete(users_business_phone_numbers)
-        .where(eq(users_business_phone_numbers.userId, user.id));
+        .where(eq(users_business_phone_numbers.userId, user.userId!));
 
       if (graphUser.businessPhones && graphUser.businessPhones.length > 0) {
         for (const phoneNumber of graphUser.businessPhones) {
@@ -234,7 +234,7 @@ async function seedGraphUsers() {
 
           // Create association between user and phone
           await db.insert(users_business_phone_numbers).values({
-            userId: user.id,
+            userId: user.userId!,
             businessPhoneNumberId: phoneRecord.id,
           });
         }
