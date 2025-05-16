@@ -5,7 +5,7 @@ export type ProfileListItemProps = {
   profilePicture?: string;
   name: string;
   title: string;
-  status: StatusType;
+  status?: StatusType;
   phoneNumber: string;
   email: string;
   department?: string;
@@ -40,7 +40,7 @@ export function ProfileListItem({
         <h2 className="text-24 leading-8 font-mono">{name}</h2>
         <div className="flex items-center gap-2">
           <p className="text-base">{title}</p>
-          <Status status={status} />
+          {status && <Status status={status} />}
         </div>
         <div className="flex flex-col sm:flex-row gap-2 mt-3">
           <a
