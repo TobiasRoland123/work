@@ -1,9 +1,9 @@
 import { linkProps } from '@/types/link';
 
 export const menuLinks: Array<linkProps> = [
-  { href: '#', label: 'Today' },
-  { href: '#', label: 'Contact' },
-  { href: '#', label: 'Profile' },
+  { href: '/today', label: 'Today' },
+  { href: '/contact', label: 'Contact' },
+  { href: '/profile', label: 'Profile' },
 ];
 
 // type options = {

@@ -32,8 +32,8 @@ export const organisations = pgTable('organisations', {
 export const users = pgTable(
   'users',
   {
-    id: serial().primaryKey().notNull(),
-    userId: varchar('user_id', { length: 36 }),
+    id: serial().notNull(),
+    userId: varchar('user_id', { length: 36 }).primaryKey().notNull(),
     firstName: varchar('first_name', { length: 60 }),
     lastName: varchar('last_name', { length: 255 }),
     email: varchar({ length: 100 }).notNull(),
@@ -53,9 +53,9 @@ export const organisation_roles = pgTable('organisation_roles', {
 
 export const users_organisation_roles = pgTable('users_organisation_roles', {
   id: serial().primaryKey().notNull(),
-  userId: integer('user_id')
+  userId: varchar('user_id', { length: 36 })
     .notNull()
-    .references(() => users.id, { onDelete: 'cascade' }),
+    .references(() => users.userId, { onDelete: 'cascade' }),
   organisationRoleId: integer('organisation_role_id')
     .notNull()
     .references(() => organisation_roles.id),
@@ -68,9 +68,9 @@ export const business_phone_numbers = pgTable('business_phone_numbers', {
 
 export const users_business_phone_numbers = pgTable('users_business_phone_numbers', {
   id: serial().primaryKey().notNull(),
-  userId: integer('user_id')
+  userId: varchar('user_id', { length: 36 })
     .notNull()
-    .references(() => users.id, { onDelete: 'cascade' }),
+    .references(() => users.userId, { onDelete: 'cascade' }),
   businessPhoneNumberId: integer('business_phone_numbers_id')
     .notNull()
     .references(() => business_phone_numbers.id),
@@ -78,9 +78,9 @@ export const users_business_phone_numbers = pgTable('users_business_phone_number
 
 export const status = pgTable('status', {
   id: serial().primaryKey().notNull(),
-  userID: integer('user_id')
+  userID: varchar('user_id', { length: 36 })
     .notNull()
-    .references(() => users.id, { onDelete: 'cascade' }),
+    .references(() => users.userId, { onDelete: 'cascade' }),
   status: userStatus('status').default('IN_OFFICE').notNull(),
   details: text('details'),
   time: timestamp('time', { mode: 'string' }),

@@ -10,7 +10,7 @@ export const statusService = {
     return allStatuses;
   },
 
-  async getStatusByUserId(userID: number) {
+  async getStatusByUserUserId(userID: string) {
     const userStatus = await db.select().from(status).where(eq(status.userID, userID));
     return userStatus;
   },
@@ -22,7 +22,7 @@ export const statusService = {
   },
 
   // PUT METHOD
-  async updateStatusByUserId(userID: number, updatedStatus: Partial<NewStatus>) {
+  async updateStatusByUserUserId(userID: string, updatedStatus: Partial<NewStatus>) {
     const updated = await db
       .update(status)
       .set(updatedStatus)
@@ -37,7 +37,7 @@ export const statusService = {
     return deleted[0];
   },
 
-  async deleteStatusByUserId(userId: number) {
+  async deleteStatusByUserUserId(userId: string) {
     const deleted = await db.delete(status).where(eq(status.userID, userId)).returning();
     return deleted[0];
   },
