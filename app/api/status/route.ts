@@ -1,11 +1,10 @@
-import { db } from '@/db';
-import { status } from '@/db/schema';
+import { statusService } from '@/lib/services/statusService';
 import { NextResponse } from 'next/server';
 
 // GET all statuses
 export async function GET() {
   try {
-    const allStatuses = await db.select().from(status);
+    const allStatuses = await statusService.getAllStatuses();
     return NextResponse.json(allStatuses);
   } catch (error) {
     console.error('Error fetching statuses:', error);
@@ -18,8 +17,8 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const newStatus = await db.insert(status).values(body).returning();
-    return NextResponse.json(newStatus[0], { status: 201 });
+    const newStatus = await statusService.createNewStatus(body);
+    return NextResponse.json(newStatus, { status: 201 });
   } catch (error) {
     console.error('Error creating status:', error);
     const message = error instanceof Error ? error.message : 'Failed to create status';

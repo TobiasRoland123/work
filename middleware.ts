@@ -1,18 +1,33 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { getIronSession } from 'iron-session';
-import { sessionOptions, SessionData } from './utils/validateSession';
 import { auth } from './auth';
 
-// Single public path
-const PUBLIC_PATH = '/login';
+// Define public paths that don't require authentication
+const PUBLIC_PATHS = [
+  '/login',
+  '/api/auth',
+  '/api/auth/session',
+  // Add any other public routes here
+];
 
-// Single protected path
-const PROTECTED_PATH = '/today';
+// Route to redirect to when authenticated user tries to access public routes
+const DEFAULT_AUTH_REDIRECT = '/today';
+
+// Route to redirect to when unauthenticated user tries to access protected routes
+const DEFAULT_UNAUTH_REDIRECT = '/login';
 
 export async function middleware(request: NextRequest) {
-  // Check if the path is the login page
-  const isLoginPage = request.nextUrl.pathname === PUBLIC_PATH;
+  const pathname = request.nextUrl.pathname;
+
+  // Check if the current path is public
+  const isPublicPath = PUBLIC_PATHS.some(
+    (path) => pathname === path || pathname.startsWith(`${path}/`)
+  );
+
+  const isExemptApiEndpoint = pathname === '/api/auth/session';
+
+  // Check if the path is an API route
+  const isApiRoute = pathname.startsWith('/api/');
 
   const authData = await auth();
 
@@ -20,29 +35,70 @@ export async function middleware(request: NextRequest) {
   const response = NextResponse.next();
 
   try {
-    // Get the iron session
-    const ironSession = await getIronSession<SessionData>(request, response, sessionOptions);
-
     // User is authenticated if either Auth.js has a user OR iron session is logged in
-    const isAuthenticated = !!authData?.user || ironSession.isLoggedIn;
+    const isAuthenticated = !!authData?.user;
+
+    // Check if session has expired
+    let isSessionExpired = false;
+    if (authData?.expires) {
+      const now = Date.now();
+      const expiresAt = new Date(authData.expires).getTime();
+      isSessionExpired = expiresAt < now;
+    }
+
+    // Protect API routes that aren't explicitly public
+    if (isApiRoute && !isPublicPath) {
+      // Block direct browser access to API endpoints
+      if (request.headers.get('sec-fetch-dest') === 'document') {
+        return new NextResponse(
+          JSON.stringify({ error: 'API endpoints cannot be accessed directly from browser' }),
+          {
+            status: 403,
+            headers: {
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+      }
+
+      // Return 401 for unauthenticated API requests
+      if (!isAuthenticated) {
+        return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
+          status: 401,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        });
+      }
+    }
 
     // If user is not logged in and trying to access a protected route
-    if (!isAuthenticated && !isLoginPage) {
-      const url = new URL(PUBLIC_PATH, request.url);
+    if (!isAuthenticated && isSessionExpired && !isPublicPath) {
+      const url = new URL(DEFAULT_UNAUTH_REDIRECT, request.url);
       return NextResponse.redirect(url);
     }
 
-    // If user is logged in and trying to access login page
-    if (isAuthenticated && isLoginPage) {
-      const url = new URL(PROTECTED_PATH, request.url);
+    // If user is logged in and trying to access a public-only path
+    if (isAuthenticated && !isSessionExpired && isPublicPath && !isExemptApiEndpoint) {
+      const url = new URL(DEFAULT_AUTH_REDIRECT, request.url);
       return NextResponse.redirect(url);
     }
   } catch (error) {
     console.error('Middleware authentication error:', error);
 
-    // On error, redirect non-public paths to login
-    if (!isLoginPage) {
-      const url = new URL(PUBLIC_PATH, request.url);
+    // Return 401 for API routes on error
+    if (isApiRoute) {
+      return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    }
+
+    // On error, redirect to login page if not already on a public path
+    if (!isPublicPath) {
+      const url = new URL(DEFAULT_UNAUTH_REDIRECT, request.url);
       return NextResponse.redirect(url);
     }
   }
@@ -50,17 +106,10 @@ export async function middleware(request: NextRequest) {
   return response;
 }
 
-// Configure the middleware to run on specific paths
+// Configure the middleware to run on all paths except static assets
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except:
-     * - api routes (starting with /api/)
-     * - _next/static (static files)
-     * - _next/image (image optimization files)
-     * - favicon.ico (favicon file)
-     * - public files (images, etc.)
-     */
-    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    // Apply to all routes except for static assets
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };

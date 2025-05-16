@@ -1,6 +1,6 @@
 {
-  "id": "039c59e0-5f67-4192-b370-7c4503b0e256",
-  "prevId": "4b64215a-0d35-442a-a4e0-a083e045fd18",
+  "id": "ccb5c53f-7d52-467d-b8e9-d4ba0d75ace5",
+  "prevId": "a6d6efc2-56bc-47ce-ae99-835f24262bc1",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -16,7 +16,7 @@
         },
         "business_phone_numbers": {
           "name": "business_phone_numbers",
-          "type": "varchar(11)",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         }
@@ -141,8 +141,12 @@
           "name": "status_user_id_users_id_fk",
           "tableFrom": "status",
           "tableTo": "users",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -166,6 +170,12 @@
         "first_name": {
           "name": "first_name",
           "type": "varchar(20)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "password": {
+          "name": "password",
+          "type": "varchar(60)",
           "primaryKey": false,
           "notNull": false
         },
@@ -204,7 +214,7 @@
         },
         "mobile_phone": {
           "name": "mobile_phone",
-          "type": "varchar(11)",
+          "type": "text",
           "primaryKey": false,
           "notNull": false
         },
@@ -221,8 +231,12 @@
           "name": "users_organisation_id_organisations_id_fk",
           "tableFrom": "users",
           "tableTo": "organisations",
-          "columnsFrom": ["organisation_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "organisation_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -232,7 +246,9 @@
         "users_email_unique": {
           "name": "users_email_unique",
           "nullsNotDistinct": false,
-          "columns": ["email"]
+          "columns": [
+            "email"
+          ]
         }
       },
       "policies": {},
@@ -268,8 +284,12 @@
           "name": "users_business_phone_numbers_user_id_users_id_fk",
           "tableFrom": "users_business_phone_numbers",
           "tableTo": "users",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -277,8 +297,12 @@
           "name": "users_business_phone_numbers_business_phone_numbers_id_business_phone_numbers_id_fk",
           "tableFrom": "users_business_phone_numbers",
           "tableTo": "business_phone_numbers",
-          "columnsFrom": ["business_phone_numbers_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "business_phone_numbers_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -318,8 +342,12 @@
           "name": "users_organisation_roles_user_id_users_id_fk",
           "tableFrom": "users_organisation_roles",
           "tableTo": "users",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -327,8 +355,12 @@
           "name": "users_organisation_roles_organisation_role_id_organisation_roles_id_fk",
           "tableFrom": "users_organisation_roles",
           "tableTo": "organisation_roles",
-          "columnsFrom": ["organisation_role_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "organisation_role_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -344,7 +376,11 @@
     "public.system_role": {
       "name": "system_role",
       "schema": "public",
-      "values": ["ADMIN", "USER", "GUEST"]
+      "values": [
+        "ADMIN",
+        "USER",
+        "GUEST"
+      ]
     },
     "public.user_status": {
       "name": "user_status",
