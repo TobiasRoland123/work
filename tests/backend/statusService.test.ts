@@ -17,6 +17,7 @@ const pool = new Pool({
 describe('StatusService Tests', () => {
   const testUser: NewUser = {
     id: 999999999,
+    userId: 'b0bb8dda-976d-4992-8922-4fef721c4b09',
     firstName: 'Test',
     lastName: 'User',
     email: 'testuser@example.com',
@@ -24,7 +25,7 @@ describe('StatusService Tests', () => {
   };
 
   const testStatus: NewStatus = {
-    userID: testUser.id!,
+    userID: testUser.userId!,
     status: 'FROM_HOME',
     details: 'Test status details',
     time: new Date().toISOString(),
@@ -34,14 +35,14 @@ describe('StatusService Tests', () => {
 
   beforeAll(async () => {
     await db.delete(users).where(eq(users.email, testUser.email));
-    await db.delete(status).where(eq(status.userID, testUser.id!));
+    await db.delete(status).where(eq(status.userID, testUser.userId!));
 
     await db.insert(users).values(testUser);
     await db.insert(status).values(testStatus);
   });
 
   afterAll(async () => {
-    await db.delete(status).where(eq(status.userID, testUser.id!));
+    await db.delete(status).where(eq(status.userID, testUser.userId!));
     await db.delete(users).where(eq(users.email, testUser.email));
     await pool.end();
   });
@@ -54,7 +55,7 @@ describe('StatusService Tests', () => {
 
   test('createNewStatus should create a new status', async () => {
     const newStatus: NewStatus = {
-      userID: testUser.id!,
+      userID: testUser.userId!,
       status: 'FROM_HOME',
       details: 'Test status details',
       time: new Date().toISOString(),
@@ -70,15 +71,15 @@ describe('StatusService Tests', () => {
 
   test('updateStatus should update an existing status', async () => {
     const updatedStatus: Partial<NewStatus> = {
-      userID: testUser.id!,
+      userID: testUser.userId!,
       status: 'IN_OFFICE',
       details: 'Updated status details',
       fromDate: new Date().toISOString().split('T')[0], // '2023-05-15' format
       toDate: '2025-05-15', // Proper ISO date format (YYYY-MM-DD)
     };
 
-    const updatedStatusResponse = await statusService.updateStatusByUserId(
-      testUser.id!,
+    const updatedStatusResponse = await statusService.updateStatusByUserUserId(
+      testUser.userId!,
       updatedStatus
     );
     expect(updatedStatusResponse).toBeDefined();
