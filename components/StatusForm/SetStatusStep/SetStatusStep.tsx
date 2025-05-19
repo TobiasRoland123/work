@@ -20,7 +20,7 @@ export function SetStatusStep({ setCurrentStep, form }: SetStatusStepProps) {
   // 4. Button handler to set status
   function handleSetStatus(status: UserStatus) {
     form.setValue('status', status);
-    setCurrentStep(1);
+    setCurrentStep(2);
   }
 
   return (
@@ -28,21 +28,22 @@ export function SetStatusStep({ setCurrentStep, form }: SetStatusStepProps) {
       name={'status'}
       control={form?.control}
       render={() => (
-        <FormItem className={'flex h-full justify-end flex-col'} id={'tesing id *****************'}>
+        <FormItem className={'flex h-full justify-end flex-col'}>
           <FormLabel className={'hidden'}>Set your status</FormLabel>
           <FormControl>
             <div className="flex flex-col gap-2 text-black">
               {presentOptions.map((option, index) => {
-                return (
-                  <Button
-                    key={`${index}-${option.label}-${option.value}`}
-                    ariaLabel={`set-status-to-${option.value}`}
-                    handleClick={() => handleSetStatus(option.value as UserStatus)}
-                    variant={'large'}
-                  >
-                    {option.label}
-                  </Button>
-                );
+                if (option.value !== 'IN_OFFICE')
+                  return (
+                    <Button
+                      key={`${index}-${option.label}-${option.value}`}
+                      ariaLabel={`set-status-to-${option.value}`}
+                      handleClick={() => handleSetStatus(option.value as UserStatus)}
+                      variant={'large'}
+                    >
+                      {option.label}
+                    </Button>
+                  );
               })}
               <Button
                 ariaLabel="status-button"

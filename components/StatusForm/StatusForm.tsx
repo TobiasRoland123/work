@@ -9,6 +9,7 @@ import { useState } from 'react';
 import { userStatus } from '@/db/schema';
 import { SetStatusStep } from '@/components/StatusForm/SetStatusStep/SetStatusStep';
 import { SetDetailsStep } from '@/components/StatusForm/SetDetailsStep/SetDetailsStep';
+import { statusService } from '@/lib/services/statusService';
 
 export const formSchema = z
   .object({
@@ -38,10 +39,10 @@ export const formSchema = z
   });
 
 type StatusFormProps = {
-  sheetHeader?: React.ReactNode;
+  closeButton?: React.ReactNode;
 };
 
-export function StatusForm({ sheetHeader }: StatusFormProps) {
+export function StatusForm({ closeButton }: StatusFormProps) {
   // 2. Add "status" to defaultValues
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -53,16 +54,28 @@ export function StatusForm({ sheetHeader }: StatusFormProps) {
   });
 
   // 3. Update handler to show status too
-  function onSubmit(values: z.infer<typeof formSchema>) {
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     // eslint-disable-next-line no-console
     console.log(values);
+    await statusService.createNewStatus({
+      userID: '1',
+      status: values.status,
+      details: values.detailsString,
+      time: values.actionTime,
+      fromDate: values.fromDate,
+      toDate: values.toDate,
+    });
   }
   const [currentStep, setCurrentStep] = useState(1);
-
+  const currentStatus = form.watch('status');
   return (
     <>
-      {sheetHeader && currentStep === 1 ? sheetHeader : null}
-
+      <header className={'flex justify-between items-center'}>
+        <h3>
+          {currentStatus && currentStatus !== 'IN_OFFICE' ? currentStatus : 'Where are you today?'}
+        </h3>
+        {closeButton ? closeButton : null}
+      </header>
       <div className={'h-full pb-6'}>
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="py-2 h-full  ">
