@@ -4,22 +4,9 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import {
-  Form,
-  FormControl,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-
-// import { Input } from "@/components/ui/input"
-import { Button } from '@/components/ui/Button/Button';
-import { statusOptions } from '@/components/AppContent';
+import { Form } from '@/components/ui/form';
 import { useState } from 'react';
 import { userStatus } from '@/db/schema';
-import { UserStatus } from '@/db/types';
 import { SetStatusStep } from '@/components/StatusForm/SetStatusStep/SetStatusStep';
 import { SetDetailsStep } from '@/components/StatusForm/SetDetailsStep/SetDetailsStep';
 
@@ -27,7 +14,9 @@ export const formSchema = z
   .object({
     status: z.enum(userStatus.enumValues),
     detailsString: z.string().optional(),
-    actionTime: z.string().optional(),
+    actionTime: z.string().time().optional(),
+    fromDate: z.string().date().optional(),
+    toDate: z.string().date().optional(),
   })
   .superRefine((data, ctx) => {
     // Example: require actionTime if status == "IN_LATE" or "LEAVING_EARLY"
@@ -36,6 +25,14 @@ export const formSchema = z
         code: z.ZodIssueCode.custom,
         path: ['actionTime'],
         message: 'Time is required for this status.',
+      });
+    }
+
+    if ((data.status === 'VACATION' || data.status === 'ON_LEAVE') && !data.actionTime) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['fromDate', 'toDate'],
+        message: 'Dates are required for this status.',
       });
     }
   });
@@ -47,6 +44,7 @@ export function StatusForm() {
     defaultValues: {
       status: undefined,
       detailsString: '',
+      actionTime: '11:00',
     },
   });
 

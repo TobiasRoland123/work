@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/Button/Button';
 import { UserStatus } from '@/db/types';
 import { statusOptions } from '@/components/AppContent';
 import { useState } from 'react';
-import { Input } from '@/components/ui/Input/input';
 import { UseFormReturn } from 'react-hook-form';
 import { z } from 'zod';
 import { formSchema } from '@/components/StatusForm/StatusForm';

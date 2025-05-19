@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { formSchema } from '@/components/StatusForm/StatusForm';
 import { Button } from '@/components/ui/Button/Button';
 import './SetDetailsStep.css';
+import { DatePickerWithRange } from '@/components/DateRangePicker/DateRangePicker';
 
 type SetDetailsStepProps = {
   setCurrentStep?: (step: number) => void;
@@ -24,7 +25,27 @@ export function SetDetailsStep({ form, setCurrentStep, currentStep }: SetDetails
       >
         Go Back
       </Button>
-      {chosenStatus !== 'SICK' || undefined ? (
+      {chosenStatus === 'ON_LEAVE' || 'VACATION' ? (
+        <FormField
+          name={'fromDate'}
+          control={form?.control}
+          render={() => (
+            <FormItem>
+              <FormLabel>Reason</FormLabel>
+              <FormControl>
+                <div className="flex flex-col gap-2">
+                  <DatePickerWithRange form={form} />
+                </div>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      ) : null}
+      {chosenStatus !== 'ON_LEAVE' &&
+      chosenStatus !== 'VACATION' &&
+      chosenStatus !== 'SICK' &&
+      chosenStatus !== undefined ? (
         <FormField
           name={'detailsString'}
           control={form?.control}
@@ -41,24 +62,15 @@ export function SetDetailsStep({ form, setCurrentStep, currentStep }: SetDetails
           )}
         />
       ) : null}
-      {chosenStatus === 'IN_LATE' || 'LEAVING_EARLY' ? (
+      {chosenStatus === 'IN_LATE' || chosenStatus === 'LEAVING_EARLY' ? (
         <FormField
           name={'actionTime'}
           control={form?.control}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Reason</FormLabel>
               <FormControl>
                 <div className="flex flex-col gap-2">
-                  {/*<Input placeholder="Reason" {...field} />*/}
-                  <Input
-                    type="time"
-                    id="appointment"
-                    name="appointment"
-                    min="09:00"
-                    max="18:00"
-                    required
-                  />
+                  <Input {...field} type="time" id="action-time" name="Action Time" required />
                 </div>
               </FormControl>
               <FormMessage />
