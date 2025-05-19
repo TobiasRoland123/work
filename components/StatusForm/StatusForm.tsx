@@ -53,7 +53,6 @@ export function StatusForm() {
     // eslint-disable-next-line no-console
     console.log(values);
   }
-
   const [currentStep, setCurrentStep] = useState(0);
 
   return (
@@ -63,10 +62,6 @@ export function StatusForm() {
         {currentStep === 1 && (
           <SetDetailsStep setCurrentStep={setCurrentStep} form={form} currentStep={currentStep} />
         )}
-
-        {/* Optionally display the status value */}
-        <div>Status: {form.watch('status') || '(none set)'}</div>
-        <div>detailsString: {form.watch('detailsString') || '(none set)'}</div>
         <button type="submit">Submit</button>
       </form>
     </Form>
