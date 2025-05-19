@@ -12,11 +12,11 @@ type Story = StoryObj<typeof Status>;
 const allVariants = () => {
   return (
     <div className={'flex gap-4 flex-col'}>
-      <Status status="in office" />
-      <Status status="from home" />
-      <Status status="at client" />
-      <Status status="sick" />
-      <Status status="vacation" />
+      <Status status="IN_OFFICE" />
+      <Status status="FROM_HOME" />
+      <Status status="AT_CLIENT" />
+      <Status status="SICK" />
+      <Status status="VACATION" />
     </div>
   );
 };
@@ -27,30 +27,30 @@ export const AllVariants: Story = {
 
 export const Default: Story = {
   args: {
-    status: 'in office',
+    status: 'IN_OFFICE',
   },
 };
 
 export const FromHome: Story = {
   args: {
-    status: 'from home',
+    status: 'FROM_HOME',
   },
 };
 
 export const AtClient: Story = {
   args: {
-    status: 'at client',
+    status: 'AT_CLIENT',
   },
 };
 
 export const Sick: Story = {
   args: {
-    status: 'sick',
+    status: 'SICK',
   },
 };
 
 export const Vacation: Story = {
   args: {
-    status: 'vacation',
+    status: 'VACATION',
   },
 };

@@ -2,13 +2,30 @@
 import type { Meta, StoryObj } from '@storybook/react';
 import { expect, within } from '@storybook/test';
 import ProfileInfo from '../ProfileInfo';
+import { UserWithExtras } from '@/db/types';
 
-const mockUser = {
-  name: 'Jane Doe',
-  department: 'Engineering',
-  title: 'Senior Developer',
-  phoneNumber: '123-456-7890',
-  email: 'jane.doe@example.com',
+const mockUser: UserWithExtras = {
+  id: 1,
+  userId: 'user-1',
+  firstName: 'Anders',
+  lastName: 'Christensen',
+  email: 'anders@work.com',
+  systemRole: 'USER',
+  createdAt: '2024-01-01T00:00:00Z',
+  organisationId: 1,
+  mobilePhone: '+45 87 18 91 28',
+  profilePicture: 'https://picsum.photos/200',
+  status: {
+    status: 'IN_OFFICE',
+    id: 0,
+    userID: '',
+    details: null,
+    time: null,
+    fromDate: null,
+    toDate: null,
+  },
+  organisationRoles: ['Product Manager'],
+  businessPhoneNumber: undefined,
 };
 
 const meta: Meta<typeof ProfileInfo> = {
@@ -29,13 +46,15 @@ export const RendersAllFields: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     await expect(canvas.getByText('Your information')).toBeInTheDocument();
-    await expect(canvas.getByRole('heading', { name: mockUser.name })).toBeInTheDocument();
+    await expect(
+      canvas.getByRole('heading', { name: mockUser.firstName as string })
+    ).toBeInTheDocument();
     await expect(canvas.getByText('Department')).toBeInTheDocument();
-    await expect(canvas.getByText(mockUser.department)).toBeInTheDocument();
+    await expect(canvas.getByText(String(mockUser.organisationId))).toBeInTheDocument();
     await expect(canvas.getByText('Title')).toBeInTheDocument();
-    await expect(canvas.getByText(mockUser.title)).toBeInTheDocument();
+    await expect(canvas.getByText(mockUser.organisationRoles?.[0] ?? '')).toBeInTheDocument();
     await expect(canvas.getByText('Phone')).toBeInTheDocument();
-    await expect(canvas.getByText(mockUser.phoneNumber)).toBeInTheDocument();
+    await expect(canvas.getByText(String(mockUser.mobilePhone))).toBeInTheDocument();
     await expect(canvas.getByText('Mail')).toBeInTheDocument();
     await expect(canvas.getByText(mockUser.email)).toBeInTheDocument();
   },
@@ -44,11 +63,27 @@ export const RendersAllFields: Story = {
 export const RendersWithMissingOptionalFields: Story = {
   args: {
     user: {
-      name: 'John Smith',
-      department: '',
-      title: '',
-      phoneNumber: '555-555-5555',
-      email: 'john.smith@example.com',
+      id: 1,
+      userId: 'user-1',
+      firstName: 'Anders',
+      lastName: 'Christensen',
+      email: 'anders@work.com',
+      systemRole: 'USER',
+      createdAt: '2024-01-01T00:00:00Z',
+      organisationId: null,
+      mobilePhone: '+45 87 18 91 28',
+      profilePicture: 'https://picsum.photos/200',
+      status: {
+        status: 'IN_OFFICE',
+        id: 0,
+        userID: '',
+        details: null,
+        time: null,
+        fromDate: null,
+        toDate: null,
+      },
+      organisationRoles: [],
+      businessPhoneNumber: undefined,
     },
   },
   play: async ({ canvasElement }) => {
@@ -65,11 +100,27 @@ export const RendersWithMissingOptionalFields: Story = {
 export const HandlesEmptyValues: Story = {
   args: {
     user: {
-      name: '',
-      department: '',
-      title: '',
-      phoneNumber: '',
+      id: 1,
+      userId: 'user-1',
+      firstName: '',
+      lastName: '',
       email: '',
+      systemRole: 'USER',
+      createdAt: '2024-01-01T00:00:00Z',
+      organisationId: null,
+      mobilePhone: '',
+      profilePicture: '',
+      status: {
+        status: 'IN_OFFICE',
+        id: 0,
+        userID: '',
+        details: null,
+        time: null,
+        fromDate: null,
+        toDate: null,
+      },
+      organisationRoles: [],
+      businessPhoneNumber: undefined,
     },
   },
   play: async ({ canvasElement }) => {

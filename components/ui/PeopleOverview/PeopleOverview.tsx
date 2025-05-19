@@ -1,23 +1,33 @@
 import React from 'react';
 import { ProfileList } from '../ProfileList/ProfileList';
-import { ProfileListItemProps } from '../ProfileListItem/ProfileListItem';
+
 import PeopleCounter from '../PeopleCounter/PeopleCounter';
+
+import { UserWithExtras } from '@/db/types';
 
 type PeopleOverviewProps = {
   officeStatus?: boolean;
   setOfficeStatus?: (status: boolean) => void;
-  profiles: ProfileListItemProps[];
+  profiles: UserWithExtras[];
+  showStatus?: boolean;
+  showTotalPeople?: boolean;
 };
 
-const PeopleOverview = ({ officeStatus, setOfficeStatus, profiles }: PeopleOverviewProps) => {
+const PeopleOverview = ({
+  officeStatus,
+  setOfficeStatus,
+  profiles,
+  showStatus = false,
+  showTotalPeople = false,
+}: PeopleOverviewProps) => {
   const peopleInOffice = profiles.map((profile) => {
-    if (profile.status === 'in office') {
+    if (profile.status?.status === 'IN_OFFICE') {
       return profile;
     }
   });
 
   const peopleOutOfOffice = profiles.map((profile) => {
-    if (profile.status !== 'in office') {
+    if (profile.status?.status !== 'IN_OFFICE') {
       return profile;
     }
   });
@@ -29,10 +39,12 @@ const PeopleOverview = ({ officeStatus, setOfficeStatus, profiles }: PeopleOverv
           officeStatus={officeStatus}
           setOfficeStatus={setOfficeStatus}
           peopleInOffice={peopleInOffice.length}
+          showTotalPeople={showTotalPeople}
           peopleOutOfOffice={peopleOutOfOffice.length}
+          totalPeople={profiles.length}
         />
       </div>
-      <ProfileList profiles={profiles} />
+      <ProfileList profiles={profiles} showStatus={showStatus} />
     </div>
   );
 };

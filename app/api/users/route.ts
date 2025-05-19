@@ -4,7 +4,7 @@ import { NextResponse } from 'next/server';
 // GET all users
 export async function GET() {
   try {
-    const allUsers = userService.getAllUsers();
+    const allUsers = await userService.getAllUsers();
     return NextResponse.json(allUsers);
   } catch (error) {
     console.error('Error fetching users:', error);
