@@ -25,7 +25,7 @@ export function SetDetailsStep({ form, setCurrentStep, currentStep }: SetDetails
       >
         Go Back
       </Button>
-      {chosenStatus === 'ON_LEAVE' || 'VACATION' ? (
+      {chosenStatus === 'ON_LEAVE' || chosenStatus === 'VACATION' ? (
         <FormField
           name={'fromDate'}
           control={form?.control}

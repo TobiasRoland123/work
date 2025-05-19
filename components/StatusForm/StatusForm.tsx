@@ -37,7 +37,11 @@ export const formSchema = z
     }
   });
 
-export function StatusForm() {
+type StatusFormProps = {
+  sheetHeader?: React.ReactNode;
+};
+
+export function StatusForm({ sheetHeader }: StatusFormProps) {
   // 2. Add "status" to defaultValues
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -53,17 +57,27 @@ export function StatusForm() {
     // eslint-disable-next-line no-console
     console.log(values);
   }
-  const [currentStep, setCurrentStep] = useState(0);
+  const [currentStep, setCurrentStep] = useState(1);
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-8">
-        {currentStep === 0 && <SetStatusStep setCurrentStep={setCurrentStep} form={form} />}
-        {currentStep === 1 && (
-          <SetDetailsStep setCurrentStep={setCurrentStep} form={form} currentStep={currentStep} />
-        )}
-        <button type="submit">Submit</button>
-      </form>
-    </Form>
+    <>
+      {sheetHeader && currentStep === 1 ? sheetHeader : null}
+
+      <div className={'h-full pb-6'}>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="py-2 h-full  ">
+            {currentStep === 1 && <SetStatusStep setCurrentStep={setCurrentStep} form={form} />}
+            {currentStep === 2 && (
+              <SetDetailsStep
+                setCurrentStep={setCurrentStep}
+                form={form}
+                currentStep={currentStep}
+              />
+            )}
+            {currentStep === 2 ? <button type="submit">Submit</button> : null}
+          </form>
+        </Form>
+      </div>
+    </>
   );
 }
