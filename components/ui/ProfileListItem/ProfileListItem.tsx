@@ -23,7 +23,7 @@ export function ProfileListItem({ user, showStatus = false }: ProfileListItemPro
         <div
           className="size-15 aspect-square bg-gray-400 rounded-full flex items-center justify-center relative bottom-2"
           role="img"
-          aria-label={`Default profile picture for ${user.firstName}`}
+          aria-label={`Default profile picture for ${user.firstName} ${user.lastName}`}
         ></div>
       )}
       <div className="flex flex-col gap-1">
