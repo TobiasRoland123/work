@@ -13,7 +13,7 @@ export function ProfileListItem({ user, showStatus = false }: ProfileListItemPro
       {user.profilePicture ? (
         <Image
           src={user.profilePicture}
-          alt={`Profile picture of ${user.firstName}`}
+          alt={`Profile picture of ${user.firstName} ${user.lastName}`}
           style={{ objectFit: 'cover' }}
           width={60}
           height={60}
