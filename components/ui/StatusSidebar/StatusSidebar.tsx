@@ -56,11 +56,7 @@ export function StatusSidebar({ open, setOpen }: StatusSidebarProps) {
 
           <StatusForm/>
         </InsetSheetDescription>
-        <InsetSheetFooter>
-          <Button variant={'large'} ariaLabel="Register account">
-            Register
-          </Button>
-        </InsetSheetFooter>
+
       </InsetSheetContent>
     </InsetSheet>
   );
