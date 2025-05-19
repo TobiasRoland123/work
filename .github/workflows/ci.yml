@@ -11,38 +11,25 @@ on:
       - develop
 
 jobs:
-  build:
+  setup:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:16
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: work_db
-        ports:
-          - 5434:5432
-        options: >-
-          --health-cmd="pg_isready -U testuser"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
-
+    outputs:
+      pnpm-store-path: ${{ steps.pnpm-cache.outputs.cache-hit }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install pnpm (for act compatibility)
+      - name: Install pnpm
         run: npm install -g pnpm@9.15.5
 
       - name: Cache pnpm store
+        id: pnpm-cache
         uses: actions/cache@v4
         with:
           path: ~/.pnpm-store
           key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
           restore-keys: |
             ${{ runner.os }}-pnpm-
-
       - name: Use Node.js 23.x
         uses: actions/setup-node@v4
         with:
@@ -57,34 +44,82 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+  lint-and-typecheck:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 23.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: '23.x'
+          cache: 'pnpm'
+
+      - name: Restore pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
       - name: Run ESLint
         run: pnpm run lint
 
       - name: TypeScript type check
         run: pnpm exec tsc --noEmit
 
-      # - name: Install Playwright
-      #   run: npx playwright install --with-deps
+  backend-tests:
+    needs: setup
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: work_db
+        ports:
+          - 5444:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      # - name: Build Storybook
-      #   run: pnpm build-storybook --quiet
+      - name: Use Node.js 23.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: '23.x'
+          cache: 'pnpm'
 
-      # - name: Serve Storybook and run tests
-      #   run: |
-      #     npm install -g wait-on concurrently http-server
-      #     npx concurrently -k -s first -n "SB,TEST" -c "magenta,blue" \
-      #       "npx http-server storybook-static --port 6006 --silent" \
-      #       "npx wait-on tcp:127.0.0.1:6006 && pnpm test-storybook"
-      #   timeout-minutes: 60
+      - name: Restore pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
 
       - name: Run DB migrations
         run: pnpm db:generate && pnpm db:push
         env:
-          DATABASE_URL: postgresql://postgres:postgres@localhost:5434/work_db
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5444/work_db
           PGUSER: postgres
           PGPASSWORD: postgres
           PGHOST: localhost
-          PGPORT: 5434
+          PGPORT: 5444
           PGDATABASE: work_db
 
       - name: Test backend services
@@ -93,7 +128,51 @@ jobs:
           PGUSER: postgres
           PGPASSWORD: postgres
           PGHOST: localhost
-          PGPORT: 5434
+          PGPORT: 5444
           PGDATABASE: work_db
 
-          #TODO: Try moving env to root of this yml build step so we dont have duplicate entries
+  storybook-tests:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Use Node.js 23.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: '23.x'
+          cache: 'pnpm'
+
+      - name: Restore pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright
+        run: npx playwright install --with-deps
+
+      - name: Build Storybook
+        run: pnpm build-storybook --quiet
+
+      - name: Serve Storybook and run tests
+        run: |
+          npm install -g wait-on concurrently http-server
+          npx concurrently -k -s first -n "SB,TEST" -c "magenta,blue" \
+            "npx http-server storybook-static --port 6006 --silent" \
+            "npx wait-on tcp:127.0.0.1:6006 && pnpm test-storybook"
+        timeout-minutes: 60
