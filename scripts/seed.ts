@@ -10,12 +10,23 @@ import {
 import dotenv from 'dotenv';
 import { eq } from 'drizzle-orm';
 import { db } from '../db';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import sharp from 'sharp';
 
 import path from 'path';
 
 // Install node-fetch if not already: npm install node-fetch
 
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+
+const s3 = new S3Client({
+  region: 'eu-central',
+  endpoint: process.env.HETZNER_BUCKET_URL!,
+  credentials: {
+    accessKeyId: process.env.HETZNER_BUCKET_ACCESS_KEY!,
+    secretAccessKey: process.env.HETZNER_BUCKET_SECRET_KEY!,
+  },
+});
 
 interface GraphUser {
   businessPhones: string[];
@@ -133,10 +144,26 @@ async function seedGraphUsers() {
         if (photoResponse.ok) {
           // Get photo as binary data
 
-          const photoBuffer = await photoResponse.arrayBuffer();
+          const photoBuffer = Buffer.from(await photoResponse.arrayBuffer());
 
-          // Convert to base64 string for storage
-          profilePicture = `data:image/jpeg;base64,${Buffer.from(photoBuffer).toString('base64')}`;
+          const processedBuffer = await sharp(photoBuffer)
+            .resize(256, 256, { fit: 'cover' })
+            .webp({ quality: 80 })
+            .toBuffer();
+          const mimeType = photoResponse.headers.get('content-type') || 'image/jpeg';
+          const key = `profile-images/${graphUser.id}`;
+
+          await s3.send(
+            new PutObjectCommand({
+              Bucket: process.env.HETZNER_BUCKET_NAME!,
+              Key: key,
+              Body: processedBuffer,
+              ContentType: mimeType,
+              ACL: 'public-read', // Make public
+            })
+          );
+
+          profilePicture = `${process.env.HETZNER_BUCKET_URL!.replace(/\/$/, '')}/${process.env.HETZNER_BUCKET_NAME}/${key}`;
         }
       } catch (error) {
         console.error(`Failed to fetch profile photo for ${graphUser.mail}:`, error);
