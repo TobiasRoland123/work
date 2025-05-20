@@ -1,0 +1,209 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'components/**'
+  pull_request:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'components/**'
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    outputs:
+      pnpm-store-path: ~/.pnpm-store
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Enable Corepack & Setup pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.15.5 --activate
+
+      - name: Cache pnpm store
+        id: pnpm-cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+      - name: Use Node.js 23.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: '23.x'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+  lint-and-typecheck:
+    needs: setup
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Enable Corepack & Setup pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.15.5 --activate
+
+      - name: Use Node.js 23.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: '23.x'
+          cache: 'pnpm'
+
+      - name: Restore pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run ESLint
+        run: pnpm run lint
+
+      - name: TypeScript type check
+        run: pnpm exec tsc --noEmit
+
+  backend-tests:
+    needs: setup
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: work_db
+        ports:
+          - 5444:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Enable Corepack & Setup pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.15.5 --activate
+
+      - name: Use Node.js 23.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: '23.x'
+          cache: 'pnpm'
+
+      - name: Restore pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run DB migrations
+        run: pnpm db:generate && pnpm db:push
+        env:
+          DATABASE_LOCALE_URL: postgresql://postgres:postgres@localhost
+          DATABASE_URL: postgresql://postgres:postgres@localhost:5444/work_db
+          PGUSER: postgres
+          PGPASSWORD: postgres
+          PGHOST: localhost
+          PGPORT: 5444
+          PGDATABASE: work_db
+
+      - name: Test backend services
+        run: pnpm test:backend
+        env:
+          PGUSER: postgres
+          PGPASSWORD: postgres
+          PGHOST: localhost
+          PGPORT: 5444
+          PGDATABASE: work_db
+
+  changes:
+    runs-on: ubuntu-latest
+    outputs:
+      components: ${{ steps.filter.outputs.components }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          base: develop # change this to main if you want to compare against main for changes in components/
+          filters: |
+            components:
+              - 'components/**'
+
+  storybook-tests:
+    needs: [setup, changes]
+    runs-on: ubuntu-latest
+    if: needs.changes.outputs.components == 'true'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Enable Corepack & Setup pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.15.5 --activate
+
+      - name: Use Node.js 23.x
+        uses: actions/setup-node@v4
+        with:
+          node-version: '23.x'
+          cache: 'pnpm'
+
+      - name: Restore pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ~/.pnpm-store
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Cache Playwright browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: ${{ runner.os }}-playwright-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-playwright-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright
+        run: npx playwright install --with-deps
+
+      - name: Build Storybook
+        run: pnpm build-storybook --quiet
+
+      - name: Serve Storybook and run tests
+        run: |
+          pnpm dlx concurrently -k -s first -n "SB,TEST" -c "magenta,blue" \
+            "pnpm dlx http-server storybook-static --port 6006 --silent" \
+            "pnpm dlx wait-on tcp:127.0.0.1:6006 && pnpm test-storybook"
+        timeout-minutes: 15
