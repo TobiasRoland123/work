@@ -126,6 +126,7 @@ jobs:
       - name: Run DB migrations
         run: pnpm db:generate && pnpm db:push
         env:
+          DATABASE_LOCALE_URL: postgresql://postgres:postgres@localhost
           DATABASE_URL: postgresql://postgres:postgres@localhost:5444/work_db
           PGUSER: postgres
           PGPASSWORD: postgres
