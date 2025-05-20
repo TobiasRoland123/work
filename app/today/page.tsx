@@ -1,85 +1,12 @@
 import { UserWithExtras } from '@/db/types';
 import { PeopleOverviewWrapper } from './PeopleOverviewWrapper';
+import { userService } from '@/lib/services/userService';
 
-const profiles: UserWithExtras[] = [
-  {
-    id: 1,
-    userId: 'user-1',
-    firstName: 'Anders',
-    lastName: 'Christensen',
-    email: 'anders@work.com',
-    systemRole: 'USER',
-    createdAt: '2024-01-01T00:00:00Z',
-    organisationId: 1,
-    mobilePhone: '+45 87 18 91 28',
-    profilePicture: 'https://picsum.photos/200',
-    status: {
-      status: 'IN_OFFICE',
-      id: 0,
-      userID: '',
-      details: null,
-      time: null,
-      fromDate: null,
-      toDate: null,
-    },
-    organisationRoles: ['Product Manager'],
-    businessPhoneNumber: undefined,
-  },
-  {
-    id: 2,
-    userId: 'user-2',
-    firstName: 'Maria',
-    lastName: 'Jensen',
-    email: 'maria@work.com',
-    systemRole: 'USER',
-    createdAt: '2024-01-01T00:00:00Z',
-    organisationId: 1,
-    mobilePhone: '+45 23 45 67 89',
-    profilePicture: 'https://picsum.photos/201',
-    status: {
-      status: 'IN_OFFICE',
-      id: 0,
-      userID: '',
-      details: null,
-      time: null,
-      fromDate: null,
-      toDate: null,
-    },
-    organisationRoles: ['Frontend Developer'],
-    businessPhoneNumber: undefined,
-  },
-  {
-    id: 3,
-    userId: 'user-3',
-    firstName: 'Peter',
-    lastName: 'Nielsen',
-    email: 'peter@work.com',
-    systemRole: 'USER',
-    createdAt: '2024-01-01T00:00:00Z',
-    organisationId: 1,
-    mobilePhone: '+45 32 14 76 98',
-    profilePicture: 'https://picsum.photos/202',
-    status: {
-      status: 'IN_OFFICE',
-      id: 0,
-      userID: '',
-      details: null,
-      time: null,
-      fromDate: null,
-      toDate: null,
-    },
-    organisationRoles: ['Product Manager'],
-    businessPhoneNumber: undefined,
-  },
-];
-
-export default function Home() {
+export default async function Home() {
+  const users: UserWithExtras[] = await userService.getAllUsers();
   return (
     <div>
-      {/* Add sidebar nav */}
-      <PeopleOverviewWrapper initialProfiles={profiles} initialOfficeStatus />
-
-      {/* Add 'Report Status Button' */}
+      <PeopleOverviewWrapper initialProfiles={users} initialOfficeStatus />
     </div>
   );
 }
