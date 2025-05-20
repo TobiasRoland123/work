@@ -15,7 +15,6 @@ const pool = new Pool({
 });
 
 describe('UserService Tests', () => {
-  let testUserId: string;
   const testUser: NewUser = {
     userId: 'b0bb8dda-976d-4992-8922-4fef721c4b44',
     firstName: 'Test',
@@ -28,8 +27,7 @@ describe('UserService Tests', () => {
     // Clear any existing test users
     await db.delete(users).where(eq(users.email, testUser.email));
     // Insert Test User directly
-    const inserted = await db.insert(users).values(testUser).returning();
-    testUserId = inserted[0].userId;
+    await db.insert(users).values(testUser).returning();
   });
 
   afterAll(async () => {
@@ -48,31 +46,31 @@ describe('UserService Tests', () => {
 
       expect(user).toBeDefined();
       expect(user.email).toBe(testUser.email);
-      expect(user.id).toBe(testUserId);
+      expect(user.userId).toBe(testUser.userId);
     });
 
-    test('should return undefined for non-existent email', async () => {
+    test('should return null for non-existent email', async () => {
       const user = await userService.getUserByEmail('nonexistent@example.com');
-      expect(user).toBeUndefined();
+      expect(user).toBeNull();
     });
   });
 
   describe('getUserById', () => {
     test('should retrieve user by id', async () => {
-      const user = await userService.getUserById(testUserId);
+      const user = await userService.getUserById(testUser.userId);
 
       if (!user) {
         throw new Error('Test user not found in usersList');
       }
 
       expect(user).toBeDefined();
-      expect(user.id).toBe(testUserId);
+      expect(user.userId).toBe(testUser.userId);
       expect(user.email).toBe(testUser.email);
     });
 
-    test('should return undefined for non-existent id', async () => {
+    test('should return null for non-existent id', async () => {
       const user = await userService.getUserById('9999999');
-      expect(user).toBeUndefined();
+      expect(user).toBeNull();
     });
   });
 
@@ -85,7 +83,7 @@ describe('UserService Tests', () => {
       expect(usersList.length).toBeGreaterThan(0);
 
       // Find our test user in the results
-      const foundTestUser = usersList.find((u) => u.userId === testUserId);
+      const foundTestUser = usersList.find((u) => u.userId === testUser.userId);
       expect(foundTestUser).toBeDefined();
 
       if (!foundTestUser) {
