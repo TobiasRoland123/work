@@ -11,7 +11,7 @@ const ProfileInfo = ({ user }: UserProps) => {
     <div className="p-4">
       <section>
         <span className="font-mono text-base">Your information</span>
-        <h1 className="text-5xl font-mono leading-14 font-light">{user.name}</h1>
+        <h1 className="text-5xl font-mono leading-14 font-light">{user.name || 'Profile'}</h1>
       </section>
       <section className="flex flex-col">
         <ProfileInfoField label={'Name'} value={user.name} />
