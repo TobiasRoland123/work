@@ -23,8 +23,10 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Install pnpm
-        run: npm install -g pnpm@9.15.5
+      - name: Enable Corepack & Setup pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.15.5 --activate
 
       - name: Cache pnpm store
         id: pnpm-cache
@@ -39,11 +41,6 @@ jobs:
         with:
           node-version: '23.x'
           cache: 'pnpm'
-
-      - name: Enable Corepack & Setup pnpm
-        run: |
-          corepack enable
-          corepack prepare pnpm@9.15.5 --activate
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
@@ -61,8 +58,10 @@ jobs:
           node-version: '23.x'
           cache: 'pnpm'
 
-      - name: Install pnpm
-        run: npm install -g pnpm@9.15.5
+      - name: Enable Corepack & Setup pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.15.5 --activate
 
       - name: Restore pnpm store
         uses: actions/cache@v4
@@ -108,8 +107,10 @@ jobs:
           node-version: '23.x'
           cache: 'pnpm'
 
-      - name: Install pnpm
-        run: npm install -g pnpm@9.15.5
+      - name: Enable Corepack & Setup pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.15.5 --activate
 
       - name: Restore pnpm store
         uses: actions/cache@v4
@@ -169,8 +170,10 @@ jobs:
           node-version: '23.x'
           cache: 'pnpm'
 
-      - name: Install pnpm
-        run: npm install -g pnpm@9.15.5
+      - name: Enable Corepack & Setup pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.15.5 --activate
 
       - name: Restore pnpm store
         uses: actions/cache@v4
