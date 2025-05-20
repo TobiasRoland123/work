@@ -5,10 +5,14 @@ on:
     branches:
       - main
       - develop
+    paths:
+      - 'components/**'
   pull_request:
     branches:
       - main
       - develop
+    paths:
+      - 'components/**'
 
 jobs:
   setup:
@@ -131,9 +135,24 @@ jobs:
           PGPORT: 5444
           PGDATABASE: work_db
 
-  storybook-tests:
-    needs: setup
+  changes:
     runs-on: ubuntu-latest
+    outputs:
+      components: ${{ steps.filter.outputs.components }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          base: develop # change this to main if you want to compare against main for changes in components/
+          filters: |
+            components:
+              - 'components/**'
+
+  storybook-tests:
+    needs: [setup, changes]
+    runs-on: ubuntu-latest
+    if: needs.changes.outputs.components == 'true'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
