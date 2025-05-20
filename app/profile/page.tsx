@@ -13,7 +13,6 @@ const page = async () => {
   }
 
   const user = await userService.getUserById(session.userId);
-  // const user = await userService.getUserById('b0bb8dda-976d-4992-8922-4fef721c4b09');
 
   if (!user) {
     return <div>User not found.</div>;
