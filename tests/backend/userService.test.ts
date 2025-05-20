@@ -15,7 +15,7 @@ const pool = new Pool({
 });
 
 describe('UserService Tests', () => {
-  let testUserId: number;
+  let testUserId: string;
   const testUser: NewUser = {
     userId: 'b0bb8dda-976d-4992-8922-4fef721c4b44',
     firstName: 'Test',
@@ -29,7 +29,7 @@ describe('UserService Tests', () => {
     await db.delete(users).where(eq(users.email, testUser.email));
     // Insert Test User directly
     const inserted = await db.insert(users).values(testUser).returning();
-    testUserId = inserted[0].id;
+    testUserId = inserted[0].userId;
   });
 
   afterAll(async () => {
@@ -41,6 +41,10 @@ describe('UserService Tests', () => {
   describe('getUserByEmail', () => {
     test('should retrieve user by email', async () => {
       const user = await userService.getUserByEmail(testUser.email);
+
+      if (!user) {
+        throw new Error('Test user not found in usersList');
+      }
 
       expect(user).toBeDefined();
       expect(user.email).toBe(testUser.email);
@@ -57,19 +61,23 @@ describe('UserService Tests', () => {
     test('should retrieve user by id', async () => {
       const user = await userService.getUserById(testUserId);
 
+      if (!user) {
+        throw new Error('Test user not found in usersList');
+      }
+
       expect(user).toBeDefined();
       expect(user.id).toBe(testUserId);
       expect(user.email).toBe(testUser.email);
     });
 
     test('should return undefined for non-existent id', async () => {
-      const user = await userService.getUserById(9999999);
+      const user = await userService.getUserById('9999999');
       expect(user).toBeUndefined();
     });
   });
 
   describe('getAllUsers', () => {
-    test('should retrieve all users', async () => {
+    test('should retrieve all users with status, organisationRoles, and businessPhoneNumber', async () => {
       const usersList = await userService.getAllUsers();
 
       expect(usersList).toBeDefined();
@@ -77,8 +85,37 @@ describe('UserService Tests', () => {
       expect(usersList.length).toBeGreaterThan(0);
 
       // Find our test user in the results
-      const foundTestUser = usersList.find((u) => u.id === testUserId);
+      const foundTestUser = usersList.find((u) => u.userId === testUserId);
       expect(foundTestUser).toBeDefined();
+
+      if (!foundTestUser) {
+        throw new Error('Test user not found in usersList');
+      }
+
+      // Check status object (should be null or an object with expected keys)
+      expect(foundTestUser).toHaveProperty('status');
+      if (foundTestUser.status) {
+        expect(foundTestUser.status).toHaveProperty('id');
+        expect(foundTestUser.status).toHaveProperty('userID');
+        expect(foundTestUser.status).toHaveProperty('status');
+        expect(foundTestUser.status).toHaveProperty('details');
+        expect(foundTestUser.status).toHaveProperty('time');
+        expect(foundTestUser.status).toHaveProperty('fromDate');
+        expect(foundTestUser.status).toHaveProperty('toDate');
+      } else {
+        expect(foundTestUser.status).toBeNull();
+      }
+
+      // Check organisationRoles is an array
+      expect(foundTestUser).toHaveProperty('organisationRoles');
+      expect(Array.isArray(foundTestUser.organisationRoles)).toBe(true);
+
+      // Check businessPhoneNumber property exists (can be null or string)
+      expect(foundTestUser).toHaveProperty('businessPhoneNumber');
+      expect(
+        foundTestUser.businessPhoneNumber === null ||
+          typeof foundTestUser.businessPhoneNumber === 'string'
+      ).toBe(true);
     });
   });
 
