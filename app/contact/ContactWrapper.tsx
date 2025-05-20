@@ -9,13 +9,7 @@ interface UserProps {
 }
 
 const ContactWrapper = ({ users }: UserProps) => {
-  return (
-    <div>
-      <div>
-        <PeopleOverview profiles={users} showTotalPeople />
-      </div>
-    </div>
-  );
+  return <PeopleOverview profiles={users} showTotalPeople />;
 };
 
 export default ContactWrapper;

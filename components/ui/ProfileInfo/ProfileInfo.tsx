@@ -8,22 +8,24 @@ interface UserProps {
 }
 
 const ProfileInfo = ({ user }: UserProps) => {
-  const name = `${user.firstName} ${user.lastName}`;
+  const name = `${user.firstName} ${user.lastName}`.trim();
+  const heading = name ? name : 'Profile';
   return (
     <div className="p-4">
       <section>
         <span className="font-mono text-base">Your information</span>
-        <h1 className="text-5xl font-mono leading-14 font-light">{name}</h1>
+        <h1 className="text-5xl font-mono leading-14 font-light">{heading}</h1>
       </section>
       <section className="flex flex-col">
         <ProfileInfoField label={'Name'} value={name} />
         {user?.organisationId && (
           <ProfileInfoField label={'Department'} value={String(user.organisationId)} />
         )}
-        {user?.organisationRoles && (
+        {user?.organisationRoles && user.organisationRoles.length > 0 && (
           <ProfileInfoField label={'Title'} value={user.organisationRoles[0]} />
         )}
-        {user.mobilePhone && <ProfileInfoField label={'Phone'} value={user.mobilePhone} />}
+
+        <ProfileInfoField label={'Phone'} value={user.mobilePhone ?? ''} />
 
         <ProfileInfoField label={'Mail'} value={user.email} />
       </section>

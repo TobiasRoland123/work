@@ -47,7 +47,7 @@ export const RendersAllFields: Story = {
     const canvas = within(canvasElement);
     await expect(canvas.getByText('Your information')).toBeInTheDocument();
     await expect(
-      canvas.getByRole('heading', { name: mockUser.firstName as string })
+      canvas.getByRole('heading', { name: `${mockUser.firstName} ${mockUser.lastName}` })
     ).toBeInTheDocument();
     await expect(canvas.getByText('Department')).toBeInTheDocument();
     await expect(canvas.getByText(String(mockUser.organisationId))).toBeInTheDocument();
