@@ -52,16 +52,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Enable Corepack & Setup pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.15.5 --activate
+
       - name: Use Node.js 23.x
         uses: actions/setup-node@v4
         with:
           node-version: '23.x'
           cache: 'pnpm'
-
-      - name: Enable Corepack & Setup pnpm
-        run: |
-          corepack enable
-          corepack prepare pnpm@9.15.5 --activate
 
       - name: Restore pnpm store
         uses: actions/cache@v4
@@ -101,16 +101,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Enable Corepack & Setup pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.15.5 --activate
+
       - name: Use Node.js 23.x
         uses: actions/setup-node@v4
         with:
           node-version: '23.x'
           cache: 'pnpm'
-
-      - name: Enable Corepack & Setup pnpm
-        run: |
-          corepack enable
-          corepack prepare pnpm@9.15.5 --activate
 
       - name: Restore pnpm store
         uses: actions/cache@v4
@@ -164,16 +164,16 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Enable Corepack & Setup pnpm
+        run: |
+          corepack enable
+          corepack prepare pnpm@9.15.5 --activate
+
       - name: Use Node.js 23.x
         uses: actions/setup-node@v4
         with:
           node-version: '23.x'
           cache: 'pnpm'
-
-      - name: Enable Corepack & Setup pnpm
-        run: |
-          corepack enable
-          corepack prepare pnpm@9.15.5 --activate
 
       - name: Restore pnpm store
         uses: actions/cache@v4
