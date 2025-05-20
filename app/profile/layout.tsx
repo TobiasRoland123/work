@@ -5,7 +5,6 @@ import { menuLinks } from '@/components/AppContent';
 export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <main>
-      {/*This layout does not include the StatusSidebar*/}
       <SidebarProviderWrapper links={menuLinks}>{children}</SidebarProviderWrapper>
 
       <MobileNavigation linkList={menuLinks} />
