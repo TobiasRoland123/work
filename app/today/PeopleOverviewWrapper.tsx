@@ -13,7 +13,9 @@ export const PeopleOverviewWrapper = (props: {
 
   const filteredProfiles = officeStatus
     ? profiles.filter((profile) => profile.status?.status === 'IN_OFFICE')
-    : profiles.filter((profile) => profile.status?.status !== 'IN_OFFICE');
+    : profiles.filter(
+        (profile) => profile.status?.status && profile.status?.status !== 'IN_OFFICE'
+      );
 
   return (
     <PeopleOverview
