@@ -72,8 +72,14 @@ export async function middleware(request: NextRequest) {
       }
     }
 
+    // If user is authenticated but session is expired, force re-login
+    if (isAuthenticated && isSessionExpired) {
+      const url = new URL(DEFAULT_UNAUTH_REDIRECT, request.url);
+      return NextResponse.redirect(url);
+    }
+
     // If user is not logged in and trying to access a protected route
-    if (!isAuthenticated && isSessionExpired && !isPublicPath) {
+    if (!isAuthenticated && !isPublicPath) {
       const url = new URL(DEFAULT_UNAUTH_REDIRECT, request.url);
       return NextResponse.redirect(url);
     }
