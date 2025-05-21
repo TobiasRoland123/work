@@ -1,5 +1,6 @@
 import { linkProps } from '@/types/link';
 import { UserStatus } from '@/db/types';
+import { StatusType } from '@/components/ui/Status/Status';
 
 export const menuLinks: Array<linkProps> = [
   { href: '/today', label: 'Today' },
@@ -28,3 +29,17 @@ export const statusOptions = {
     { label: 'On Leave', value: 'ON_LEAVE' },
   ],
 };
+
+export function getDetailsPlaceholder(status: StatusType) {
+  if (status === 'FROM_HOME' || status === 'IN_LATE' || status === 'LEAVING_EARLY') {
+    return 'eg. why? 🏠⏰';
+  } else if (status === 'AT_CLIENT') {
+    return 'eg. where? 🏢';
+  } else if (status === 'CHILD_SICK') {
+    return 'eg. Available on Slack 🤒💬';
+  } else if (status === 'VACATION') {
+    return 'eg. where to? 🏖️✈️';
+  } else if (status === 'ON_LEAVE') {
+    return 'eg. why? if you want to share 🌴🙂';
+  } else return 'Details... 📝';
+}

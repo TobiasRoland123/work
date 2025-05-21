@@ -9,6 +9,8 @@ import { userStatus } from '@/db/schema';
 import { SetStatusStep } from '@/components/StatusForm/SetStatusStep/SetStatusStep';
 import { SetDetailsStep } from '@/components/StatusForm/SetDetailsStep/SetDetailsStep';
 import { createNewStatusAction } from '@/app/actions/statusActions';
+import { Status } from '@/components/ui/Status/Status';
+import { Button } from '@/components/ui/Button/Button';
 
 export const formSchema = z
   .object({
@@ -71,15 +73,19 @@ export function StatusForm({ closeButton, userId }: StatusFormProps) {
 
   return (
     <>
-      <header className={'flex justify-between items-center'}>
+      <header className={'flex justify-between items-center relative'}>
         <h3>
-          {currentStatus && currentStatus !== 'IN_OFFICE' ? currentStatus : 'Where are you today?'}
+          {currentStatus && currentStatus !== 'IN_OFFICE' ? (
+            <Status status={currentStatus} asLabel={false} />
+          ) : (
+            'Where are you today?'
+          )}
         </h3>
         {closeButton ? closeButton : null}
       </header>
-      <div className={'h-full pb-6'}>
+      <div className={'h-full pt-6'}>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="py-2 h-full  ">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="h-full  ">
             {currentStep === 1 && <SetStatusStep setCurrentStep={setCurrentStep} form={form} />}
             {currentStep === 2 && (
               <SetDetailsStep
@@ -88,7 +94,16 @@ export function StatusForm({ closeButton, userId }: StatusFormProps) {
                 currentStep={currentStep}
               />
             )}
-            {currentStep === 2 ? <button type="submit">Submit</button> : null}
+            {currentStep === 2 ? (
+              <Button
+                ariaLabel={'Register Status'}
+                type="submit"
+                variant={'large'}
+                className={'text-black text-2xl mt-12'}
+              >
+                Register
+              </Button>
+            ) : null}
           </form>
         </Form>
       </div>

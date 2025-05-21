@@ -261,7 +261,7 @@ function InsetSheetDescription({
   return (
     <div
       data-slot="inset-sheet-description"
-      className={cn('text-muted-foreground text-sm', className)}
+      className={cn('text-muted-foreground', className)}
       {...props}
     />
   );
