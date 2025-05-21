@@ -43,6 +43,7 @@ type StatusFormProps = {
 };
 
 export function StatusForm({ closeButton, userId }: StatusFormProps) {
+  // const session = await();
   const [currentStep, setCurrentStep] = useState(1);
   // 2. Add "status" to defaultValues
   const form = useForm<z.infer<typeof formSchema>>({
@@ -50,7 +51,7 @@ export function StatusForm({ closeButton, userId }: StatusFormProps) {
     defaultValues: {},
   });
 
-  if (!userId) return <div>Could not update Status.</div>;
+  // if (!userId) return <div>Could not update Status.</div>;
   // 3. Update handler to show status too
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!userId) return;

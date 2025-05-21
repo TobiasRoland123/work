@@ -7,15 +7,14 @@ import {
   InsetSheetWrapper,
 } from '../Inset-Sheet/inset-sheet';
 import { StatusForm } from '@/components/StatusForm/StatusForm';
-import { auth } from '@/auth';
 
 type StatusSidebarProps = {
   open: string;
   setOpen: (value: string) => void;
+  userId?: string;
 };
 
-export async function StatusSidebar({ open, setOpen }: StatusSidebarProps) {
-  const session = await auth();
+export function StatusSidebar({ open, setOpen, userId }: StatusSidebarProps) {
   return (
     <InsetSheet
       open={open === 'status'}
@@ -31,7 +30,7 @@ export async function StatusSidebar({ open, setOpen }: StatusSidebarProps) {
       <InsetSheetContent className={'bg-black py-6 px-3.5 border-0 '} hideCloseButton>
         <InsetSheetDescription className={'text-white h-full'}>
           <StatusForm
-            userId={session?.userId}
+            userId={userId}
             closeButton={
               <InsetSheetClose className="cursor-pointer" aria-label="Close sidebar">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none">
