@@ -12,7 +12,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         {children}
       </SidebarProviderWrapper>
 
-      <MobileNavigation linkList={menuLinks} />
+      <MobileNavigation linkList={menuLinks} userId={session?.userId} />
     </main>
   );
 }

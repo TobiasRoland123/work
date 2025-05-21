@@ -11,9 +11,13 @@ import {
   DrawerTrigger,
 } from '@/components/ui/Drawer/drawer';
 import { useState } from 'react';
-import {StatusForm} from "@/components/StatusForm/StatusForm";
+import { StatusForm } from '@/components/StatusForm/StatusForm';
 
-export function StatusDrawer() {
+type StatusDrawerProps = {
+  userId?: string;
+};
+
+export function StatusDrawer({ userId }: StatusDrawerProps) {
   const [open, setOpen] = useState(false);
   return (
     <Drawer open={open} onClose={() => setOpen(false)}>
@@ -50,7 +54,7 @@ export function StatusDrawer() {
           </DrawerClose>
         </DrawerHeader>
         <div className={'gap-4 flex flex-col'}>
-         <StatusForm/>
+          <StatusForm userId={userId} />
         </div>
       </DrawerContent>
     </Drawer>
