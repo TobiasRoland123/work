@@ -4,8 +4,6 @@ import {
   InsetSheetClose,
   InsetSheetContent,
   InsetSheetDescription,
-  InsetSheetHeader,
-  InsetSheetTitle,
   InsetSheetWrapper,
 } from '../Inset-Sheet/inset-sheet';
 import { StatusForm } from '@/components/StatusForm/StatusForm';

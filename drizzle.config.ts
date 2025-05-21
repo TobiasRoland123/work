@@ -11,6 +11,6 @@ export default {
     url:
       process.env.NODE_ENV === 'production'
         ? `${process.env.DATABASE_URL}`
-        : `${process.env.DATABASE_LOCALE_URL!}${process.env.PGPORT}/${process.env.PGDATABASE}`,
+        : `${process.env.DATABASE_LOCALE_URL!}:${process.env.PGPORT}/${process.env.PGDATABASE}`,
   },
 } satisfies Config;

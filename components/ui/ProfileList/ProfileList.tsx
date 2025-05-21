@@ -1,10 +1,12 @@
-import { ProfileListItem, ProfileListItemProps } from '../ProfileListItem/ProfileListItem';
+import { UserWithExtras } from '@/db/types';
+import { ProfileListItem } from '../ProfileListItem/ProfileListItem';
 
 type ProfileListProps = {
-  profiles: ProfileListItemProps[];
+  profiles: UserWithExtras[];
+  showStatus?: boolean;
 };
 
-export function ProfileList({ profiles }: ProfileListProps) {
+export function ProfileList({ profiles, showStatus = false }: ProfileListProps) {
   return (
     <ul className="grid grid-cols-1 md:grid-cols-2" role="list">
       {profiles.map((profile, index) => (
@@ -14,7 +16,7 @@ export function ProfileList({ profiles }: ProfileListProps) {
             index === profiles.length - 1 && profiles.length % 2 === 1 ? 'md:col-span-2' : ''
           }`}
         >
-          <ProfileListItem {...profile} />
+          <ProfileListItem user={profile} showStatus={showStatus} />
         </li>
       ))}
     </ul>

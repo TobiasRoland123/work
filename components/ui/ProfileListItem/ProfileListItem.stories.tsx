@@ -11,21 +11,55 @@ type Story = StoryObj<typeof ProfileListItem>;
 
 export const Default: Story = {
   args: {
-    profilePicture: 'https://picsum.photos/200',
-    name: 'Anders Christensen',
-    title: 'UI Designer',
-    status: 'from home',
-    phoneNumber: '+45 87 18 91 28',
-    email: 'anders@work.com',
+    user: {
+      id: 1,
+      userId: 'user-1',
+      firstName: 'Anders',
+      lastName: 'Christensen',
+      email: 'anders@work.com',
+      systemRole: 'USER',
+      createdAt: '2024-01-01T00:00:00Z',
+      organisationId: null,
+      mobilePhone: '+45 87 18 91 28',
+      profilePicture: 'https://picsum.photos/200',
+      status: {
+        status: 'IN_OFFICE',
+        id: 0,
+        userID: '',
+        details: null,
+        time: null,
+        fromDate: null,
+        toDate: null,
+      },
+      organisationRoles: [],
+      businessPhoneNumber: undefined,
+    },
   },
 };
 
 export const NoPicture: Story = {
   args: {
-    name: 'Anders Christensen',
-    title: 'UI Designer',
-    status: 'from home',
-    phoneNumber: '+45 87 18 91 28',
-    email: 'anders@work.com',
+    user: {
+      id: 1,
+      userId: 'user-1',
+      firstName: 'Anders',
+      lastName: 'Christensen',
+      email: 'anders@work.com',
+      systemRole: 'USER',
+      createdAt: '2024-01-01T00:00:00Z',
+      organisationId: null,
+      mobilePhone: '+45 87 18 91 28',
+      status: {
+        status: 'IN_OFFICE',
+        id: 0,
+        userID: '',
+        details: null,
+        time: null,
+        fromDate: null,
+        toDate: null,
+      },
+      organisationRoles: [],
+      businessPhoneNumber: undefined,
+    },
   },
 };

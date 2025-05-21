@@ -1,6 +1,6 @@
 {
-  "id": "c85caf24-4d35-4fbd-a0b5-40c9c32ed979",
-  "prevId": "a0fbe8ac-24f7-407a-9f3b-8095d7b8bf12",
+  "id": "d2bc7f65-08bb-400d-9cdf-a47671d2eac4",
+  "prevId": "fc030571-cf76-4bd1-88c9-ac6aadee27cb",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -222,8 +222,7 @@
           "name": "profile_picture",
           "type": "text",
           "primaryKey": false,
-          "notNull": true,
-          "default": "''"
+          "notNull": false
         }
       },
       "indexes": {},

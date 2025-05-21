@@ -36,7 +36,7 @@ export async function middleware(request: NextRequest) {
 
   try {
     // User is authenticated if either Auth.js has a user OR iron session is logged in
-    const isAuthenticated = !!authData?.user;
+    const isAuthenticated = authData?.user;
 
     // Check if session has expired
     let isSessionExpired = false;
@@ -62,7 +62,7 @@ export async function middleware(request: NextRequest) {
       }
 
       // Return 401 for unauthenticated API requests
-      if (!isAuthenticated) {
+      if (isAuthenticated) {
         return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
           status: 401,
           headers: {
@@ -72,8 +72,14 @@ export async function middleware(request: NextRequest) {
       }
     }
 
+    // If user is authenticated but session is expired, force re-login
+    if (isAuthenticated && isSessionExpired) {
+      const url = new URL(DEFAULT_UNAUTH_REDIRECT, request.url);
+      return NextResponse.redirect(url);
+    }
+
     // If user is not logged in and trying to access a protected route
-    if (!isAuthenticated && isSessionExpired && !isPublicPath) {
+    if (!isAuthenticated && !isPublicPath) {
       const url = new URL(DEFAULT_UNAUTH_REDIRECT, request.url);
       return NextResponse.redirect(url);
     }
