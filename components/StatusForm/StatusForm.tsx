@@ -3,9 +3,8 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-
 import { Form } from '@/components/ui/form';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { userStatus } from '@/db/schema';
 import { SetStatusStep } from '@/components/StatusForm/SetStatusStep/SetStatusStep';
 import { SetDetailsStep } from '@/components/StatusForm/SetDetailsStep/SetDetailsStep';
@@ -40,21 +39,25 @@ export const formSchema = z
 
 type StatusFormProps = {
   closeButton?: React.ReactNode;
+  userId?: string;
 };
 
-export function StatusForm({ closeButton }: StatusFormProps) {
+export function StatusForm({ closeButton, userId }: StatusFormProps) {
+  const [currentStep, setCurrentStep] = useState(1);
   // 2. Add "status" to defaultValues
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: {},
   });
 
+  if (!userId) return <div>Could not update Status.</div>;
   // 3. Update handler to show status too
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    if (!userId) return;
     // eslint-disable-next-line no-console
     console.log(values);
-    createNewStatusAction({
-      userID: 'b0bb8dda-976d-4992-8922-4fef721c4b09',
+    await createNewStatusAction({
+      userID: userId,
       status: values.status,
       details: values.detailsString,
       time: values.actionTime,
@@ -62,7 +65,7 @@ export function StatusForm({ closeButton }: StatusFormProps) {
       toDate: values.toDate,
     });
   }
-  const [currentStep, setCurrentStep] = useState(1);
+
   const currentStatus = form.watch('status');
 
   return (
@@ -84,8 +87,6 @@ export function StatusForm({ closeButton }: StatusFormProps) {
                 currentStep={currentStep}
               />
             )}
-
-            <p>{form.watch('status')}</p>
             {currentStep === 2 ? <button type="submit">Submit</button> : null}
           </form>
         </Form>
