@@ -9,7 +9,7 @@ import { useState } from 'react';
 import { userStatus } from '@/db/schema';
 import { SetStatusStep } from '@/components/StatusForm/SetStatusStep/SetStatusStep';
 import { SetDetailsStep } from '@/components/StatusForm/SetDetailsStep/SetDetailsStep';
-import { statusService } from '@/lib/services/statusService';
+import { createNewStatusAction } from '@/app/actions/statusActions';
 
 export const formSchema = z
   .object({
@@ -20,7 +20,6 @@ export const formSchema = z
     toDate: z.string().date().optional(),
   })
   .superRefine((data, ctx) => {
-    // Example: require actionTime if status == "IN_LATE" or "LEAVING_EARLY"
     if ((data.status === 'IN_LATE' || data.status === 'LEAVING_EARLY') && !data.actionTime) {
       ctx.addIssue({
         code: z.ZodIssueCode.custom,
@@ -28,13 +27,14 @@ export const formSchema = z
         message: 'Time is required for this status.',
       });
     }
-
-    if ((data.status === 'VACATION' || data.status === 'ON_LEAVE') && !data.actionTime) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['fromDate', 'toDate'],
-        message: 'Dates are required for this status.',
-      });
+    if (data.status === 'VACATION' || data.status === 'ON_LEAVE') {
+      if (!data.fromDate || !data.toDate) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['fromDate', 'toDate'],
+          message: 'Dates are required for this status.',
+        });
+      }
     }
   });
 
@@ -46,19 +46,15 @@ export function StatusForm({ closeButton }: StatusFormProps) {
   // 2. Add "status" to defaultValues
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {
-      status: undefined,
-      detailsString: '',
-      actionTime: '11:00',
-    },
+    defaultValues: {},
   });
 
   // 3. Update handler to show status too
   async function onSubmit(values: z.infer<typeof formSchema>) {
     // eslint-disable-next-line no-console
     console.log(values);
-    await statusService.createNewStatus({
-      userID: '1',
+    createNewStatusAction({
+      userID: 'b0bb8dda-976d-4992-8922-4fef721c4b09',
       status: values.status,
       details: values.detailsString,
       time: values.actionTime,
@@ -68,6 +64,7 @@ export function StatusForm({ closeButton }: StatusFormProps) {
   }
   const [currentStep, setCurrentStep] = useState(1);
   const currentStatus = form.watch('status');
+
   return (
     <>
       <header className={'flex justify-between items-center'}>
@@ -87,6 +84,8 @@ export function StatusForm({ closeButton }: StatusFormProps) {
                 currentStep={currentStep}
               />
             )}
+
+            <p>{form.watch('status')}</p>
             {currentStep === 2 ? <button type="submit">Submit</button> : null}
           </form>
         </Form>
