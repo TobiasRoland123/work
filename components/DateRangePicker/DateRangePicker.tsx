@@ -34,7 +34,7 @@ export function DatePickerWithRange({ className, form }: DateRangePickerProps) {
       form.setValue('fromDate', fromDate);
       form.setValue('toDate', toDate);
     }
-  }, [date]);
+  }, [date, form]);
 
   return (
     <div className={cn('grid gap-2', className)}>
