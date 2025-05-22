@@ -15,8 +15,6 @@ import sharp from 'sharp';
 
 import path from 'path';
 
-// Install node-fetch if not already: npm install node-fetch
-
 dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
 
 const s3 = new S3Client({
