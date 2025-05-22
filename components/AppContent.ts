@@ -34,11 +34,11 @@ export function getDetailsPlaceholder(status: StatusType) {
   if (status === 'FROM_HOME' || status === 'IN_LATE' || status === 'LEAVING_EARLY') {
     return 'eg. why? 🏠⏰';
   } else if (status === 'AT_CLIENT') {
-    return 'eg. where? 🏢';
+    return 'ex. where? 🏢';
   } else if (status === 'CHILD_SICK') {
-    return 'eg. Available on Slack 🤒💬';
+    return 'ex. Available on Slack 🤒💬';
   } else if (status === 'VACATION') {
-    return 'eg. where to? 🏖️✈️';
+    return 'ex. where to? 🏖️✈️';
   } else if (status === 'ON_LEAVE') {
     return 'eg. why? if you want to share 🌴🙂';
   } else return 'Details... 📝';

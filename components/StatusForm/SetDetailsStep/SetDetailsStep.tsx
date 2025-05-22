@@ -23,31 +23,11 @@ export function SetDetailsStep({ form }: SetDetailsStepProps) {
           name={'fromDate'}
           control={form?.control}
           render={() => (
-            <FormItem className={'flex'}>
-              <FormLabel>Dates</FormLabel>
-              <FormControl>
-                <div className="flex flex-col gap-2">
-                  <DatePickerWithRange form={form} />
-                </div>
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-      ) : null}
-      {chosenStatus !== 'ON_LEAVE' &&
-      chosenStatus !== 'VACATION' &&
-      chosenStatus !== 'SICK' &&
-      chosenStatus !== undefined ? (
-        <FormField
-          name={'detailsString'}
-          control={form?.control}
-          render={({ field }) => (
             <FormItem className={'flex gap-11 justify-between items-end'}>
-              <FormLabel>Details</FormLabel>
-              <FormControl className={'w-full'}>
-                <div className="flex flex-col gap-2">
-                  <Input placeholder={getDetailsPlaceholder(form.watch('status'))} {...field} />
+              <FormLabel className={'min-w-[80px]'}>Dates</FormLabel>
+              <FormControl>
+                <div className="flex w-full flex-col gap-2">
+                  <DatePickerWithRange form={form} />
                 </div>
               </FormControl>
               <FormMessage />
@@ -60,8 +40,10 @@ export function SetDetailsStep({ form }: SetDetailsStepProps) {
           name={'actionTime'}
           control={form?.control}
           render={({ field }) => (
-            <FormItem>
-              <FormControl>
+            <FormItem className={'flex gap-11 justify-between items-end'}>
+              <FormLabel className={'min-w-[80px]'}>Time</FormLabel>
+
+              <FormControl className={'w-full'}>
                 <div className="flex flex-col gap-2">
                   <Input {...field} type="time" id="action-time" name="Action Time" required />
                 </div>
@@ -71,6 +53,24 @@ export function SetDetailsStep({ form }: SetDetailsStepProps) {
           )}
         />
       ) : null}
+      {chosenStatus !== 'ON_LEAVE' && chosenStatus !== 'SICK' && chosenStatus !== undefined ? (
+        <FormField
+          name={'detailsString'}
+          control={form?.control}
+          render={({ field }) => (
+            <FormItem className={'flex gap-11 justify-between items-end'}>
+              <FormLabel className={'min-w-[80px]'}>Details</FormLabel>
+              <FormControl className={'w-full'}>
+                <div className="flex flex-col gap-2">
+                  <Input placeholder={getDetailsPlaceholder(form.watch('status'))} {...field} />
+                </div>
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+      ) : null}
+
       {/*<Button*/}
       {/*  ariaLabel={'Press to go back'}*/}
       {/*  handleClick={() => {*/}

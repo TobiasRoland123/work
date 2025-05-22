@@ -85,7 +85,7 @@ export function StatusForm({ closeButton, userId }: StatusFormProps) {
       </header>
       <div className={'h-full pt-6'}>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="h-full  ">
+          <form onSubmit={form.handleSubmit(onSubmit)} className="h-full flex flex-col gap-8 ">
             {currentStep === 1 && <SetStatusStep setCurrentStep={setCurrentStep} form={form} />}
             {currentStep === 2 && (
               <SetDetailsStep

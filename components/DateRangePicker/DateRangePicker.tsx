@@ -42,9 +42,9 @@ export function DatePickerWithRange({ className, form }: DateRangePickerProps) {
         <PopoverTrigger asChild>
           <Button
             id="date"
-            variant={'outline'}
+            variant={'ghost'}
             className={cn(
-              'w-[300px] justify-start text-left font-normal text-white bg-black',
+              'justify-start text-left font-normal text-white bg-black border-b-white border-b rounded-none',
               !date && 'text-muted-foreground'
             )}
           >
@@ -52,10 +52,10 @@ export function DatePickerWithRange({ className, form }: DateRangePickerProps) {
             {date?.from ? (
               date.to ? (
                 <>
-                  {format(date.from, 'LLL dd, y')} - {format(date.to, 'LLL dd, y')}
+                  {format(date.from, 'LLL dd')} - {format(date.to, 'LLL dd, yyyy')}
                 </>
               ) : (
-                format(date.from, 'LLL dd, y')
+                format(date.from, 'LLL dd')
               )
             ) : (
               <span>Pick a date</span>
