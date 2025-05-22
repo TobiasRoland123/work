@@ -82,12 +82,16 @@ export async function GET() {
         updateData.organisationRoles = [entraUser.jobTitle];
       }
 
-      if (neonUser.businessPhoneNumber !== entraUser.businessPhones) {
-        updateData.businessPhoneNumber = entraUser.businessPhones;
+      if (
+        Array.isArray(entraUser.businessPhones) &&
+        entraUser.businessPhones[0] &&
+        neonUser.businessPhoneNumber !== entraUser.businessPhones[0]
+      ) {
+        updateData.businessPhoneNumber = entraUser.businessPhones[0].replaceAll(' ', '');
       }
 
       if (neonUser.mobilePhone !== entraUser.mobilePhone) {
-        updateData.mobilePhone = entraUser.mobilePhone;
+        updateData.mobilePhone = entraUser.mobilePhone?.replaceAll(' ', '');
       }
 
       if (neonUser.profilePicture === null) {
