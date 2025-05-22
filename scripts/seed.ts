@@ -8,7 +8,7 @@ import {
   users_organisation_roles, // Add this
 } from '../db/schema';
 import dotenv from 'dotenv';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 import { db } from '../db';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import sharp from 'sharp';
@@ -42,7 +42,7 @@ interface GraphUser {
   id: string;
 }
 
-async function getAccessToken() {
+export async function getAccessToken() {
   const tenantId = process.env.AUTH_MICROSOFT_ENTRA_ID_TENANT_ID;
   const clientId = process.env.AUTH_MICROSOFT_ENTRA_ID_ID;
   const clientSecret = process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET;
@@ -200,7 +200,7 @@ async function seedGraphUsers() {
           .where(eq(users.userId, user.userId));
       }
 
-      if (graphUser.jobTitle && graphUser.jobTitle.trim()) {
+      if (graphUser.jobTitle) {
         const roleName = graphUser.jobTitle.trim();
 
         // Check if role exists
@@ -223,8 +223,10 @@ async function seedGraphUsers() {
           .select()
           .from(users_organisation_roles)
           .where(
-            (eq(users_organisation_roles.userId, user.userId),
-            eq(users_organisation_roles.organisationRoleId, role.id))
+            and(
+              eq(users_organisation_roles.userId, user.userId),
+              eq(users_organisation_roles.organisationRoleId, role.id)
+            )
           );
 
         if (existingRoleLink.length === 0) {

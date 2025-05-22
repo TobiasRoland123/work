@@ -1,4 +1,4 @@
-import { NewUser } from '@/db/types';
+import { NewUser, UserWithExtras } from '@/db/types';
 import { db } from '@/db';
 import {
   users,
@@ -162,6 +162,50 @@ export const userService = {
     }
     const createdUser = await db.insert(users).values(user).returning();
     return createdUser[0];
+  },
+
+  async updateUser(userId: string, updateData: Partial<UserWithExtras>) {
+    // Only include fields that are actual columns in the users table
+    const allowedFields = [
+      'firstName',
+      'lastName',
+      'email',
+      'mobilePhone',
+      'userId' /* add more if needed */,
+    ];
+    const mainUserFields: Record<string, unknown> = {};
+    for (const key of allowedFields) {
+      if (key in updateData) {
+        mainUserFields[key] = updateData[key as keyof UserWithExtras];
+      }
+    }
+
+    // Update main user fields
+    if (Object.keys(mainUserFields).length > 0) {
+      await db.update(users).set(mainUserFields).where(eq(users.userId, userId));
+    }
+
+    // Handle organisationRoles separately
+    if (updateData.organisationRoles && Array.isArray(updateData.organisationRoles)) {
+      await db.delete(users_organisation_roles).where(eq(users_organisation_roles.userId, userId));
+      for (const roleName of updateData.organisationRoles) {
+        const [role] = await db
+          .select()
+          .from(organisation_roles)
+          .where(eq(organisation_roles.role_name, roleName))
+          .limit(1);
+        if (role) {
+          await db.insert(users_organisation_roles).values({
+            userId,
+            organisationRoleId: role.id,
+          });
+        }
+      }
+    }
+
+    // Handle businessPhoneNumber separately if needed...
+
+    return this.getUserById(userId);
   },
 
   /* * * * * * THIS METHDOD HAS BEEN COMMENTED OUT DUE TO NOT NEEDING TO CREATE LOGIN LOGIC CAUSE OF THE ENTRA IMPLEMENTATION * * * * * */
