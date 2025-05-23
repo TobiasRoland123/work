@@ -9,12 +9,14 @@ type SidebarProviderWrapperProps = {
   children: ReactNode;
   links: Array<linkProps>;
   showStatusSidebar?: boolean;
+  userId?: string;
 };
 
 export function SidebarProviderWrapper({
   children,
   links,
   showStatusSidebar,
+  userId,
 }: SidebarProviderWrapperProps) {
   const [open, setOpen] = useState('navigation');
 
@@ -32,7 +34,7 @@ export function SidebarProviderWrapper({
             setOpen={setOpen}
             className="fixed bottom-5 right-3.5 hidden md:block"
           />
-          <StatusSidebar open={open} setOpen={setOpen} />
+          <StatusSidebar open={open} setOpen={setOpen} userId={userId} />
         </>
       )}
     </SidebarProvider>

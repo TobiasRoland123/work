@@ -13,6 +13,7 @@ export type ButtonProps = {
   link?: linkProps; // If link is present, then the button component will render as a Link
   className?: string;
   handleClick?: () => void;
+  type?: 'button' | 'submit' | 'reset';
 };
 
 const variants = cva(
@@ -37,6 +38,7 @@ export function Button({
   children,
   className,
   handleClick,
+  type = 'button',
 }: ButtonProps) {
   if ((link && link?.href && link?.label) || (link && link.href && children)) {
     return (
@@ -52,6 +54,7 @@ export function Button({
   }
   return (
     <button
+      type={type}
       aria-label={ariaLabel}
       onClick={handleClick}
       className={cn(variants({ variant, className }))}

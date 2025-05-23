@@ -1,5 +1,5 @@
 import { InferSelectModel, InferInsertModel } from 'drizzle-orm';
-import { users, status } from './schema';
+import { users, status, userStatus } from './schema';
 import { Status } from '@/components/ui/Status/Status';
 
 // Type for querying users (SELECT operations)
@@ -20,3 +20,5 @@ export type NewUser = InferInsertModel<typeof users>;
 export type Status = InferSelectModel<typeof status>;
 
 export type NewStatus = InferInsertModel<typeof status>;
+
+export type UserStatus = (typeof userStatus.enumValues)[number];

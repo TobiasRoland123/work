@@ -20,14 +20,23 @@ export const {
     }),
   ],
   callbacks: {
-    async jwt({ token, account, user }) {
+    async jwt({ token, account }) {
       if (account?.access_token) {
         token.access_token = account.access_token;
       }
+
       // Add user id to token if available
+      const res = await fetch('https://graph.microsoft.com/v1.0/me', {
+        headers: {
+          Authorization: `Bearer ${token.access_token}`,
+        },
+      });
+      const user = await res.json();
+
       if (user?.id) {
         token.id = user.id;
       }
+
       return token;
     },
     async authorized({ auth }) {
@@ -39,7 +48,7 @@ export const {
       return {
         ...session,
         accessToken: token.access_token as string,
-        userId: token.id as string,
+        userId: token.id,
       };
     },
   },

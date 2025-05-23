@@ -21,6 +21,7 @@ const sampleProfile: UserWithExtras = {
     time: null,
     fromDate: null,
     toDate: null,
+    createdAt: '2024-01-01T00:00:00Z',
   },
   organisationRoles: ['Product Manager'],
   businessPhoneNumber: undefined,
