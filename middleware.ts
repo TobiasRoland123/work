@@ -62,7 +62,7 @@ export async function middleware(request: NextRequest) {
       }
 
       // Return 401 for unauthenticated API requests
-      if (isAuthenticated) {
+      if (!isAuthenticated) {
         return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
           status: 401,
           headers: {

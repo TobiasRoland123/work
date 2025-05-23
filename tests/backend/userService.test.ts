@@ -2,7 +2,7 @@ import { describe, expect, test, beforeAll, afterAll } from 'vitest';
 import { userService } from '@/lib/services/userService';
 import { NewUser } from '@/db/types';
 import { db } from '@/db';
-import { users } from '@/db/schema';
+import { organisation_roles, users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { Pool } from 'pg';
 
@@ -114,6 +114,35 @@ describe('UserService Tests', () => {
         foundTestUser.businessPhoneNumber === null ||
           typeof foundTestUser.businessPhoneNumber === 'string'
       ).toBe(true);
+    });
+  });
+
+  describe('updateUser', () => {
+    test('should update user fields', async () => {
+      const updatedFirstName = 'UpdatedFirst';
+      const updatedLastName = 'UpdatedLast';
+
+      await userService.updateUser(testUser.userId, {
+        firstName: updatedFirstName,
+        lastName: updatedLastName,
+      });
+
+      const updatedUser = await userService.getUserById(testUser.userId);
+      expect(updatedUser?.firstName).toBe(updatedFirstName);
+      expect(updatedUser?.lastName).toBe(updatedLastName);
+    });
+
+    test('should update organisationRoles', async () => {
+      const newRole = 'TEST_ROLE';
+
+      await db.insert(organisation_roles).values({ role_name: newRole }).onConflictDoNothing?.();
+
+      await userService.updateUser(testUser.userId, {
+        organisationRoles: [newRole],
+      });
+
+      const updatedUser = await userService.getUserById(testUser.userId);
+      expect(updatedUser?.organisationRoles).toContain(newRole);
     });
   });
 

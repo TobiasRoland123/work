@@ -34,9 +34,8 @@ describe('StatusService Tests', () => {
   };
 
   beforeAll(async () => {
-    await db.delete(users).where(eq(users.email, testUser.email));
+    await db.delete(users).where(eq(users.userId, testUser.userId));
     await db.delete(status).where(eq(status.userID, testUser.userId!));
-
     await db.insert(users).values(testUser);
     await db.insert(status).values(testStatus);
   });
