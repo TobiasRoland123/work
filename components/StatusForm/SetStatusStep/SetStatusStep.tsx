@@ -28,7 +28,7 @@ export function SetStatusStep({ setCurrentStep, form }: SetStatusStepProps) {
       name={'status'}
       control={form?.control}
       render={() => (
-        <FormItem className={'flex h-full justify-end flex-col'}>
+        <FormItem className={'flex h-full justify-end flex-col pb-8'}>
           <FormLabel className={'hidden'}>Set your status</FormLabel>
           <FormControl>
             <div className="flex flex-col gap-3.5 text-black">

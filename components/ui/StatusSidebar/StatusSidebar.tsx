@@ -18,7 +18,9 @@ export function StatusSidebar({ open, setOpen, userId }: StatusSidebarProps) {
   return (
     <InsetSheet
       open={open === 'status'}
-      onOpenChange={(isOpen) => setOpen(isOpen ? 'status' : 'navigation')}
+      onOpenChange={(isOpen) => {
+        setOpen(isOpen ? 'status' : 'navigation');
+      }}
       side="right" // Explicitly set side if needed
     >
       {/* Add the wrapper to create space for content */}
@@ -31,6 +33,7 @@ export function StatusSidebar({ open, setOpen, userId }: StatusSidebarProps) {
         <InsetSheetDescription className={'text-white h-full'}>
           <StatusForm
             userId={userId}
+            setOpenSidebar={setOpen}
             closeButton={
               <InsetSheetClose className="cursor-pointer" aria-label="Close sidebar">
                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none">

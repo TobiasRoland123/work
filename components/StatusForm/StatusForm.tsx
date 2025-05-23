@@ -9,8 +9,9 @@ import { userStatus } from '@/db/schema';
 import { SetStatusStep } from '@/components/StatusForm/SetStatusStep/SetStatusStep';
 import { SetDetailsStep } from '@/components/StatusForm/SetDetailsStep/SetDetailsStep';
 import { createNewStatusAction } from '@/app/actions/statusActions';
-import { Status } from '@/components/ui/Status/Status';
+import { Status, StatusProps } from '@/components/ui/Status/Status';
 import { Button } from '@/components/ui/Button/Button';
+import { toast } from 'sonner';
 
 export const formSchema = z
   .object({
@@ -42,9 +43,16 @@ export const formSchema = z
 type StatusFormProps = {
   closeButton?: React.ReactNode;
   userId?: string;
+  setOpenSidebar?: (open: 'navigation' | 'status') => void;
+  setOpenDrawer?: (open: boolean) => void;
 };
 
-export function StatusForm({ closeButton, userId }: StatusFormProps) {
+export function StatusForm({
+  closeButton,
+  userId,
+  setOpenSidebar,
+  setOpenDrawer,
+}: StatusFormProps) {
   // const session = await();
   const [currentStep, setCurrentStep] = useState(1);
   // 2. Add "status" to defaultValues
@@ -54,19 +62,25 @@ export function StatusForm({ closeButton, userId }: StatusFormProps) {
   });
 
   // if (!userId) return <div>Could not update Status.</div>;
-  // 3. Update handler to show status too
+  // 3. Update handler to show status toos
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!userId) return;
-    // eslint-disable-next-line no-console
-    console.log(values);
-    await createNewStatusAction({
-      userID: userId,
-      status: values.status,
-      details: values.detailsString,
-      time: values.actionTime,
-      fromDate: values.fromDate,
-      toDate: values.toDate,
-    });
+
+    try {
+      const newStatus = await createNewStatusAction({
+        userID: userId,
+        status: values.status,
+        details: values.detailsString,
+        time: values.actionTime,
+        fromDate: values.fromDate,
+        toDate: values.toDate,
+      });
+      if (newStatus satisfies StatusProps) toast('Status has been updated✨');
+      else toast('Something went wrong, status not updated 🚫');
+    } catch (error) {
+      // Handle error (e.g., show a notification)
+      console.error(error);
+    }
   }
 
   const currentStatus = form.watch('status');
@@ -85,7 +99,13 @@ export function StatusForm({ closeButton, userId }: StatusFormProps) {
       </header>
       <div className={'h-full pt-6'}>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="h-full flex flex-col gap-8 ">
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              form.handleSubmit(onSubmit)(e);
+            }}
+            className="h-full flex flex-col gap-8 "
+          >
             {currentStep === 1 && <SetStatusStep setCurrentStep={setCurrentStep} form={form} />}
             {currentStep === 2 && (
               <SetDetailsStep
@@ -99,7 +119,18 @@ export function StatusForm({ closeButton, userId }: StatusFormProps) {
                 ariaLabel={'Register Status'}
                 type="submit"
                 variant={'large'}
-                className={'text-black text-2xl mt-12'}
+                className={'text-black text-2xl mt-12 md:mt-auto md: mb-5'}
+                handleClick={() => {
+                  if (setOpenSidebar) {
+                    setOpenSidebar('navigation');
+                    setTimeout(() => {
+                      setCurrentStep(1);
+                    }, 500);
+                  }
+                  if (setOpenDrawer) {
+                    setOpenDrawer(false);
+                  }
+                }}
               >
                 Register
               </Button>

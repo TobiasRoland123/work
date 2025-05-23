@@ -40,6 +40,6 @@ export function getDetailsPlaceholder(status: StatusType) {
   } else if (status === 'VACATION') {
     return 'ex. where to? 🏖️✈️';
   } else if (status === 'ON_LEAVE') {
-    return 'eg. why? if you want to share 🌴🙂';
+    return 'eg. why? (if you want to share)';
   } else return 'Details... 📝';
 }

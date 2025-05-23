@@ -17,7 +17,7 @@ type SetDetailsStepProps = {
 export function SetDetailsStep({ form }: SetDetailsStepProps) {
   const chosenStatus = form.watch('status');
   return (
-    <>
+    <div className={'md:pt-8 flex flex-col gap-8'}>
       {chosenStatus === 'ON_LEAVE' || chosenStatus === 'VACATION' ? (
         <FormField
           name={'fromDate'}
@@ -53,7 +53,7 @@ export function SetDetailsStep({ form }: SetDetailsStepProps) {
           )}
         />
       ) : null}
-      {chosenStatus !== 'ON_LEAVE' && chosenStatus !== 'SICK' && chosenStatus !== undefined ? (
+      {chosenStatus !== 'SICK' && chosenStatus !== undefined ? (
         <FormField
           name={'detailsString'}
           control={form?.control}
@@ -79,6 +79,6 @@ export function SetDetailsStep({ form }: SetDetailsStepProps) {
       {/*>*/}
       {/*  Go Back*/}
       {/*</Button>*/}
-    </>
+    </div>
   );
 }
