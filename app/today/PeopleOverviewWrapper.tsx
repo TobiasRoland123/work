@@ -11,32 +11,34 @@ export const PeopleOverviewWrapper = (props: {
   const [officeStatus, setOfficeStatus] = useState(props.initialOfficeStatus || false);
   const [profiles] = useState(props.initialProfiles || []);
 
-  const filteredProfiles = officeStatus
-    ? profiles.filter(
-        (profile) =>
-          profile.status === null ||
-          profile.status?.status === 'IN_OFFICE' ||
-          (profile.status?.status === 'IN_LATE' &&
-            profile.status.time !== null &&
-            profile.status.time < new Date(Date.now())) ||
-          (profile.status?.status === 'LEAVING_EARLY' &&
-            profile.status.time !== null &&
-            profile.status.time > new Date(Date.now()))
-      )
-    : profiles.filter(
-        (profile) =>
-          (profile.status !== null && profile.status?.status !== 'IN_OFFICE') ||
-          (profile.status?.status === 'IN_LATE' &&
-            profile.status.time !== null &&
-            profile.status.time > new Date(Date.now())) ||
-          (profile.status?.status === 'LEAVING_EARLY' &&
-            profile.status.time !== null &&
-            profile.status.time < new Date(Date.now()))
-      );
+  function getProfilesInAndOutOfOffice(profiles: Array<UserWithExtras>) {
+    const profilesInOffice: UserWithExtras[] = [];
+    const profilesOutOfOffice: UserWithExtras[] = [];
+
+    profiles.map((profile) => {
+      if (
+        profile.status === null ||
+        profile.status?.status === 'IN_OFFICE' ||
+        (profile.status?.status === 'IN_LATE' &&
+          profile.status.time !== null &&
+          profile.status.time < new Date(Date.now())) ||
+        (profile.status?.status === 'LEAVING_EARLY' &&
+          profile.status.time !== null &&
+          profile.status.time > new Date(Date.now()))
+      ) {
+        profilesInOffice.push(profile);
+      } else {
+        profilesOutOfOffice.push(profile);
+      }
+    });
+    return [profilesInOffice, profilesOutOfOffice];
+  }
+
+  const [profilesInOffice, profilesOutOfOffice] = getProfilesInAndOutOfOffice(profiles);
 
   return (
     <PeopleOverview
-      profiles={filteredProfiles}
+      profiles={officeStatus ? profilesInOffice : profilesOutOfOffice}
       officeStatus={officeStatus}
       setOfficeStatus={setOfficeStatus}
       showStatus
