@@ -145,7 +145,7 @@ function InsetSheetContent({
         data-slot="inset-sheet-content"
         data-state={open ? 'open' : 'closed'}
         className={cn(
-          'bg-background fixed z-50 flex flex-col gap-4 shadow-lg transition-transform duration-200 ease-in-out',
+          'bg-background fixed z-50 flex h-full flex-col gap-4 shadow-lg transition-transform duration-200 ease-in-out',
           sideVariants[activeSide],
           getDimensions(),
           className
@@ -259,9 +259,9 @@ function InsetSheetDescription({
   ...props
 }: React.HTMLAttributes<HTMLParagraphElement>) {
   return (
-    <p
+    <div
       data-slot="inset-sheet-description"
-      className={cn('text-muted-foreground text-sm', className)}
+      className={cn('text-muted-foreground', className)}
       {...props}
     />
   );
@@ -276,15 +276,15 @@ interface InsetSheetCloseProps {
 function InsetSheetClose({ children, className, ...props }: InsetSheetCloseProps) {
   const { onOpenChange } = useInsetSheet();
   return (
-    <Button
+    <button
       className={className}
-      ariaLabel="Close inset sheet button"
+      aria-label="Close inset sheet button"
       data-slot="inset-sheet-close"
-      handleClick={() => onOpenChange(false)}
+      onClick={() => onOpenChange(false)}
       {...props}
     >
       {children}
-    </Button>
+    </button>
   );
 }
 

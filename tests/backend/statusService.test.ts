@@ -17,7 +17,7 @@ const pool = new Pool({
 describe('StatusService Tests', () => {
   const testUser: NewUser = {
     id: 999999999,
-    userId: 'b0bb8dda-976d-4992-8922-4fef721c4b09',
+    userId: 'b0bgfdda-976d-4962-8942-4fef721cddf9',
     firstName: 'Test',
     lastName: 'User',
     email: 'testuser@example.com',
@@ -28,7 +28,7 @@ describe('StatusService Tests', () => {
     userID: testUser.userId!,
     status: 'FROM_HOME',
     details: 'Test status details',
-    time: new Date().toISOString(),
+    time: new Date().toTimeString().slice(0, 5), // 'HH:MM' format like '11:15'
     fromDate: new Date().toISOString().split('T')[0], // '2023-05-15' format
     toDate: '2025-05-15', // Proper ISO date format (YYYY-MM-DD)
   };
@@ -57,7 +57,7 @@ describe('StatusService Tests', () => {
       userID: testUser.userId!,
       status: 'FROM_HOME',
       details: 'Test status details',
-      time: new Date().toISOString(),
+      time: new Date().toTimeString().slice(0, 5),
       fromDate: new Date().toISOString().split('T')[0], // '2023-05-15' format
       toDate: '2025-05-15', // Proper ISO date format (YYYY-MM-DD)
     };

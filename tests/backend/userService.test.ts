@@ -16,7 +16,7 @@ const pool = new Pool({
 
 describe('UserService Tests', () => {
   const testUser: NewUser = {
-    userId: 'b0bb8dda-976d-4992-8922-4fef721c4b44',
+    userId: 'b0bgfdda-976d-4962-8952-4fef721cddf9',
     firstName: 'Test',
     lastName: 'User',
     email: 'testuuser@example.com',

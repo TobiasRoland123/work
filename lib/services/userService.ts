@@ -114,7 +114,7 @@ export const userService = {
           .select()
           .from(status)
           .where(eq(status.userID, user.userId))
-          .orderBy(desc(status.time))
+          .orderBy(desc(status.createdAt))
           .limit(1);
 
         // Fetch all organisation roles for this user
