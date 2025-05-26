@@ -1,5 +1,7 @@
 'use client';
 import PeopleOverview from '@/components/ui/PeopleOverview/PeopleOverview';
+import { useCallback } from 'react';
+import { useWebSocket } from '@/hooks/useWebSocket';
 
 import { UserWithExtras } from '@/db/types';
 import { useState } from 'react';
@@ -9,7 +11,32 @@ export const PeopleOverviewWrapper = (props: {
   initialOfficeStatus?: boolean;
 }) => {
   const [officeStatus, setOfficeStatus] = useState(props.initialOfficeStatus || false);
-  const [profiles] = useState(props.initialProfiles || []);
+  const [profiles, setProfiles] = useState(props.initialProfiles || []);
+
+  const refetchProfiles = useCallback(async () => {
+    const res = await fetch('/api/users');
+    if (res.ok) {
+      setProfiles(await res.json());
+    }
+  }, []);
+
+  const handleMessage = useCallback(
+    (msg: string) => {
+      try {
+        const data = JSON.parse(msg);
+        if (data.type === 'STATUS_UPDATE' || data.type === 'USER_UPDATE') {
+          refetchProfiles();
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    },
+    [refetchProfiles]
+  );
+  const wsUrl =
+    process.env.NODE_ENV === 'production' ? process.env.NEXT_PUBLIC_WS_URL! : 'ws://localhost:3001';
+
+  useWebSocket(wsUrl, handleMessage);
 
   const filteredProfiles = officeStatus
     ? profiles.filter((profile) => profile.status?.status === 'IN_OFFICE')
