@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { XIcon } from 'lucide-react';
 
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/className';
 import { Button } from '../Button/Button';
 
 // Context to manage the sheet state
