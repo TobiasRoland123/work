@@ -1,24 +1,42 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
-
 import { defineConfig } from 'vitest/config';
-
 import { storybookTest } from '@storybook/experimental-addon-test/vitest-plugin';
 
 const dirname =
   typeof __dirname !== 'undefined' ? __dirname : path.dirname(fileURLToPath(import.meta.url));
 
-// More info at: https://storybook.js.org/docs/writing-tests/test-addon
 export default defineConfig({
   test: {
+    exclude: [
+      '.next',
+      'node_modules',
+      'dist',
+      'coverage',
+      'storybook-static',
+      'out', // Exclude Next.js build output
+      '.cache', // Exclude any temp/caching folders if they exist
+    ],
+    coverage: {
+      provider: 'v8',
+      include: [
+        'app/**/*.{ts,tsx}',
+        'components/**/*.{ts,tsx}',
+        'lib/**/*.{ts,tsx}',
+        'scripts/**/*.{ts,tsx}',
+        'utils/**/*.{ts,tsx}',
+      ],
+      exclude: [
+        'components/ui/**',
+        '**/*.stories.tsx',
+        // Add more patterns here as needed
+      ],
+      reporter: ['text', 'json', 'html'],
+    },
     workspace: [
       {
         extends: true,
-        plugins: [
-          // The plugin will run tests for the stories defined in your Storybook config
-          // See options at: https://storybook.js.org/docs/writing-tests/test-addon#storybooktest
-          storybookTest({ configDir: path.join(dirname, '.storybook') }),
-        ],
+        plugins: [storybookTest({ configDir: path.join(dirname, '.storybook') })],
         test: {
           name: 'storybook',
           browser: {
@@ -28,6 +46,7 @@ export default defineConfig({
             provider: 'playwright',
           },
           setupFiles: ['.storybook/vitest.setup.ts'],
+          exclude: ['.next', 'dist', 'storybook-static', 'coverage', 'out', '**/*.stories.tsx'],
         },
       },
       {
@@ -38,10 +57,18 @@ export default defineConfig({
           },
         },
         test: {
-          exclude: ['**/*.stories.tsx'],
-          include: ['tests/backend/*.test.ts'],
           name: 'backend',
           environment: 'node',
+          include: ['tests/backend/*.test.ts'],
+          exclude: [
+            '.next',
+            'dist',
+            'coverage',
+            'storybook-static',
+            'out',
+            'node_modules',
+            '**/*.stories.tsx',
+          ],
         },
       },
     ],
