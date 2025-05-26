@@ -7,12 +7,9 @@ import { DayPicker } from 'react-day-picker';
 import { cn } from '@/lib/className';
 import { buttonVariants } from '@/components/ui/button';
 
-function Calendar({
-  className,
-  classNames,
-  showOutsideDays = true,
-  ...props
-}: React.ComponentProps<typeof DayPicker>) {
+import type { DayPickerProps } from 'react-day-picker';
+
+function Calendar({ className, classNames, showOutsideDays = true, ...props }: DayPickerProps) {
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
@@ -57,10 +54,10 @@ function Calendar({
         ...classNames,
       }}
       components={{
-        IconLeft: ({ className, ...props }) => (
+        IconLeft: ({ className, ...props }: React.SVGProps<SVGSVGElement>) => (
           <ChevronLeft className={cn('size-4', className)} {...props} />
         ),
-        IconRight: ({ className, ...props }) => (
+        IconRight: ({ className, ...props }: React.SVGProps<SVGSVGElement>) => (
           <ChevronRight className={cn('size-4', className)} {...props} />
         ),
       }}
