@@ -146,6 +146,39 @@ describe('UserService Tests', () => {
     });
   });
 
+  describe('createUser', () => {
+    test('should create a new user', async () => {
+      const newUser: NewUser = {
+        userId: 'new-user-id',
+        firstName: 'New',
+        lastName: 'User',
+        email: 'new-user@test.com',
+        systemRole: 'USER',
+      };
+      const createdUser = await userService.createUser(newUser);
+      expect(createdUser).toBeDefined();
+      expect(createdUser.email).toBe(newUser.email);
+      expect(createdUser.userId).toBe(newUser.userId);
+      // Clean up created user
+      await db.delete(users).where(eq(users.userId, newUser.userId));
+      await db.delete(users).where(eq(users.email, newUser.email));
+    });
+    test('should throw error when creating user with existing email', async () => {
+      const existingUser: NewUser = {
+        userId: 'existing-user-id',
+        firstName: 'Existing',
+        lastName: 'User',
+        email: 'new-user@test.com',
+        systemRole: 'USER',
+      };
+      await db.insert(users).values(existingUser).onConflictDoNothing?.();
+      await expect(userService.createUser(existingUser)).rejects.toThrow('User already exists');
+      // Clean up created user
+      await db.delete(users).where(eq(users.userId, existingUser.userId));
+      await db.delete(users).where(eq(users.email, existingUser.email));
+    });
+  });
+
   // describe('loginUser', () => {
   //   test('should successfully login with valid credentials', async () => {
   //     const user = await userService.loginUser(testUser.email, testUser.password);
