@@ -14,18 +14,15 @@ export default defineConfig({
       'dist',
       'coverage',
       'storybook-static',
+      'scripts',
+      'app', // Exclude Next.js app directory - this is where your pages and components live (This is due to the storyb
+      'components', // Exclude shared components (This is due to storybook setup)
       'out', // Exclude Next.js build output
       '.cache', // Exclude any temp/caching folders if they exist
     ],
     coverage: {
       provider: 'v8',
-      include: [
-        'app/**/*.{ts,tsx}',
-        'components/**/*.{ts,tsx}',
-        'lib/**/*.{ts,tsx}',
-        'scripts/**/*.{ts,tsx}',
-        'utils/**/*.{ts,tsx}',
-      ],
+      include: ['lib/**/*.{ts,tsx}', 'utils/**/*.{ts,tsx}'],
       exclude: [
         'components/ui/**',
         '**/*.stories.tsx',
@@ -59,7 +56,7 @@ export default defineConfig({
         test: {
           name: 'backend',
           environment: 'node',
-          include: ['tests/backend/*.test.ts'],
+          include: ['tests/backend/**/*.test.ts'],
           exclude: [
             '.next',
             'dist',
