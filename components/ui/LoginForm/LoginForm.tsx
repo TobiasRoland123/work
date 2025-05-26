@@ -42,7 +42,7 @@ const LoginForm = () => {
         <div className="relative flex flex-col items-center w-full">
           <input type="hidden" name="csrfToken" value={csrfToken} />
           <input type="hidden" name="callbackUrl" value="/" />
-          <Button ariaLabel="log in" variant="large">
+          <Button ariaLabel="Log ind" variant="large" type={'submit'}>
             {'Log ind'}
           </Button>
         </div>
