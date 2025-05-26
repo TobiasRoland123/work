@@ -12,9 +12,26 @@ export const PeopleOverviewWrapper = (props: {
   const [profiles] = useState(props.initialProfiles || []);
 
   const filteredProfiles = officeStatus
-    ? profiles.filter((profile) => profile.status?.status === 'IN_OFFICE')
+    ? profiles.filter(
+        (profile) =>
+          profile.status === null ||
+          profile.status?.status === 'IN_OFFICE' ||
+          (profile.status?.status === 'IN_LATE' &&
+            profile.status.time !== null &&
+            profile.status.time < new Date(Date.now())) ||
+          (profile.status?.status === 'LEAVING_EARLY' &&
+            profile.status.time !== null &&
+            profile.status.time > new Date(Date.now()))
+      )
     : profiles.filter(
-        (profile) => profile.status?.status && profile.status?.status !== 'IN_OFFICE'
+        (profile) =>
+          (profile.status !== null && profile.status?.status !== 'IN_OFFICE') ||
+          (profile.status?.status === 'IN_LATE' &&
+            profile.status.time !== null &&
+            profile.status.time > new Date(Date.now())) ||
+          (profile.status?.status === 'LEAVING_EARLY' &&
+            profile.status.time !== null &&
+            profile.status.time < new Date(Date.now()))
       );
 
   return (

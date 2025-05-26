@@ -1,0 +1,1 @@
+ALTER TABLE "status" ALTER COLUMN "time" SET DATA TYPE timestamp;

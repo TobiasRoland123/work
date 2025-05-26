@@ -12,6 +12,7 @@ import { createNewStatusAction } from '@/app/actions/statusActions';
 import { Status } from '@/components/ui/Status/Status';
 import { Button } from '@/components/ui/Button/Button';
 import { toast } from 'sonner';
+import { timeStringToDate } from '@/utils/TimeConverter';
 
 export const formSchema = z
   .object({
@@ -71,7 +72,7 @@ export function StatusForm({
         userID: userId,
         status: values.status,
         details: values.detailsString,
-        time: values.actionTime,
+        time: values.actionTime ? timeStringToDate(values.actionTime) : null,
         fromDate: values.fromDate,
         toDate: values.toDate,
       });

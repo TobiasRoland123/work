@@ -148,6 +148,20 @@
       "when": 1747834350605,
       "tag": "0020_majestic_alex_wilder",
       "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1748266272280,
+      "tag": "0021_sad_dragon_man",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1748266535640,
+      "tag": "0022_tricky_rafael_vega",
+      "breakpoints": true
     }
   ]
 }
