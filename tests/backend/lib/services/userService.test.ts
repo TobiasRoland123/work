@@ -178,25 +178,4 @@ describe('UserService Tests', () => {
       await db.delete(users).where(eq(users.email, existingUser.email));
     });
   });
-
-  // describe('loginUser', () => {
-  //   test('should successfully login with valid credentials', async () => {
-  //     const user = await userService.loginUser(testUser.email, testUser.password);
-
-  //     expect(user).toBeDefined();
-  //     expect(user.id).toBe(testUserId);
-  //   });
-
-  //   test('should throw error with invalid email', async () => {
-  //     await expect(userService.loginUser('wrong@example.com', testUser.password)).rejects.toThrow(
-  //       'User not found'
-  //     );
-  //   });
-
-  //   test('should throw error with invalid password', async () => {
-  //     await expect(userService.loginUser(testUser.email, 'wrongpassword')).rejects.toThrow(
-  //       'Invalid credentials'
-  //     );
-  //   });
-  // });
 });
