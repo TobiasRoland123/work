@@ -9,7 +9,7 @@ import { userStatus } from '@/db/schema';
 import { SetStatusStep } from '@/components/StatusForm/SetStatusStep/SetStatusStep';
 import { SetDetailsStep } from '@/components/StatusForm/SetDetailsStep/SetDetailsStep';
 import { createNewStatusAction } from '@/app/actions/statusActions';
-import { Status, StatusProps } from '@/components/ui/Status/Status';
+import { Status } from '@/components/ui/Status/Status';
 import { Button } from '@/components/ui/Button/Button';
 import { toast } from 'sonner';
 
@@ -75,7 +75,7 @@ export function StatusForm({
         fromDate: values.fromDate,
         toDate: values.toDate,
       });
-      if (newStatus satisfies StatusProps) toast('Status has been updated✨');
+      if (newStatus) toast('Status has been updated✨');
       else toast('Something went wrong, status not updated 🚫');
     } catch (error) {
       // Handle error (e.g., show a notification)

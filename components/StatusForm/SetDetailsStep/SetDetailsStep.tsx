@@ -70,15 +70,6 @@ export function SetDetailsStep({ form }: SetDetailsStepProps) {
           )}
         />
       ) : null}
-
-      {/*<Button*/}
-      {/*  ariaLabel={'Press to go back'}*/}
-      {/*  handleClick={() => {*/}
-      {/*    if (currentStep && setCurrentStep) setCurrentStep(currentStep - 1);*/}
-      {/*  }}*/}
-      {/*>*/}
-      {/*  Go Back*/}
-      {/*</Button>*/}
     </div>
   );
 }
