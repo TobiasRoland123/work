@@ -22,6 +22,12 @@
       "@/*": ["./*"]
     }
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-  "exclude": ["node_modules"]
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    "node_modules/.pnpm/vitest@3.1.3_@types+node@20.17.45_@vitest+browser@3.1.3_jiti@2.4.2_lightningcss@1.29.2_terser_7l5k7ibrzwdplu4olbljrsdcqi/node_modules/vitest/globals.d.ts"
+  ],
+  "exclude": ["node_modules", ".next"]
 }
