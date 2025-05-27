@@ -84,7 +84,7 @@ export const status = pgTable('status', {
     .references(() => users.userId, { onDelete: 'cascade' }),
   status: userStatus('status').default('IN_OFFICE').notNull(),
   details: text('details'),
-  time: time('time'),
+  time: timestamp('time'),
   fromDate: date('from_date'),
   toDate: date('to_date'),
   createdAt: timestamp('created_at', { mode: 'string' }).defaultNow().notNull(),

@@ -28,7 +28,7 @@ describe('StatusService Tests', () => {
     userID: testUser.userId!,
     status: 'FROM_HOME',
     details: 'Test status details',
-    time: new Date().toTimeString().slice(0, 5), // 'HH:MM' format like '11:15'
+    time: new Date(Date.now()),
     fromDate: new Date().toISOString().split('T')[0], // '2023-05-15' format
     toDate: '2025-05-15', // Proper ISO date format (YYYY-MM-DD)
   };
@@ -57,7 +57,7 @@ describe('StatusService Tests', () => {
       userID: testUser.userId!,
       status: 'FROM_HOME',
       details: 'Test status details',
-      time: new Date().toTimeString().slice(0, 5),
+      time: new Date(Date.now()),
       fromDate: new Date().toISOString().split('T')[0], // '2023-05-15' format
       toDate: '2025-05-15', // Proper ISO date format (YYYY-MM-DD)
     };
