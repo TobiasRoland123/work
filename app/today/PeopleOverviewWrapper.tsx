@@ -5,6 +5,7 @@ import { useWebSocket } from '@/hooks/useWebSocket';
 
 import { UserWithExtras } from '@/db/types';
 import { useState } from 'react';
+import { getAllUsersAction } from '../actions/userActions';
 
 export const PeopleOverviewWrapper = (props: {
   initialProfiles: UserWithExtras[];
@@ -14,9 +15,9 @@ export const PeopleOverviewWrapper = (props: {
   const [profiles, setProfiles] = useState(props.initialProfiles || []);
 
   const refetchProfiles = useCallback(async () => {
-    const res = await fetch('/api/users');
-    if (res.ok) {
-      setProfiles(await res.json());
+    const users = await getAllUsersAction();
+    if (users) {
+      setProfiles(users);
     }
   }, []);
 
