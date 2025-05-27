@@ -1,6 +1,6 @@
 import { linkProps } from '@/types/link';
 import Link from 'next/link';
-import { cn } from '@/lib/utils';
+import { cn } from '@/lib/className';
 import { cva } from 'class-variance-authority';
 import React from 'react';
 import './button.css';

@@ -6,6 +6,7 @@ import React from 'react';
 
 export default async function Home() {
   const users: UserWithExtras[] = await userService.getAllUsers();
+
   return (
     <div>
       <PeopleOverviewWrapper initialProfiles={users} initialOfficeStatus />

@@ -1,8 +1,6 @@
 import React from 'react';
 import { ProfileList } from '../ProfileList/ProfileList';
-
 import PeopleCounter from '../PeopleCounter/PeopleCounter';
-
 import { UserWithExtras } from '@/db/types';
 
 type PeopleOverviewProps = {
