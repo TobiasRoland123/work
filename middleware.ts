@@ -18,7 +18,31 @@ const DEFAULT_UNAUTH_REDIRECT = '/login';
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-  const authData = await auth();
+  let authData;
+  try {
+    authData = await auth();
+  } catch (error) {
+    console.error('Error during authentication:', error);
+
+    // Return 401 for API routes on error
+    if (pathname.startsWith('/api/')) {
+      return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    }
+
+    // Redirect to login page if not already on a public path
+    const isPublicPath = PUBLIC_PATHS.some(
+      (path) => pathname === path || pathname.startsWith(`${path}/`)
+    );
+    if (!isPublicPath) {
+      const url = new URL(DEFAULT_UNAUTH_REDIRECT, request.url);
+      return NextResponse.redirect(url);
+    }
+  }
   const isAuthenticated = authData?.user;
 
   // Check if the current path is public
