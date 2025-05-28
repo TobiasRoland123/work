@@ -18,6 +18,32 @@ const DEFAULT_UNAUTH_REDIRECT = '/login';
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
+  let authData;
+  try {
+    authData = await auth();
+  } catch (error) {
+    console.error('Error during authentication:', error);
+
+    // Return 401 for API routes on error
+    if (pathname.startsWith('/api/')) {
+      return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+    }
+
+    // Redirect to login page if not already on a public path
+    const isPublicPath = PUBLIC_PATHS.some(
+      (path) => pathname === path || pathname.startsWith(`${path}/`)
+    );
+    if (!isPublicPath) {
+      const url = new URL(DEFAULT_UNAUTH_REDIRECT, request.url);
+      return NextResponse.redirect(url);
+    }
+  }
+  const isAuthenticated = authData?.user;
 
   // Check if the current path is public
   const isPublicPath = PUBLIC_PATHS.some(
@@ -29,15 +55,16 @@ export async function middleware(request: NextRequest) {
   // Check if the path is an API route
   const isApiRoute = pathname.startsWith('/api/');
 
-  const authData = await auth();
-
   // Create a response object we'll use for redirection if needed
   const response = NextResponse.next();
 
-  try {
-    // User is authenticated if either Auth.js has a user OR iron session is logged in
-    const isAuthenticated = authData?.user;
+  if (pathname === '/') {
+    return NextResponse.redirect(
+      new URL(isAuthenticated ? DEFAULT_AUTH_REDIRECT : DEFAULT_UNAUTH_REDIRECT, request.url)
+    );
+  }
 
+  try {
     // Check if session has expired
     let isSessionExpired = false;
     if (authData?.expires) {
