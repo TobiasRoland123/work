@@ -8,7 +8,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
   return (
     <main>
       <SidebarProviderWrapper links={menuLinks}>
-        {' '}
         <Suspense fallback={<Loading />}>{children}</Suspense>
       </SidebarProviderWrapper>
 
