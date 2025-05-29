@@ -26,8 +26,11 @@ export default function Loading() {
 
               <div className="flex flex-col gap-3.5 w-full min-w-0 pt-1">
                 {/* Name */}
-                <Skeleton className="w-[30ch] h-6 text-24 rounded-full" />
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap gap-2">
+                  <Skeleton className="w-[10ch] h-6 text-2xl rounded-full" />
+                  <Skeleton className="w-[12ch] h-6 text-2xl rounded-full" />
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
                   {/* Title */}
                   <Skeleton className="w-[20ch] text-base h-4 rounded-full" />
                 </div>
