@@ -5,9 +5,10 @@ import { StatusDrawer } from '@/components/ui/StatusDrawer/StatusDrawer';
 type MobileNavigationProps = {
   linkList?: Array<linkProps>;
   userId?: string;
+  onToday?: boolean;
 };
 
-export function MobileNavigation({ linkList, userId }: MobileNavigationProps) {
+export function MobileNavigation({ linkList, userId, onToday = false }: MobileNavigationProps) {
   return (
     <>
       <nav className={'bg-black  md:hidden w-full text-white sticky bottom-0 font-mono  px-6 py-5'}>
@@ -24,7 +25,7 @@ export function MobileNavigation({ linkList, userId }: MobileNavigationProps) {
             })}
         </ul>
       </nav>
-      <StatusDrawer userId={userId} />
+      {onToday && <StatusDrawer userId={userId} />}
     </>
   );
 }
