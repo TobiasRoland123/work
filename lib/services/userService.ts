@@ -242,6 +242,20 @@ export const userService = {
     return this.getUserById(userId);
   },
 
+  async deleteUser(userId: string) {
+    // Delete related organisation roles
+    await db.delete(users_organisation_roles).where(eq(users_organisation_roles.userId, userId));
+    // Delete related business phone numbers
+    await db
+      .delete(users_business_phone_numbers)
+      .where(eq(users_business_phone_numbers.userId, userId));
+    // Delete related statuses
+    await db.delete(status).where(eq(status.userID, userId));
+    // Finally, delete the user
+    await db.delete(users).where(eq(users.userId, userId));
+    return { userId, deleted: true };
+  },
+
   /* * * * * * THIS METHDOD HAS BEEN COMMENTED OUT DUE TO NOT NEEDING TO CREATE LOGIN LOGIC CAUSE OF THE ENTRA IMPLEMENTATION * * * * * */
   // async loginUser(email: string, password: string) {
   //   const user = await this.getUserByEmail(email);
