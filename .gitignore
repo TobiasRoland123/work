@@ -40,7 +40,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-
 # webstorm
 .idea
 *storybook.log
+
+# playwright
+test-results/
