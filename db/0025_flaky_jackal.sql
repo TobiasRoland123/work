@@ -1,0 +1,2 @@
+ALTER TABLE "users" ADD COLUMN "organisation" integer;--> statement-breakpoint
+ALTER TABLE "users" ADD CONSTRAINT "users_organisation_organisations_id_fk" FOREIGN KEY ("organisation") REFERENCES "public"."organisations"("id") ON DELETE no action ON UPDATE no action;

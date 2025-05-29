@@ -7,6 +7,7 @@ import {
   organisation_roles,
   users_business_phone_numbers,
   business_phone_numbers,
+  organisations,
 } from '@/db/schema';
 import { desc, eq } from 'drizzle-orm';
 
@@ -19,6 +20,16 @@ export const userService = {
     const user = userArr[0];
     if (!user) return null;
 
+    // Fetch organisation roles for this user
+    let organisation = null;
+    if (user.organisationId !== null && user.organisationId !== undefined) {
+      [organisation] = await db
+        .select({ id: organisations.id, organisationName: organisations.organisationName })
+        .from(organisations)
+        .where(eq(organisations.id, user.organisationId))
+        .limit(1);
+    }
+
     // Fetch latest status row for this user
     const [latestStatus] = await db
       .select()
@@ -56,6 +67,7 @@ export const userService = {
         .map((r) => r.role)
         .filter((role): role is string => typeof role === 'string'),
       businessPhoneNumber,
+      organisation: organisation?.organisationName ?? null,
     };
   },
 
@@ -64,6 +76,16 @@ export const userService = {
     const user = userArr[0];
     if (!user) return null;
 
+    // Fetch organisation roles for this user
+    let organisation = null;
+    if (user.organisationId !== null && user.organisationId !== undefined) {
+      [organisation] = await db
+        .select({ id: organisations.id, organisationName: organisations.organisationName })
+        .from(organisations)
+        .where(eq(organisations.id, user.organisationId))
+        .limit(1);
+    }
+
     // Fetch latest status row for this user
     const [latestStatus] = await db
       .select()
@@ -101,6 +123,7 @@ export const userService = {
         .map((r) => r.role)
         .filter((role): role is string => typeof role === 'string'),
       businessPhoneNumber,
+      organisation: organisation?.organisationName ?? null,
     };
   },
 
@@ -109,6 +132,16 @@ export const userService = {
 
     const usersWithExtras = await Promise.all(
       usersList.map(async (user) => {
+        // Fetch organisation roles for this user
+        let organisation = null;
+        if (user.organisationId !== null && user.organisationId !== undefined) {
+          [organisation] = await db
+            .select({ id: organisations.id, organisationName: organisations.organisationName })
+            .from(organisations)
+            .where(eq(organisations.id, user.organisationId))
+            .limit(1);
+        }
+
         // Fetch latest status row for this user
         const [latestStatus] = await db
           .select()
@@ -146,6 +179,7 @@ export const userService = {
             .map((r) => r.role)
             .filter((role): role is string => typeof role === 'string'),
           businessPhoneNumber,
+          organisation: organisation?.organisationName ?? null,
         };
       })
     );

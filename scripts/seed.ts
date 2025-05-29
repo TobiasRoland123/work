@@ -194,6 +194,7 @@ async function seedGraphUsers() {
             mobilePhone: graphUser.mobilePhone?.replaceAll(' ', '') || null,
             ...(profilePicture && profilePicture !== user.profilePicture ? { profilePicture } : {}),
             userId: graphUser.id,
+            organisationId: organisation.id,
           })
           .where(eq(users.userId, user.userId));
       }

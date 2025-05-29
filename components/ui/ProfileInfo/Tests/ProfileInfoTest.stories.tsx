@@ -13,6 +13,7 @@ const mockUser: UserWithExtras = {
   systemRole: 'USER',
   createdAt: '2024-01-01T00:00:00Z',
   organisationId: 1,
+  organisation: 'Charlie Tango',
   mobilePhone: '+45 87 18 91 28',
   profilePicture: 'https://picsum.photos/200',
   status: {
@@ -51,7 +52,7 @@ export const RendersAllFields: Story = {
       canvas.getByRole('heading', { name: `${mockUser.firstName} ${mockUser.lastName}` })
     ).toBeInTheDocument();
     await expect(canvas.getByText('Department')).toBeInTheDocument();
-    await expect(canvas.getByText(String(mockUser.organisationId))).toBeInTheDocument();
+    await expect(canvas.getByText(String(mockUser.organisation))).toBeInTheDocument();
     await expect(canvas.getByText('Title')).toBeInTheDocument();
     await expect(canvas.getByText(mockUser.organisationRoles?.[0] ?? '')).toBeInTheDocument();
     await expect(canvas.getByText('Phone')).toBeInTheDocument();
@@ -72,6 +73,7 @@ export const RendersWithMissingOptionalFields: Story = {
       systemRole: 'USER',
       createdAt: '2024-01-01T00:00:00Z',
       organisationId: null,
+      organisation: null,
       mobilePhone: '+45 87 18 91 28',
       profilePicture: 'https://picsum.photos/200',
       status: {
@@ -110,6 +112,7 @@ export const HandlesEmptyValues: Story = {
       systemRole: 'USER',
       createdAt: '2024-01-01T00:00:00Z',
       organisationId: null,
+      organisation: null,
       mobilePhone: '',
       profilePicture: '',
       status: {
