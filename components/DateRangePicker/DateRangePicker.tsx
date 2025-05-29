@@ -12,7 +12,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { UseFormReturn } from 'react-hook-form';
 import { z } from 'zod';
 import { formSchema } from '@/components/StatusForm/StatusForm';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 type DateRangePickerProps = {
   className?: string;
@@ -22,16 +22,23 @@ type DateRangePickerProps = {
 export function DatePickerWithRange({ className, form }: DateRangePickerProps) {
   const chosenStatus = form.watch('status');
 
-  const [date, setDate] = React.useState<DateRange | undefined>({
+  const [date, setDate] = useState<DateRange | undefined>({
     from: new Date(),
     to: addDays(new Date(), 7),
   });
 
   useEffect(() => {
+    if (chosenStatus !== 'ON_LEAVE' && chosenStatus !== 'VACATION') return;
     if (date != undefined && date.from && date.to) {
       // Convert to ISO date-only strings: 'YYYY-MM-DD'
+
+      console.log('dateFrom:', date.from);
+      console.log('dateTo:', date.to);
       const fromDate = date.from.toISOString().slice(0, 10);
       const toDate = date.to.toISOString().slice(0, 10);
+
+      console.log('fromDate:', fromDate);
+      console.log('toDate:', toDate);
 
       form.setValue('fromDate', fromDate);
       form.setValue('toDate', toDate);

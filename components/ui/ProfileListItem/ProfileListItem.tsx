@@ -39,14 +39,17 @@ export function ProfileListItem({ user, showStatus = false }: ProfileListItemPro
 
           {showStatus && user.status && <Status status={user.status.status} />}
           {user?.status?.time && <Status status={user.status.status}>{formatedTimed}</Status>}
+          {user?.status?.fromDate && user?.status?.toDate && (
+            <Status
+              status={user.status.status}
+            >{`${user?.status?.fromDate}-${user?.status?.toDate}`}</Status>
+          )}
         </div>
-        {user.status && (
-          <div className={' mt-2 '}>
+        {user?.status?.details && (
+          <div className={'mt-2'}>
             <small>Details:</small>
             <div className={'flex justify-between'}>
-              {user.status.details && (
-                <p className="max-w-[50ch] bg-white-blue p-2 rounded-md">{user.status.details}</p>
-              )}
+              <p className="max-w-[50ch] bg-white-blue p-2 rounded-md">{user.status.details}</p>
             </div>
           </div>
         )}
