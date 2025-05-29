@@ -7,7 +7,7 @@ const PUBLIC_PATHS = [
   '/login',
   '/api/auth',
   '/api/auth/session',
-  '/api/check-users',
+
   // Add any other public routes here
 ];
 
