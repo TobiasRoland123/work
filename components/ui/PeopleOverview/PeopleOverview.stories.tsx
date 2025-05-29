@@ -15,6 +15,7 @@ const sampleProfiles: UserWithExtras[] = [
     systemRole: 'USER',
     createdAt: '2024-01-01T00:00:00Z',
     organisationId: 1,
+    organisation: 'Charlie Tango',
     mobilePhone: '+45 87 18 91 28',
     profilePicture: 'https://picsum.photos/200',
     status: {
@@ -39,6 +40,7 @@ const sampleProfiles: UserWithExtras[] = [
     systemRole: 'USER',
     createdAt: '2024-01-03T00:00:00Z',
     organisationId: 1,
+    organisation: 'Charlie Tango',
     mobilePhone: '+45 23 45 67 89',
     profilePicture: 'https://picsum.photos/201',
     status: {
@@ -63,6 +65,7 @@ const sampleProfiles: UserWithExtras[] = [
     systemRole: 'USER',
     createdAt: '2024-01-01T00:00:00Z',
     organisationId: 1,
+    organisation: 'Charlie Tango',
     mobilePhone: '+45 32 14 76 98',
     profilePicture: 'https://picsum.photos/202',
     status: {

@@ -1,5 +1,6 @@
 import { UserWithExtras } from '@/db/types';
 import { ProfileListItem } from '../ProfileListItem/ProfileListItem';
+import { cn } from '@/lib/className';
 
 type ProfileListProps = {
   profiles: UserWithExtras[];
@@ -8,7 +9,7 @@ type ProfileListProps = {
 
 export function ProfileList({ profiles, showStatus = false }: ProfileListProps) {
   return (
-    <ul className="grid grid-cols-1 md:grid-cols-2" role="list">
+    <ul className={cn(showStatus ? 'pb-24' : '', 'grid grid-cols-1 md:grid-cols-2')} role="list">
       {profiles.map((profile, index) => (
         <li
           key={index}
