@@ -21,6 +21,11 @@ const VERCEL_CRON_HEADER = 'x-vercel-cron';
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
+
+  if (pathname === CHECK_USERS_API_PATH && request.headers.get(VERCEL_CRON_HEADER)) {
+    return NextResponse.next();
+  }
+
   let authData;
   try {
     authData = await auth();
@@ -35,10 +40,6 @@ export async function middleware(request: NextRequest) {
           'Content-Type': 'application/json',
         },
       });
-    }
-
-    if (pathname === CHECK_USERS_API_PATH && request.headers.get(VERCEL_CRON_HEADER)) {
-      return NextResponse.next();
     }
 
     // Redirect to login page if not already on a public path
