@@ -34,7 +34,7 @@ export async function middleware(request: NextRequest) {
       });
     }
 
-    if (pathname === '/api/check-users' && request.headers.get('x-vercel-cron')) {
+    if (pathname === CHECK_USERS_API_PATH && request.headers.get(VERCEL_CRON_HEADER)) {
       return NextResponse.next();
     }
 
