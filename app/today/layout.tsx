@@ -13,7 +13,7 @@ export default async function DashboardLayout({ children }: { children: ReactNod
         <Suspense fallback={<Loading />}>{children}</Suspense>
       </SidebarProviderWrapper>
 
-      <MobileNavigation linkList={menuLinks} userId={session?.userId} />
+      <MobileNavigation linkList={menuLinks} userId={session?.userId} onToday />
     </main>
   );
 }
