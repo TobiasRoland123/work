@@ -8,7 +8,6 @@ import {
   pgEnum,
   integer,
   date,
-  time,
 } from 'drizzle-orm/pg-core';
 
 export const systemRole = pgEnum('system_role', ['ADMIN', 'USER', 'GUEST']);
@@ -85,7 +84,7 @@ export const status = pgTable('status', {
   status: userStatus('status').default('IN_OFFICE').notNull(),
   details: text('details'),
   time: timestamp('time'),
-  fromDate: date('from_date'),
-  toDate: date('to_date'),
+  fromDate: date('from_date', { mode: 'date' }),
+  toDate: date('to_date', { mode: 'date' }),
   createdAt: timestamp('created_at', { mode: 'string' }).defaultNow().notNull(),
 });

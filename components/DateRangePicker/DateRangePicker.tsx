@@ -31,19 +31,12 @@ export function DatePickerWithRange({ className, form }: DateRangePickerProps) {
     if (chosenStatus !== 'ON_LEAVE' && chosenStatus !== 'VACATION') return;
     if (date != undefined && date.from && date.to) {
       // Convert to ISO date-only strings: 'YYYY-MM-DD'
+      form.setValue('actionTime', undefined);
 
-      console.log('dateFrom:', date.from);
-      console.log('dateTo:', date.to);
-      const fromDate = date.from.toISOString().slice(0, 10);
-      const toDate = date.to.toISOString().slice(0, 10);
-
-      console.log('fromDate:', fromDate);
-      console.log('toDate:', toDate);
-
-      form.setValue('fromDate', fromDate);
-      form.setValue('toDate', toDate);
+      form.setValue('fromDate', date.from);
+      form.setValue('toDate', date.to);
     }
-  }, [date, form]);
+  }, [date, form, chosenStatus]);
   if (chosenStatus === 'ON_LEAVE' || chosenStatus === 'VACATION')
     return (
       <div className={cn('grid gap-2', className)}>
