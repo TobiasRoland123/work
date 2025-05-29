@@ -7,6 +7,7 @@ const PUBLIC_PATHS = [
   '/login',
   '/api/auth',
   '/api/auth/session',
+
   // Add any other public routes here
 ];
 
@@ -18,14 +19,11 @@ const DEFAULT_UNAUTH_REDIRECT = '/login';
 
 const CHECK_USERS_API_PATH = '/api/check-users';
 const VERCEL_CRON_HEADER = 'x-vercel-cron';
-const CRON_SECRET = process.env.CRON_SECRET;
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-  const cronHeader = request.headers.get(VERCEL_CRON_HEADER);
-  const cronSecret = request.headers.get('x-cron-secret');
 
-  if (pathname === CHECK_USERS_API_PATH && cronHeader && cronSecret === CRON_SECRET) {
+  if (pathname === CHECK_USERS_API_PATH && request.headers.get(VERCEL_CRON_HEADER)) {
     return NextResponse.next();
   }
 
