@@ -14,7 +14,7 @@
     "test-storybook-coverage": "NODE_ENV=test STORYBOOK_TEST=true test-storybook --coverage",
     "test": "vitest",
     "test:backend": "vitest --project backend",
-    "test:e2e": "npx playwright test tests/e2e.test.ts",
+    "test:e2e": "tsx db/seed-test-user.ts && npx playwright test tests/e2e.test.ts",
     "prepare": "husky install",
     "db:trigger": "tsx db/trigger.ts",
     "ws": "tsx lib/websocket-server.ts",
