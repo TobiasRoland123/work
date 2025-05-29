@@ -34,6 +34,10 @@ export async function middleware(request: NextRequest) {
       });
     }
 
+    if (pathname === '/api/check-users' && request.headers.get('x-vercel-cron')) {
+      return NextResponse.next();
+    }
+
     // Redirect to login page if not already on a public path
     const isPublicPath = PUBLIC_PATHS.some(
       (path) => pathname === path || pathname.startsWith(`${path}/`)
