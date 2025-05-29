@@ -9,7 +9,10 @@ export default function Loading() {
         <div className="flex justify-between">
           <div className="flex flex-col items-start gap-2">
             <Skeleton className="w-[16ch] text-base h-5 rounded-full" /> {/* Text label */}
-            <Skeleton className="w-[15ch] text-5xl h-12 rounded-full" /> {/* Number */}
+            <div className=" flex flex-wrap gap-4">
+              <Skeleton className="w-[9ch] text-5xl h-12 rounded-full" />
+              <Skeleton className="w-[10ch] text-5xl h-12 rounded-full" />
+            </div>
           </div>
         </div>
 
