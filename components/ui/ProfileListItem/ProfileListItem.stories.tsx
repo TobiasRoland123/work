@@ -19,7 +19,8 @@ export const Default: Story = {
       email: 'anders@work.com',
       systemRole: 'USER',
       createdAt: '2024-01-01T00:00:00Z',
-      organisationId: null,
+      organisationId: 1,
+      organisation: 'Charlie Tango',
       mobilePhone: '+45 87 18 91 28',
       profilePicture: 'https://picsum.photos/200',
       status: {
@@ -48,7 +49,8 @@ export const NoPicture: Story = {
       email: 'anders@work.com',
       systemRole: 'USER',
       createdAt: '2024-01-01T00:00:00Z',
-      organisationId: null,
+      organisationId: 1,
+      organisation: 'Charlie Tango',
       mobilePhone: '+45 87 18 91 28',
       status: {
         status: 'IN_OFFICE',

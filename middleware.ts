@@ -7,6 +7,7 @@ const PUBLIC_PATHS = [
   '/login',
   '/api/auth',
   '/api/auth/session',
+
   // Add any other public routes here
 ];
 
@@ -16,8 +17,16 @@ const DEFAULT_AUTH_REDIRECT = '/today';
 // Route to redirect to when unauthenticated user tries to access protected routes
 const DEFAULT_UNAUTH_REDIRECT = '/login';
 
+const CHECK_USERS_API_PATH = '/api/check-users';
+const VERCEL_CRON_HEADER = 'x-vercel-cron';
+
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
+
+  if (pathname === CHECK_USERS_API_PATH && request.headers.get(VERCEL_CRON_HEADER)) {
+    return NextResponse.next();
+  }
+
   let authData;
   try {
     authData = await auth();

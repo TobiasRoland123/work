@@ -26,7 +26,6 @@ export const userStatus = pgEnum('user_status', [
 export const organisations = pgTable('organisations', {
   id: serial().primaryKey().notNull(),
   organisationName: varchar('organisation_name', { length: 255 }),
-  createdAt: timestamp('created_at', { mode: 'string' }).defaultNow().notNull(),
 });
 
 export const users = pgTable(
@@ -39,7 +38,9 @@ export const users = pgTable(
     email: varchar({ length: 100 }).notNull(),
     systemRole: systemRole('system_role').default('USER').notNull(),
     createdAt: timestamp('created_at', { mode: 'string' }).defaultNow().notNull(),
-    organisationId: integer('organisation_id').references(() => organisations.id),
+    organisationId: integer('organisation_id').references(() => organisations.id, {
+      onDelete: 'restrict',
+    }),
     mobilePhone: varchar('mobile_phone', { length: 20 }),
     profilePicture: text('profile_picture'),
   },
