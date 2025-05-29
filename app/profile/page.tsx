@@ -1,4 +1,4 @@
-import { auth } from '@/auth';
+import auth from '@/lib/e2e-auth';
 import ProfileInfo from '@/components/ui/ProfileInfo/ProfileInfo';
 
 import { userService } from '@/lib/services/userService';
