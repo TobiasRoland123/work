@@ -16,6 +16,9 @@ const DEFAULT_AUTH_REDIRECT = '/today';
 // Route to redirect to when unauthenticated user tries to access protected routes
 const DEFAULT_UNAUTH_REDIRECT = '/login';
 
+const CHECK_USERS_API_PATH = '/api/check-users';
+const VERCEL_CRON_HEADER = 'x-vercel-cron';
+
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   let authData;
@@ -32,6 +35,10 @@ export async function middleware(request: NextRequest) {
           'Content-Type': 'application/json',
         },
       });
+    }
+
+    if (pathname === CHECK_USERS_API_PATH && request.headers.get(VERCEL_CRON_HEADER)) {
+      return NextResponse.next();
     }
 
     // Redirect to login page if not already on a public path
