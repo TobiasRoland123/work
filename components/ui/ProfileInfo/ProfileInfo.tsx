@@ -18,8 +18,8 @@ const ProfileInfo = ({ user }: UserProps) => {
       </section>
       <section className="flex flex-col">
         <ProfileInfoField label={'Name'} value={name} />
-        {user?.organisationId && (
-          <ProfileInfoField label={'Department'} value={String(user.organisationId)} />
+        {user?.organisation && (
+          <ProfileInfoField label={'Department'} value={String(user.organisation)} />
         )}
         {user?.organisationRoles && user.organisationRoles.length > 0 && (
           <ProfileInfoField label={'Title'} value={user.organisationRoles[0]} />
