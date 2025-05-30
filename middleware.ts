@@ -18,12 +18,13 @@ const DEFAULT_AUTH_REDIRECT = '/today';
 const DEFAULT_UNAUTH_REDIRECT = '/login';
 
 const CHECK_USERS_API_PATH = '/api/check-users';
-const VERCEL_CRON_HEADER = 'x-vercel-cron';
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
+  const cronHeader = request.headers.get('x-vercel-cron');
 
-  if (pathname === CHECK_USERS_API_PATH && request.headers.get(VERCEL_CRON_HEADER)) {
+  // BYPASS: Allow Vercel cron job with x-vercel-cron header
+  if (pathname === CHECK_USERS_API_PATH && cronHeader) {
     return NextResponse.next();
   }
 
@@ -102,10 +103,7 @@ export async function middleware(request: NextRequest) {
       }
 
       // Return 401 for unauthenticated API requests
-      if (
-        !isAuthenticated &&
-        !(pathname === CHECK_USERS_API_PATH && request.headers.get(VERCEL_CRON_HEADER))
-      ) {
+      if (!isAuthenticated && !(pathname === CHECK_USERS_API_PATH && cronHeader)) {
         console.error('Returning 401 from second catch block');
         return new NextResponse(JSON.stringify({ error: 'Unauthorized, is not authenticated' }), {
           status: 401,
