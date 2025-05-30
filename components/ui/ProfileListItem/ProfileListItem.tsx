@@ -9,7 +9,7 @@ export type ProfileListItemProps = {
 };
 
 export function ProfileListItem({ user, showStatus = false }: ProfileListItemProps) {
-  const formatedTimed = user?.status?.time?.toLocaleTimeString('da-dk').substring(0, 5);
+  const formattedTimed = user?.status?.time?.toLocaleTimeString('da-dk').substring(0, 5);
   return (
     <div className="flex items-start gap-3 px-2 py-1 border-gray-400 max-w-[60ch] ">
       {user.profilePicture ? (
@@ -39,7 +39,7 @@ export function ProfileListItem({ user, showStatus = false }: ProfileListItemPro
             ))}
 
           {showStatus && user.status && <Status status={user.status.status} />}
-          {user?.status?.time && <Status status={user.status.status}>{formatedTimed}</Status>}
+          {user?.status?.time && <Status status={user.status.status}>{formattedTimed}</Status>}
           {user?.status?.fromDate && user?.status?.toDate && (
             <Status status={user.status.status}>
               {`${formatDate(user?.status?.fromDate)} - ${formatDate(user?.status?.toDate)}`}
