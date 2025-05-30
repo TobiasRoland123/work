@@ -3,7 +3,6 @@ import { status } from '@/db/schema';
 import { db } from '@/db';
 import { eq, desc } from 'drizzle-orm';
 
-
 export const statusService = {
   // GET METHODS
   async getAllStatuses() {
@@ -38,11 +37,12 @@ export const statusService = {
       statusDate.getDate() === today.getDate();
 
     if (isToday) {
-
       return latestStatus;
     } else if (latestStatus.fromDate && latestStatus.toDate) {
-      const isTodayBetween = latestStatus?.fromDate <= today && latestStatus?.toDate >= today
-        return isTodayBetween ? latestStatus: null;
+      const fromDate = new Date(latestStatus.fromDate);
+      const toDate = new Date(latestStatus.toDate);
+      const isTodayBetween = fromDate <= today && toDate >= today;
+      return isTodayBetween ? latestStatus : null;
     } else {
       return null;
     }
