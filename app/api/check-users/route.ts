@@ -3,7 +3,7 @@ import { userService } from '@/lib/services/userService';
 import { getAccessToken } from '@/scripts/seed';
 import { NextResponse } from 'next/server';
 import sharp from 'sharp';
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 
 export type EntraUser = {
   businessPhones: string[];
@@ -28,7 +28,13 @@ const s3 = new S3Client({
   },
 });
 
-export async function GET() {
+export async function GET(request: Request) {
+  const authHeader = request.headers.get('authorization');
+  if (authHeader !== process.env.CRON_SECRET) {
+    return new Response(authHeader, {
+      status: 401,
+    });
+  }
   const accessToken = await getAccessToken();
   let allNeonUsers = [];
   let allEntraUsers = [];
@@ -82,16 +88,18 @@ export async function GET() {
         updateData.organisationRoles = [entraUser.jobTitle];
       }
 
-      if (
-        Array.isArray(entraUser.businessPhones) &&
-        entraUser.businessPhones[0] &&
-        neonUser.businessPhoneNumber !== entraUser.businessPhones[0]
-      ) {
-        updateData.businessPhoneNumber = entraUser.businessPhones[0].replaceAll(' ', '');
+      if (Array.isArray(entraUser.businessPhones) && entraUser.businessPhones[0]) {
+        const entraPhone = entraUser.businessPhones[0]?.replaceAll(' ', '') || null;
+        const neonPhone = neonUser.businessPhoneNumber?.replaceAll(' ', '') || null;
+        if (neonPhone !== entraPhone) {
+          updateData.businessPhoneNumber = entraPhone;
+        }
       }
 
-      if (neonUser.mobilePhone !== entraUser.mobilePhone) {
-        updateData.mobilePhone = entraUser.mobilePhone?.replaceAll(' ', '');
+      if (
+        neonUser.mobilePhone?.replaceAll(' ', '') !== entraUser.mobilePhone?.replaceAll(' ', '')
+      ) {
+        updateData.mobilePhone = entraUser.mobilePhone?.replaceAll(' ', '') || null;
       }
 
       if (neonUser.profilePicture === null) {
@@ -146,8 +154,113 @@ export async function GET() {
 
   const updatedUsers = updates.filter(Boolean);
 
+  // Find Entra users not in Neon
+  const neonUserIds = new Set(allNeonUsers.map((u: UserWithExtras) => u.userId));
+  const missingEntraUsers = allEntraUsers.value.filter(
+    (entra: EntraUser) => !neonUserIds.has(entra.id)
+  );
+
+  // Add missing users to Neon
+  const createdUsers = await Promise.all(
+    missingEntraUsers.map(async (entra: EntraUser) => {
+      try {
+        let profilePictureUrl: string | null = null;
+
+        // Try to fetch and upload profile picture
+        try {
+          const photoResponse = await fetch(
+            `https://graph.microsoft.com/v1.0/users/${entra.id}/photo/$value`,
+            {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+              },
+            }
+          );
+
+          if (photoResponse.ok) {
+            const photoBuffer = Buffer.from(await photoResponse.arrayBuffer());
+
+            const processedBuffer = await sharp(photoBuffer)
+              .resize(256, 256, { fit: 'cover' })
+              .webp({ quality: 80 })
+              .toBuffer();
+            const mimeType = photoResponse.headers.get('content-type') || 'image/jpeg';
+            const key = `profile-images/${entra.id}`;
+
+            await s3.send(
+              new PutObjectCommand({
+                Bucket: process.env.HETZNER_BUCKET_NAME!,
+                Key: key,
+                Body: processedBuffer,
+                ContentType: mimeType,
+                ACL: 'public-read',
+              })
+            );
+
+            profilePictureUrl = `${process.env.HETZNER_BUCKET_URL!.replace(/\/$/, '')}/${process.env.HETZNER_BUCKET_NAME}/${key}`;
+          }
+        } catch (error) {
+          console.error(`Failed to fetch/upload profile photo for ${entra.mail}:`, error);
+        }
+
+        const newUser = {
+          userId: entra.id,
+          firstName: entra.givenName,
+          lastName: entra.surname,
+          email: entra.mail,
+          organisationRoles: [entra.jobTitle],
+          businessPhoneNumber: entra.businessPhones?.[0]?.replaceAll(' ', '') || null,
+          mobilePhone: entra.mobilePhone?.replaceAll(' ', '') || null,
+          profilePicture: profilePictureUrl,
+          // ...add other fields as needed
+        };
+        await userService.createUser(newUser);
+        return { userId: entra.id, created: true };
+      } catch (err) {
+        console.error('Failed to create user', entra.id, err);
+        return { userId: entra.id, error: err instanceof Error ? err.message : err };
+      }
+    })
+  );
+
+  // Find Neon users not in Entra
+  const entraUserIds = new Set(allEntraUsers.value.map((u: EntraUser) => u.id));
+  const removedNeonUsers = allNeonUsers.filter(
+    (neonUser: UserWithExtras) => !entraUserIds.has(neonUser.userId)
+  );
+
+  // Remove users from Neon
+  const deletedUsers = await Promise.all(
+    removedNeonUsers.map(async (neonUser: UserWithExtras) => {
+      try {
+        if (neonUser.profilePicture) {
+          const key = `profile-images/${neonUser.userId}`;
+          try {
+            await s3.send(
+              new DeleteObjectCommand({
+                Bucket: process.env.HETZNER_BUCKET_NAME!,
+                Key: key,
+              })
+            );
+          } catch (err) {
+            console.error('Failed to delete profile picture from S3 for', neonUser.userId, err);
+          }
+        }
+        await userService.deleteUser(neonUser.userId);
+        return { userId: neonUser.userId, deleted: true };
+      } catch (err) {
+        console.error('Failed to delete user', neonUser.userId, err);
+        return { userId: neonUser.userId, error: err instanceof Error ? err.message : err };
+      }
+    })
+  );
+
   return NextResponse.json({
     updatedUsers,
-    count: updatedUsers.length,
+    createdUsers: createdUsers.filter(Boolean),
+    deletedUsers: deletedUsers.filter(Boolean),
+    updatedCount: updatedUsers.length,
+    createdCount: createdUsers.filter((u) => u && u.created).length,
+    deletedCount: deletedUsers.filter((u) => u && u.deleted).length,
   });
 }

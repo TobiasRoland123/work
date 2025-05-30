@@ -76,8 +76,10 @@ export function StatusForm({
         fromDate: values.fromDate,
         toDate: values.toDate,
       });
-      if (newStatus) toast('Status has been updated✨');
-      else toast('Something went wrong, status not updated 🚫');
+
+      if (newStatus && newStatus.status) {
+        toast('Status has been updated✨');
+      } else toast('Something went wrong, status not updated 🚫');
     } catch (error) {
       // Handle error (e.g., show a notification)
       console.error(error);

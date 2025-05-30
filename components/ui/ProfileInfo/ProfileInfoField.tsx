@@ -12,7 +12,7 @@ const ProfileInfoField = ({ label, value }: ProfileInfoFieldProps) => {
         <p className="font-mono w-24 text-base">{label}</p>
       </div>
       <div className="flex flex-col justify-end w-full">
-        <p className="w-full min-w-64 border-b border-black font-light text-2xl">
+        <p className="w-full lg:min-w-64 border-b border-black break-all font-light text-2xl">
           {value ? value : ''}
         </p>
       </div>

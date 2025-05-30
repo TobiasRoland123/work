@@ -9,8 +9,9 @@ export type User = InferSelectModel<typeof users>;
 
 // Extended user type for frontend
 export type UserWithExtras = NewUser & {
-  status?: Status;
-  organisationRoles: string[] | null;
+  status?: Status | null;
+  organisation?: string | null;
+  organisationRoles?: string[] | null;
   businessPhoneNumber?: string | null;
 };
 

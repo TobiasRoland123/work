@@ -7,6 +7,7 @@ const PUBLIC_PATHS = [
   '/login',
   '/api/auth',
   '/api/auth/session',
+
   // Add any other public routes here
 ];
 
@@ -16,8 +17,18 @@ const DEFAULT_AUTH_REDIRECT = '/today';
 // Route to redirect to when unauthenticated user tries to access protected routes
 const DEFAULT_UNAUTH_REDIRECT = '/login';
 
+const CHECK_USERS_API_PATH = '/api/check-users';
+
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
+  const cronHeader = request.headers.get('x-vercel-cron');
+  const authHeader = request.headers.get('authorization');
+
+  // BYPASS: Allow Vercel cron job with x-vercel-cron header
+  if (authHeader && cronHeader) {
+    return NextResponse.next();
+  }
+
   let authData;
   try {
     authData = await auth();
@@ -26,12 +37,16 @@ export async function middleware(request: NextRequest) {
 
     // Return 401 for API routes on error
     if (pathname.startsWith('/api/')) {
-      return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      console.error('Returning 401 from first catch block');
+      return new NextResponse(
+        JSON.stringify({ error: 'Unauthorized, something went wrong with authData' }),
+        {
+          status: 401,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
     }
 
     // Redirect to login page if not already on a public path
@@ -89,8 +104,9 @@ export async function middleware(request: NextRequest) {
       }
 
       // Return 401 for unauthenticated API requests
-      if (!isAuthenticated) {
-        return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
+      if (!isAuthenticated && !(pathname === CHECK_USERS_API_PATH && cronHeader)) {
+        console.error('Returning 401 from second catch block');
+        return new NextResponse(JSON.stringify({ error: 'Unauthorized, is not authenticated' }), {
           status: 401,
           headers: {
             'Content-Type': 'application/json',
@@ -121,12 +137,16 @@ export async function middleware(request: NextRequest) {
 
     // Return 401 for API routes on error
     if (isApiRoute) {
-      return new NextResponse(JSON.stringify({ error: 'Unauthorized' }), {
-        status: 401,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
+      console.error('Returning 401 from third catch block');
+      return new NextResponse(
+        JSON.stringify({ error: 'Unauthorized: error in second catch block (middleware)' }),
+        {
+          status: 401,
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      );
     }
 
     // On error, redirect to login page if not already on a public path

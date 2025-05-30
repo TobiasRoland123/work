@@ -7,8 +7,10 @@ import {
   organisation_roles,
   users_business_phone_numbers,
   business_phone_numbers,
+  organisations,
 } from '@/db/schema';
-import { desc, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
+import { statusService } from './statusService';
 
 // This will be our user service, which will handle all user-related database operations.
 // It will be used in the API routes to interact with the database.
@@ -19,13 +21,18 @@ export const userService = {
     const user = userArr[0];
     if (!user) return null;
 
+    // Fetch organisation roles for this user
+    let organisation = null;
+    if (user.organisationId !== null && user.organisationId !== undefined) {
+      [organisation] = await db
+        .select({ id: organisations.id, organisationName: organisations.organisationName })
+        .from(organisations)
+        .where(eq(organisations.id, user.organisationId))
+        .limit(1);
+    }
+
     // Fetch latest status row for this user
-    const [latestStatus] = await db
-      .select()
-      .from(status)
-      .where(eq(status.userID, user.userId))
-      .orderBy(desc(status.time))
-      .limit(1);
+    const latestStatus = await statusService.getActiveStatusByUserUserId(user.userId);
 
     // Fetch all organisation roles for this user
     const roles = await db
@@ -56,6 +63,7 @@ export const userService = {
         .map((r) => r.role)
         .filter((role): role is string => typeof role === 'string'),
       businessPhoneNumber,
+      organisation: organisation?.organisationName ?? null,
     };
   },
 
@@ -64,13 +72,18 @@ export const userService = {
     const user = userArr[0];
     if (!user) return null;
 
+    // Fetch organisation roles for this user
+    let organisation = null;
+    if (user.organisationId !== null && user.organisationId !== undefined) {
+      [organisation] = await db
+        .select({ id: organisations.id, organisationName: organisations.organisationName })
+        .from(organisations)
+        .where(eq(organisations.id, user.organisationId))
+        .limit(1);
+    }
+
     // Fetch latest status row for this user
-    const [latestStatus] = await db
-      .select()
-      .from(status)
-      .where(eq(status.userID, user.userId))
-      .orderBy(desc(status.time))
-      .limit(1);
+    const latestStatus = await statusService.getActiveStatusByUserUserId(user.userId);
 
     // Fetch all organisation roles for this user
     const roles = await db
@@ -101,6 +114,7 @@ export const userService = {
         .map((r) => r.role)
         .filter((role): role is string => typeof role === 'string'),
       businessPhoneNumber,
+      organisation: organisation?.organisationName ?? null,
     };
   },
 
@@ -109,13 +123,18 @@ export const userService = {
 
     const usersWithExtras = await Promise.all(
       usersList.map(async (user) => {
+        // Fetch organisation roles for this user
+        let organisation = null;
+        if (user.organisationId !== null && user.organisationId !== undefined) {
+          [organisation] = await db
+            .select({ id: organisations.id, organisationName: organisations.organisationName })
+            .from(organisations)
+            .where(eq(organisations.id, user.organisationId))
+            .limit(1);
+        }
+
         // Fetch latest status row for this user
-        const [latestStatus] = await db
-          .select()
-          .from(status)
-          .where(eq(status.userID, user.userId))
-          .orderBy(desc(status.createdAt))
-          .limit(1);
+        const latestStatus = await statusService.getActiveStatusByUserUserId(user.userId);
 
         // Fetch all organisation roles for this user
         const roles = await db
@@ -146,6 +165,7 @@ export const userService = {
             .map((r) => r.role)
             .filter((role): role is string => typeof role === 'string'),
           businessPhoneNumber,
+          organisation: organisation?.organisationName ?? null,
         };
       })
     );
@@ -206,6 +226,20 @@ export const userService = {
     // Handle businessPhoneNumber separately if needed...
 
     return this.getUserById(userId);
+  },
+
+  async deleteUser(userId: string) {
+    // Delete related organisation roles
+    await db.delete(users_organisation_roles).where(eq(users_organisation_roles.userId, userId));
+    // Delete related business phone numbers
+    await db
+      .delete(users_business_phone_numbers)
+      .where(eq(users_business_phone_numbers.userId, userId));
+    // Delete related statuses
+    await db.delete(status).where(eq(status.userID, userId));
+    // Finally, delete the user
+    await db.delete(users).where(eq(users.userId, userId));
+    return { userId, deleted: true };
   },
 
   /* * * * * * THIS METHDOD HAS BEEN COMMENTED OUT DUE TO NOT NEEDING TO CREATE LOGIN LOGIC CAUSE OF THE ENTRA IMPLEMENTATION * * * * * */

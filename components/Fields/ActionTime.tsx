@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/Input/input';
 import { z } from 'zod';
 import { formSchema } from '@/components/StatusForm/StatusForm';
 import { UseFormReturn } from 'react-hook-form';
+import { useEffect } from 'react';
 
 type ActionTimeProps = {
   form: UseFormReturn<z.infer<typeof formSchema>>;
@@ -10,6 +11,13 @@ type ActionTimeProps = {
 
 export function ActionTime({ form }: ActionTimeProps) {
   const chosenStatus = form.watch('status');
+
+  useEffect(() => {
+    if (chosenStatus === 'IN_LATE' || chosenStatus === 'LEAVING_EARLY') {
+      form.setValue('fromDate', undefined);
+      form.setValue('toDate', undefined);
+    }
+  }, [chosenStatus, form]);
 
   if (chosenStatus === 'IN_LATE' || chosenStatus === 'LEAVING_EARLY') {
     return (
