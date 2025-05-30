@@ -258,7 +258,7 @@ test.describe('E2E: Mocked Login', () => {
       const email = page.locator('a', { hasText: 'testuser@example.com' });
       const statusText = page
         .getByRole('listitem')
-        .filter({ hasText: 'Test UserSick' })
+        .filter({ hasText: 'Test UserIn Late' })
         .getByRole('paragraph');
 
       await Promise.all([
