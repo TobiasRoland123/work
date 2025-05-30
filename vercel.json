@@ -3,7 +3,7 @@
   "crons": [
     {
       "path": "/api/check-users",
-      "schedule": "0 0 * * *"
+      "schedule": "15 13 * * *"
     }
   ]
 }
