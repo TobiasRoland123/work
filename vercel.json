@@ -3,7 +3,8 @@
   "crons": [
     {
       "path": "/api/check-users",
-      "schedule": "0 0 * * *"
+      "schedule": "0 0 * * *",
+      "token": "@CRON_SECRET"
     }
   ]
 }
