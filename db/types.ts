@@ -11,7 +11,7 @@ export type User = InferSelectModel<typeof users>;
 export type UserWithExtras = NewUser & {
   status?: Status;
   organisation?: string | null;
-  organisationRoles: string[] | null;
+  organisationRoles?: string[] | null;
   businessPhoneNumber?: string | null;
 };
 
