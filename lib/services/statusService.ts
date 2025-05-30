@@ -1,7 +1,7 @@
 import { NewStatus } from '@/db/types';
 import { status } from '@/db/schema';
 import { db } from '@/db';
-import { eq } from 'drizzle-orm';
+import { eq, desc } from 'drizzle-orm';
 
 export const statusService = {
   // GET METHODS
@@ -13,6 +13,41 @@ export const statusService = {
   async getStatusByUserUserId(userID: string) {
     const userStatus = await db.select().from(status).where(eq(status.userID, userID));
     return userStatus;
+  },
+
+  // This gets the latest active status by user
+  async getActiveStatusByUserUserId(userID: string) {
+    // Get the latest status for the user, order by createdAt desc (fallback to id if needed)
+    const userStatuses = await db
+      .select()
+      .from(status)
+      .where(eq(status.userID, userID))
+      .orderBy(desc(status.createdAt))
+      .limit(1);
+    const latestStatus = userStatuses[0];
+    if (!latestStatus) return null;
+
+    // Check if the status was made today
+    const today = new Date();
+    const statusDate = latestStatus.createdAt ? new Date(latestStatus.createdAt) : null;
+    const isToday =
+      statusDate &&
+      statusDate.getFullYear() === today.getFullYear() &&
+      statusDate.getMonth() === today.getMonth() &&
+      statusDate.getDate() === today.getDate();
+
+    if (latestStatus.fromDate && latestStatus.toDate) {
+      const fromDate = new Date(latestStatus.fromDate);
+      const toDate = new Date(latestStatus.toDate);
+      const isTodayBetween = fromDate <= today && toDate >= today;
+      if (isTodayBetween) {
+      }
+      return isTodayBetween ? latestStatus : undefined;
+    } else if (isToday) {
+      return latestStatus;
+    } else {
+      return undefined;
+    }
   },
 
   // POST METHODS

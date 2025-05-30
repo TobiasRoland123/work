@@ -9,7 +9,8 @@ import {
   business_phone_numbers,
   organisations,
 } from '@/db/schema';
-import { desc, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
+import { statusService } from './statusService';
 
 // This will be our user service, which will handle all user-related database operations.
 // It will be used in the API routes to interact with the database.
@@ -31,12 +32,7 @@ export const userService = {
     }
 
     // Fetch latest status row for this user
-    const [latestStatus] = await db
-      .select()
-      .from(status)
-      .where(eq(status.userID, user.userId))
-      .orderBy(desc(status.time))
-      .limit(1);
+    const latestStatus = await statusService.getActiveStatusByUserUserId(user.userId);
 
     // Fetch all organisation roles for this user
     const roles = await db
@@ -87,12 +83,7 @@ export const userService = {
     }
 
     // Fetch latest status row for this user
-    const [latestStatus] = await db
-      .select()
-      .from(status)
-      .where(eq(status.userID, user.userId))
-      .orderBy(desc(status.time))
-      .limit(1);
+    const latestStatus = await statusService.getActiveStatusByUserUserId(user.userId);
 
     // Fetch all organisation roles for this user
     const roles = await db
@@ -143,12 +134,7 @@ export const userService = {
         }
 
         // Fetch latest status row for this user
-        const [latestStatus] = await db
-          .select()
-          .from(status)
-          .where(eq(status.userID, user.userId))
-          .orderBy(desc(status.createdAt))
-          .limit(1);
+        const latestStatus = await statusService.getActiveStatusByUserUserId(user.userId);
 
         // Fetch all organisation roles for this user
         const roles = await db

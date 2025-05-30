@@ -85,7 +85,7 @@ export const status = pgTable('status', {
   status: userStatus('status').default('IN_OFFICE').notNull(),
   details: text('details'),
   time: timestamp('time'),
-  fromDate: date('from_date', { mode: 'date' }),
-  toDate: date('to_date', { mode: 'date' }),
+  fromDate: date('from_date'),
+  toDate: date('to_date'),
   createdAt: timestamp('created_at', { mode: 'string' }).defaultNow().notNull(),
 });
