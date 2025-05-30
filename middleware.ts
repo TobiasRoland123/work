@@ -35,6 +35,7 @@ export async function middleware(request: NextRequest) {
 
     // Return 401 for API routes on error
     if (pathname.startsWith('/api/')) {
+      console.error('Returning 401 from first catch block');
       return new NextResponse(
         JSON.stringify({ error: 'Unauthorized, something went wrong with authData' }),
         {
@@ -102,6 +103,7 @@ export async function middleware(request: NextRequest) {
 
       // Return 401 for unauthenticated API requests
       if (!isAuthenticated) {
+        console.error('Returning 401 from second catch block');
         return new NextResponse(JSON.stringify({ error: 'Unauthorized, is not authenticated' }), {
           status: 401,
           headers: {
@@ -133,6 +135,7 @@ export async function middleware(request: NextRequest) {
 
     // Return 401 for API routes on error
     if (isApiRoute) {
+      console.error('Returning 401 from third catch block');
       return new NextResponse(
         JSON.stringify({ error: 'Unauthorized: error in second catch block (middleware)' }),
         {
