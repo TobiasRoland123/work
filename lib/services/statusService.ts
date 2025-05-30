@@ -36,15 +36,17 @@ export const statusService = {
       statusDate.getMonth() === today.getMonth() &&
       statusDate.getDate() === today.getDate();
 
-    if (isToday) {
-      return latestStatus;
-    } else if (latestStatus.fromDate && latestStatus.toDate) {
+    if (latestStatus.fromDate && latestStatus.toDate) {
       const fromDate = new Date(latestStatus.fromDate);
       const toDate = new Date(latestStatus.toDate);
       const isTodayBetween = fromDate <= today && toDate >= today;
-      return isTodayBetween ? latestStatus : null;
+      if (isTodayBetween) {
+      }
+      return isTodayBetween ? latestStatus : undefined;
+    } else if (isToday) {
+      return latestStatus;
     } else {
-      return null;
+      return undefined;
     }
   },
 

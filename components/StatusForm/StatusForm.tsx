@@ -19,8 +19,8 @@ export const formSchema = z
     status: z.enum(userStatus.enumValues),
     detailsString: z.string().optional(),
     actionTime: z.string().time().optional(),
-    fromDate: z.date().optional(),
-    toDate: z.date().optional(),
+    fromDate: z.string().date().optional(),
+    toDate: z.string().date().optional(),
   })
   .superRefine((data, ctx) => {
     if ((data.status === 'IN_LATE' || data.status === 'LEAVING_EARLY') && !data.actionTime) {
@@ -76,6 +76,7 @@ export function StatusForm({
         fromDate: values.fromDate,
         toDate: values.toDate,
       });
+
       if (newStatus && newStatus.status) {
         toast('Status has been updated✨');
       } else toast('Something went wrong, status not updated 🚫');

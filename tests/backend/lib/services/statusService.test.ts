@@ -7,6 +7,9 @@ import { Pool } from 'pg';
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
 import { addDays } from 'date-fns';
 
+const fromDate = new Date().toLocaleDateString();
+const toDate = addDays(new Date(), 7).toLocaleDateString();
+
 const pool = new Pool({
   user: process.env.PGUSER,
   password: process.env.PGPASSWORD,
@@ -30,8 +33,8 @@ describe('StatusService Tests', () => {
     status: 'FROM_HOME',
     details: 'Test status details',
     time: new Date(Date.now()),
-    fromDate: new Date(),
-    toDate: addDays(new Date(), 7),
+    fromDate: fromDate,
+    toDate: toDate,
   };
 
   beforeAll(async () => {
@@ -59,8 +62,8 @@ describe('StatusService Tests', () => {
       status: 'FROM_HOME',
       details: 'Test status details',
       time: new Date(Date.now()),
-      fromDate: new Date(),
-      toDate: addDays(new Date(), 7),
+      fromDate: fromDate,
+      toDate: toDate,
     };
 
     const createdStatus = await statusService.createNewStatus(newStatus);
@@ -74,8 +77,8 @@ describe('StatusService Tests', () => {
       userID: testUser.userId!,
       status: 'IN_OFFICE',
       details: 'Updated status details',
-      fromDate: new Date(),
-      toDate: addDays(new Date(), 7),
+      fromDate: fromDate,
+      toDate: toDate,
     };
 
     const updatedStatusResponse = await statusService.updateStatusByUserUserId(
