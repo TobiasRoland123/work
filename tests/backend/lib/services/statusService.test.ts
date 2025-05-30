@@ -5,6 +5,7 @@ import { statusService } from '@/lib/services/statusService';
 import { eq } from 'drizzle-orm';
 import { Pool } from 'pg';
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
+import { addDays } from 'date-fns';
 
 const pool = new Pool({
   user: process.env.PGUSER,
@@ -29,8 +30,8 @@ describe('StatusService Tests', () => {
     status: 'FROM_HOME',
     details: 'Test status details',
     time: new Date(Date.now()),
-    fromDate: new Date().toISOString().split('T')[0], // '2023-05-15' format
-    toDate: '2025-05-15', // Proper ISO date format (YYYY-MM-DD)
+    fromDate: new Date(),
+    toDate: addDays(new Date(), 7),
   };
 
   beforeAll(async () => {
@@ -58,8 +59,8 @@ describe('StatusService Tests', () => {
       status: 'FROM_HOME',
       details: 'Test status details',
       time: new Date(Date.now()),
-      fromDate: new Date().toISOString().split('T')[0], // '2023-05-15' format
-      toDate: '2025-05-15', // Proper ISO date format (YYYY-MM-DD)
+      fromDate: new Date(),
+      toDate: addDays(new Date(), 7),
     };
 
     const createdStatus = await statusService.createNewStatus(newStatus);
@@ -73,8 +74,8 @@ describe('StatusService Tests', () => {
       userID: testUser.userId!,
       status: 'IN_OFFICE',
       details: 'Updated status details',
-      fromDate: new Date().toISOString().split('T')[0], // '2023-05-15' format
-      toDate: '2025-05-15', // Proper ISO date format (YYYY-MM-DD)
+      fromDate: new Date(),
+      toDate: addDays(new Date(), 7),
     };
 
     const updatedStatusResponse = await statusService.updateStatusByUserUserId(

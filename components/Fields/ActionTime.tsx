@@ -12,6 +12,8 @@ export function ActionTime({ form }: ActionTimeProps) {
   const chosenStatus = form.watch('status');
 
   if (chosenStatus === 'IN_LATE' || chosenStatus === 'LEAVING_EARLY') {
+    form.setValue('fromDate', undefined);
+    form.setValue('toDate', undefined);
     return (
       <FormField
         name={'actionTime'}
