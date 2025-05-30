@@ -27,16 +27,6 @@ export async function middleware(request: NextRequest) {
   // BYPASS: Allow Vercel cron job with x-vercel-cron header
   if (authHeader && cronHeader) {
     return NextResponse.next();
-  } else {
-    return new NextResponse(
-      JSON.stringify({ error: 'Missing authorization from vercel headers' }),
-      {
-        status: 401,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      }
-    );
   }
 
   let authData;
