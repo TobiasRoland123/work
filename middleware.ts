@@ -104,7 +104,11 @@ export async function middleware(request: NextRequest) {
       }
 
       // Return 401 for unauthenticated API requests
-      if (!isAuthenticated && !(pathname === CHECK_USERS_API_PATH && cronHeader)) {
+      if (!isAuthenticated) {
+        // Allow Vercel cron job to access /api/check-users with x-vercel-cron header
+        if (pathname === CHECK_USERS_API_PATH && cronHeader) {
+          return NextResponse.next();
+        }
         console.error('Returning 401 from second catch block');
         return new NextResponse(JSON.stringify({ error: 'Unauthorized, is not authenticated' }), {
           status: 401,
