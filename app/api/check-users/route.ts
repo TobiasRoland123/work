@@ -29,9 +29,11 @@ const s3 = new S3Client({
 });
 
 export async function GET(request: Request) {
-  const url = new URL(request.url);
-  if (url.searchParams.get('secret') !== process.env.CRON_SECRET) {
-    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  const authHeader = request.headers.get('authorization');
+  if (authHeader !== process.env.CRON_SECRET) {
+    return new Response(authHeader, {
+      status: 401,
+    });
   }
   const accessToken = await getAccessToken();
   let allNeonUsers = [];

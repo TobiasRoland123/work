@@ -22,10 +22,21 @@ const CHECK_USERS_API_PATH = '/api/check-users';
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const cronHeader = request.headers.get('x-vercel-cron');
+  const authHeader = request.headers.get('authorization');
 
   // BYPASS: Allow Vercel cron job with x-vercel-cron header
-  if (pathname === CHECK_USERS_API_PATH && cronHeader) {
+  if (authHeader && cronHeader) {
     return NextResponse.next();
+  } else {
+    return new NextResponse(
+      JSON.stringify({ error: 'Missing authorization from vercel headers' }),
+      {
+        status: 401,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      }
+    );
   }
 
   let authData;
