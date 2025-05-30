@@ -2,7 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "crons": [
     {
-      "path": "/api/check-users?secret=7b1cb002-3fee-4b9b-b2d6-5ee0f477bfbf",
+      "path": "/api/check-users",
       "schedule": "0 0 * * *"
     }
   ]
