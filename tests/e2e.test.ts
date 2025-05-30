@@ -2,17 +2,18 @@ import { test, expect } from '@playwright/test';
 import dotenv from 'dotenv';
 dotenv.config();
 
-const bypassHeader = { [`x-e2e-test-bypass${process.env.BYPASS_SECRET}`]: 'true' };
+test.describe('E2E: Homepage (logged-out)', () => {
+  // For every test in this describe block create a fresh context with no cookies
+  test.use({ storageState: { cookies: [], origins: [] } });
 
-test.describe('E2E: Homepage', () => {
   test('should load the homepage and display the correct title', async ({ page }) => {
     await page.goto('http://localhost:3000');
     await expect(page).toHaveTitle(/WØRK/i);
   });
+
   test('should display the login form on the homepage', async ({ page }) => {
     await page.goto('http://localhost:3000');
     const loginForm = page.locator('form');
-
     const csrfTokenInput = page.locator('input[name="csrfToken"]');
     const callbackUrlInput = page.locator('input[name="callbackUrl"]');
     const loginButton = page.locator('button[type="submit"]');
@@ -28,9 +29,6 @@ test.describe('E2E: Homepage', () => {
 
 test.describe('E2E: Mocked Login', () => {
   test('should access /today as a logged-in user (mocked)', async ({ page }) => {
-    // Set the bypass header before navigating
-    await page.setExtraHTTPHeaders(bypassHeader);
-
     // Go directly to /today
     await page.goto('http://localhost:3000/today');
 
@@ -55,9 +53,6 @@ test.describe('E2E: Mocked Login', () => {
 
   test.describe('E2E: (auth path) - Contact', () => {
     test('should navigate to /contact and back to /today', async ({ page }) => {
-      // Set the bypass header before navigating
-      await page.setExtraHTTPHeaders(bypassHeader);
-
       // Go directly to /today
       await page.goto('http://localhost:3000/today');
 
@@ -72,6 +67,208 @@ test.describe('E2E: Mocked Login', () => {
       // Navigate back to /today
       await page.goBack();
       await expect(page).toHaveURL(/\/today/);
+    });
+  });
+
+  test.describe('E2E: (auth path) - Profile', () => {
+    test('should navigate to /profile and back to /today', async ({ page }) => {
+      // Go directly to /today
+      await page.goto('http://localhost:3000/today');
+
+      const navProfile = page.locator('a[href="/profile"]').first();
+      // Navigate to /profile
+      await navProfile.click();
+      await expect(page).toHaveURL(/\/profile/);
+
+      const profileName = page.locator('h1', { hasText: 'Test User' });
+      const profileNameField = page.locator('p', { hasText: 'Test User' });
+      const profilePhoneField = page.locator('p', { hasText: '1234567890' });
+      const profileEmailField = page.locator('p', { hasText: 'testuser@example.com' });
+
+      await Promise.all([
+        expect(profileName).toBeVisible(),
+        expect(profileNameField).toBeVisible(),
+        expect(profilePhoneField).toBeVisible(),
+        expect(profileEmailField).toBeVisible(),
+      ]);
+
+      // Navigate back to /today
+      await page.goBack();
+      await expect(page).toHaveURL(/\/today/);
+    });
+  });
+
+  test.describe('E2E: (auth path) - Report Status', () => {
+    test('Should report the test user as "Working from Home"', async ({ page }) => {
+      // Go directly to /today
+      await page.goto('http://localhost:3000/today');
+
+      const statusButton = page.locator('button', { hasText: 'Report Status' }).first();
+
+      await statusButton.click();
+
+      const fromHomeOption = page.locator('button', { hasText: 'From Home' }).first();
+
+      await fromHomeOption.click();
+
+      const detailsField = page.locator('input[name="detailsString"]');
+
+      await detailsField.fill('E2E test - Working from Home');
+
+      const registerButton = page.locator('button', { hasText: 'Register' }).first();
+      await registerButton.click();
+
+      const switchButton = page.locator('button[role="switch"]');
+      await switchButton.click();
+
+      const todayText = page.locator('p', { hasText: 'Out of office today' });
+      const testUserName = page.locator('h2', { hasText: 'Test User' });
+      const phoneNumber = page.locator('a', { hasText: '1234567890' });
+      const email = page.locator('a', { hasText: 'testuser@example.com' });
+      const statusText = page
+        .getByRole('listitem')
+        .filter({ hasText: 'Test UserFrom Home' })
+        .getByRole('paragraph');
+
+      await Promise.all([
+        expect(todayText).toBeVisible(),
+        expect(testUserName).toBeVisible(),
+        expect(phoneNumber).toBeVisible(),
+        expect(email).toBeVisible(),
+        expect(statusText).toBeVisible(),
+        expect(page).toHaveURL(/\/today/),
+      ]);
+    });
+    test('Should report the test user as "At Client"', async ({ page }) => {
+      // Go directly to /today
+      await page.goto('http://localhost:3000/today');
+
+      const statusButton = page.locator('button', { hasText: 'Report Status' }).first();
+
+      await statusButton.click();
+
+      const atClient = page.locator('button', { hasText: 'At Client' }).first();
+
+      await atClient.click();
+
+      const detailsField = page.locator('input[name="detailsString"]');
+
+      await detailsField.fill('E2E test - Working at Client');
+
+      const registerButton = page.locator('button', { hasText: 'Register' }).first();
+      await registerButton.click();
+
+      const switchButton = page.locator('button[role="switch"]');
+      await switchButton.click();
+
+      const todayText = page.locator('p', { hasText: 'Out of office today' });
+      const testUserName = page.locator('h2', { hasText: 'Test User' });
+      const phoneNumber = page.locator('a', { hasText: '1234567890' });
+      const email = page.locator('a', { hasText: 'testuser@example.com' });
+      const statusText = page
+        .getByRole('listitem')
+        .filter({ hasText: 'Test UserAt Client' })
+        .getByRole('paragraph');
+
+      await Promise.all([
+        expect(todayText).toBeVisible(),
+        expect(testUserName).toBeVisible(),
+        expect(phoneNumber).toBeVisible(),
+        expect(email).toBeVisible(),
+        expect(statusText).toBeVisible(),
+        expect(page).toHaveURL(/\/today/),
+      ]);
+    });
+    test('Should report the test user as "Sick"', async ({ page }) => {
+      // Go directly to /today
+      await page.goto('http://localhost:3000/today');
+
+      const statusButton = page.locator('button', { hasText: 'Report Status' }).first();
+
+      await statusButton.click();
+
+      const sickOption = page.locator('button', { hasText: 'Sick' }).first();
+
+      await sickOption.click();
+
+      const registerButton = page.locator('button', { hasText: 'Register' }).first();
+      await registerButton.click();
+
+      const switchButton = page.locator('button[role="switch"]');
+      await switchButton.click();
+
+      const todayText = page.locator('p', { hasText: 'Out of office today' });
+      const testUserName = page.locator('h2', { hasText: 'Test User' });
+      const phoneNumber = page.locator('a', { hasText: '1234567890' });
+      const email = page.locator('a', { hasText: 'testuser@example.com' });
+      const statusText = page
+        .getByRole('listitem')
+        .filter({ hasText: 'Test UserSick' })
+        .getByRole('paragraph');
+
+      await Promise.all([
+        expect(todayText).toBeVisible(),
+        expect(testUserName).toBeVisible(),
+        expect(phoneNumber).toBeVisible(),
+        expect(email).toBeVisible(),
+        expect(statusText).toBeVisible(),
+        expect(page).toHaveURL(/\/today/),
+      ]);
+    });
+
+    test('(Other) Should report the test user as "In Late"', async ({ page }) => {
+      // Go directly to /today
+      await page.goto('http://localhost:3000/today');
+
+      const statusButton = page.locator('button', { hasText: 'Report Status' }).first();
+
+      await statusButton.click();
+
+      const fromHomeOption = page.locator('button', { hasText: 'Other' }).first();
+
+      await fromHomeOption.click();
+
+      const inLateOption = page.locator('button', { hasText: 'In Late' }).first();
+
+      await inLateOption.click();
+
+      const timeField = page.locator('input[name="Action Time"');
+      // Calculate 1 hour later
+      const now = new Date();
+      now.setHours(now.getHours() + 1);
+      const hour = String(now.getHours()).padStart(2, '0');
+      const minute = String(now.getMinutes()).padStart(2, '0');
+      const timeString = `${hour}:${minute}`;
+
+      await timeField.fill(timeString);
+
+      const detailsField = page.locator('input[name="detailsString"]');
+
+      await detailsField.fill('Car broke down on the way to work');
+
+      const registerButton = page.locator('button', { hasText: 'Register' }).first();
+      await registerButton.click();
+
+      const switchButton = page.locator('button[role="switch"]');
+      await switchButton.click();
+
+      const todayText = page.locator('p', { hasText: 'Out of office today' });
+      const testUserName = page.locator('h2', { hasText: 'Test User' });
+      const phoneNumber = page.locator('a', { hasText: '1234567890' });
+      const email = page.locator('a', { hasText: 'testuser@example.com' });
+      const statusText = page
+        .getByRole('listitem')
+        .filter({ hasText: 'Test UserSick' })
+        .getByRole('paragraph');
+
+      await Promise.all([
+        expect(todayText).toBeVisible(),
+        expect(testUserName).toBeVisible(),
+        expect(phoneNumber).toBeVisible(),
+        expect(email).toBeVisible(),
+        expect(statusText).toBeVisible(),
+        expect(page).toHaveURL(/\/today/),
+      ]);
     });
   });
 });
