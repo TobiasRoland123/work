@@ -70,32 +70,31 @@ test.describe('E2E: Mocked Login', () => {
     });
   });
 
-  test.describe('E2E: (auth path) - Profile', () => {
-    test('should navigate to /profile and back to /today', async ({ page }) => {
-      // Go directly to /today
-      await page.goto('http://localhost:3000/today');
+  test('should navigate to /profile and back to /today', async ({ page }) => {
+    // Go directly to /today
+    await page.goto('http://localhost:3000/today');
 
-      const navProfile = page.locator('a[href="/profile"]').first();
-      // Navigate to /profile
-      await navProfile.click();
-      await expect(page).toHaveURL(/\/profile/);
+    const navProfile = page.locator('a[href="/profile"]').first();
+    // Navigate to /profile and wait for navigation
+    await Promise.all([page.waitForNavigation(), navProfile.click({ force: true })]);
 
-      const profileName = page.locator('h1', { hasText: 'Test User' });
-      const profileNameField = page.locator('p', { hasText: 'Test User' });
-      const profilePhoneField = page.locator('p', { hasText: '1234567890' });
-      const profileEmailField = page.locator('p', { hasText: 'testuser@example.com' });
+    // Now create locators after navigation
+    const profileName = page.locator('h1', { hasText: 'Test User' });
+    const profileNameField = page.locator('p', { hasText: 'Test User' });
+    const profilePhoneField = page.locator('p', { hasText: '1234567890' });
+    const profileEmailField = page.locator('p', { hasText: 'testuser@example.com' });
 
-      await Promise.all([
-        expect(profileName).toBeVisible(),
-        expect(profileNameField).toBeVisible(),
-        expect(profilePhoneField).toBeVisible(),
-        expect(profileEmailField).toBeVisible(),
-      ]);
+    await Promise.all([
+      expect(page).toHaveURL(/\/profile/),
+      expect(profileName).toBeVisible(),
+      expect(profileNameField).toBeVisible(),
+      expect(profilePhoneField).toBeVisible(),
+      expect(profileEmailField).toBeVisible(),
+    ]);
 
-      // Navigate back to /today
-      await page.goBack();
-      await expect(page).toHaveURL(/\/today/);
-    });
+    // Navigate back to /today
+    await page.goBack();
+    await expect(page).toHaveURL(/\/today/);
   });
 
   test.describe('E2E: (auth path) - Report Status', () => {
@@ -125,10 +124,7 @@ test.describe('E2E: Mocked Login', () => {
       const testUserName = page.locator('h2', { hasText: 'Test User' });
       const phoneNumber = page.locator('a', { hasText: '1234567890' });
       const email = page.locator('a', { hasText: 'testuser@example.com' });
-      const statusText = page
-        .getByRole('listitem')
-        .filter({ hasText: 'Test UserFrom Home' })
-        .getByRole('paragraph');
+      const statusText = page.getByRole('paragraph').filter({ hasText: /^From home$/ });
 
       await Promise.all([
         expect(todayText).toBeVisible(),
@@ -165,10 +161,7 @@ test.describe('E2E: Mocked Login', () => {
       const testUserName = page.locator('h2', { hasText: 'Test User' });
       const phoneNumber = page.locator('a', { hasText: '1234567890' });
       const email = page.locator('a', { hasText: 'testuser@example.com' });
-      const statusText = page
-        .getByRole('listitem')
-        .filter({ hasText: 'Test UserAt Client' })
-        .getByRole('paragraph');
+      const statusText = page.getByRole('paragraph').filter({ hasText: /^At client$/ });
 
       await Promise.all([
         expect(todayText).toBeVisible(),
@@ -201,10 +194,7 @@ test.describe('E2E: Mocked Login', () => {
       const testUserName = page.locator('h2', { hasText: 'Test User' });
       const phoneNumber = page.locator('a', { hasText: '1234567890' });
       const email = page.locator('a', { hasText: 'testuser@example.com' });
-      const statusText = page
-        .getByRole('listitem')
-        .filter({ hasText: 'Test UserSick' })
-        .getByRole('paragraph');
+      const statusText = page.getByRole('paragraph').filter({ hasText: /^Sick$/ });
 
       await Promise.all([
         expect(todayText).toBeVisible(),
@@ -224,15 +214,15 @@ test.describe('E2E: Mocked Login', () => {
 
       await statusButton.click();
 
-      const fromHomeOption = page.locator('button', { hasText: 'Other' }).first();
+      const otherOption = page.locator('button', { hasText: 'Other' }).first();
 
-      await fromHomeOption.click();
+      await otherOption.click();
 
       const inLateOption = page.locator('button', { hasText: 'In Late' }).first();
 
       await inLateOption.click();
 
-      const timeField = page.locator('input[name="Action Time"');
+      const timeField = page.locator('input[name="Action Time"]');
       // Calculate 1 hour later
       const now = new Date();
       now.setHours(now.getHours() + 1);
@@ -244,7 +234,9 @@ test.describe('E2E: Mocked Login', () => {
 
       const detailsField = page.locator('input[name="detailsString"]');
 
-      await detailsField.fill('Car broke down on the way to work');
+      const detailsDescription = 'Car broke down on the way to work';
+
+      await detailsField.fill(detailsDescription);
 
       const registerButton = page.locator('button', { hasText: 'Register' }).first();
       await registerButton.click();
@@ -256,10 +248,11 @@ test.describe('E2E: Mocked Login', () => {
       const testUserName = page.locator('h2', { hasText: 'Test User' });
       const phoneNumber = page.locator('a', { hasText: '1234567890' });
       const email = page.locator('a', { hasText: 'testuser@example.com' });
+      const inLateDetails = page.locator('p', { hasText: detailsDescription });
       const statusText = page
-        .getByRole('listitem')
-        .filter({ hasText: 'Test UserIn Late' })
-        .getByRole('paragraph');
+        .getByRole('paragraph')
+        .filter({ hasText: /^In late$/ })
+        .first();
 
       await Promise.all([
         expect(todayText).toBeVisible(),
@@ -267,8 +260,245 @@ test.describe('E2E: Mocked Login', () => {
         expect(phoneNumber).toBeVisible(),
         expect(email).toBeVisible(),
         expect(statusText).toBeVisible(),
+        expect(inLateDetails).toBeVisible(),
         expect(page).toHaveURL(/\/today/),
       ]);
+    });
+    test('(Other) Should report the test user as "Leaving Early"', async ({ page }) => {
+      // Go directly to /today
+      await page.goto('http://localhost:3000/today');
+
+      const statusButton = page.locator('button', { hasText: 'Report Status' }).first();
+
+      await statusButton.click();
+
+      const otherOption = page.locator('button', { hasText: 'Other' }).first();
+
+      await otherOption.click();
+
+      const leavingEarlyOption = page.locator('button', { hasText: 'Leaving Early' }).first();
+
+      await leavingEarlyOption.click();
+
+      const timeField = page.locator('input[name="Action Time"]');
+      // Calculate 1 hour later
+      const now = new Date();
+      now.setHours(now.getHours() + 1);
+      const hour = String(now.getHours()).padStart(2, '0');
+      const minute = String(now.getMinutes()).padStart(2, '0');
+      const timeString = `${hour}:${minute}`;
+
+      await timeField.fill(timeString);
+
+      const detailsField = page.locator('input[name="detailsString"]');
+
+      const detailsDescription = 'Have to pick up my kids from school';
+
+      await detailsField.fill(detailsDescription);
+
+      const registerButton = page.locator('button', { hasText: 'Register' }).first();
+      await registerButton.click();
+
+      const todayText = page.locator('p', { hasText: 'At the office today' });
+      const testUserName = page.locator('h2', { hasText: 'Test User' });
+      const phoneNumber = page.locator('a', { hasText: '1234567890' });
+      const email = page.locator('a', { hasText: 'testuser@example.com' });
+      const inLateDetails = page.locator('p', { hasText: detailsDescription });
+      const statusText = page
+        .getByRole('paragraph')
+        .filter({ hasText: /^Leaving early$/ })
+        .first();
+
+      await Promise.all([
+        expect(todayText).toBeVisible(),
+        expect(testUserName).toBeVisible(),
+        expect(phoneNumber).toBeVisible(),
+        expect(email).toBeVisible(),
+        expect(statusText).toBeVisible(),
+        expect(inLateDetails).toBeVisible(),
+        expect(page).toHaveURL(/\/today/),
+      ]);
+    });
+    test('(Other) Should report the test user as "Vacation"', async ({ page }) => {
+      // Go directly to /today
+      await page.goto('http://localhost:3000/today');
+
+      const statusButton = page.locator('button', { hasText: 'Report Status' }).first();
+
+      await statusButton.click();
+
+      const otherOption = page.locator('button', { hasText: 'Other' }).first();
+
+      await otherOption.click();
+
+      const vacationOption = page.locator('button', { hasText: 'Vacation' }).first();
+
+      await vacationOption.click();
+
+      const detailsField = page.locator('input[name="detailsString"]');
+
+      const detailsDescription = 'Going to Disney Land';
+
+      await detailsField.fill(detailsDescription);
+
+      const registerButton = page.locator('button', { hasText: 'Register' }).first();
+      await registerButton.click();
+
+      const switchButton = page.locator('button[role="switch"]');
+      await switchButton.click();
+
+      const todayText = page.locator('p', { hasText: 'Out of office today' });
+      const testUserName = page.locator('h2', { hasText: 'Test User' });
+      const phoneNumber = page.locator('a', { hasText: '1234567890' });
+      const email = page.locator('a', { hasText: 'testuser@example.com' });
+      const inLateDetails = page.locator('p', { hasText: detailsDescription });
+      const statusText = page
+        .getByRole('paragraph')
+        .filter({ hasText: /^Vacation$/ })
+        .first();
+
+      await Promise.all([
+        expect(todayText).toBeVisible(),
+        expect(testUserName).toBeVisible(),
+        expect(phoneNumber).toBeVisible(),
+        expect(email).toBeVisible(),
+        expect(statusText).toBeVisible(),
+        expect(inLateDetails).toBeVisible(),
+        expect(page).toHaveURL(/\/today/),
+      ]);
+    });
+    test('(Other) Should report the test user as "Child sick"', async ({ page }) => {
+      // Go directly to /today
+      await page.goto('http://localhost:3000/today');
+
+      const statusButton = page.locator('button', { hasText: 'Report Status' }).first();
+
+      await statusButton.click();
+
+      const otherOption = page.locator('button', { hasText: 'Other' }).first();
+
+      await otherOption.click();
+
+      const childSickOption = page.locator('button', { hasText: 'Child Sick' }).first();
+
+      await childSickOption.click();
+
+      const detailsField = page.locator('input[name="detailsString"]');
+
+      const detailsDescription = 'Going to Disney Land';
+
+      await detailsField.fill(detailsDescription);
+
+      const registerButton = page.locator('button', { hasText: 'Register' }).first();
+      await registerButton.click();
+
+      const switchButton = page.locator('button[role="switch"]');
+      await switchButton.click();
+
+      const todayText = page.locator('p', { hasText: 'Out of office today' });
+      const testUserName = page.locator('h2', { hasText: 'Test User' });
+      const phoneNumber = page.locator('a', { hasText: '1234567890' });
+      const email = page.locator('a', { hasText: 'testuser@example.com' });
+      const inLateDetails = page.locator('p', { hasText: detailsDescription });
+      const statusText = page
+        .getByRole('paragraph')
+        .filter({ hasText: /^Child sick$/ })
+        .first();
+
+      await Promise.all([
+        expect(todayText).toBeVisible(),
+        expect(testUserName).toBeVisible(),
+        expect(phoneNumber).toBeVisible(),
+        expect(email).toBeVisible(),
+        expect(statusText).toBeVisible(),
+        expect(inLateDetails).toBeVisible(),
+        expect(page).toHaveURL(/\/today/),
+      ]);
+    });
+    test('(Other) Should report the test user as "On Leave"', async ({ page }) => {
+      // Go directly to /today
+      await page.goto('http://localhost:3000/today');
+
+      const statusButton = page.locator('button', { hasText: 'Report Status' }).first();
+
+      await statusButton.click();
+
+      const otherOption = page.locator('button', { hasText: 'Other' }).first();
+
+      await otherOption.click();
+
+      const onLeaveOption = page.locator('button', { hasText: 'On Leave' }).first();
+
+      await onLeaveOption.click();
+
+      const detailsField = page.locator('input[name="detailsString"]');
+
+      const detailsDescription = 'On leave for personal reasons';
+
+      await detailsField.fill(detailsDescription);
+
+      const registerButton = page.locator('button', { hasText: 'Register' }).first();
+      await registerButton.click();
+
+      const switchButton = page.locator('button[role="switch"]');
+      await switchButton.click();
+
+      const todayText = page.locator('p', { hasText: 'Out of office today' });
+      const testUserName = page.locator('h2', { hasText: 'Test User' });
+      const phoneNumber = page.locator('a', { hasText: '1234567890' });
+      const email = page.locator('a', { hasText: 'testuser@example.com' });
+      const inLateDetails = page.locator('p', { hasText: detailsDescription });
+      const statusText = page
+        .getByRole('paragraph')
+        .filter({ hasText: /^On leave$/ })
+        .first();
+
+      await Promise.all([
+        expect(todayText).toBeVisible(),
+        expect(testUserName).toBeVisible(),
+        expect(phoneNumber).toBeVisible(),
+        expect(email).toBeVisible(),
+        expect(statusText).toBeVisible(),
+        expect(inLateDetails).toBeVisible(),
+        expect(page).toHaveURL(/\/today/),
+      ]);
+    });
+    test('User opens "Other" option, then press "Back" then closes sidebar', async ({ page }) => {
+      // Go directly to /today
+      await page.goto('http://localhost:3000/today');
+
+      const statusButton = page.locator('button', { hasText: 'Report Status' }).first();
+
+      await statusButton.click();
+
+      const sidebar = page.locator('[data-slot="inset-sheet"]');
+
+      const otherOption = page.locator('button', { hasText: 'Other' }).first();
+
+      await otherOption.click();
+
+      const backOption = page.locator('button', { hasText: 'Back' }).first();
+
+      await backOption.click();
+
+      const fromHomeOption = page.locator('button', { hasText: 'From Home' }).first();
+      const atClientOption = page.locator('button', { hasText: 'At Client' }).first();
+      const sickOption = page.locator('button', { hasText: 'Sick' }).first();
+
+      await Promise.all([
+        expect(sidebar).toBeVisible(),
+        expect(fromHomeOption).toBeVisible(),
+        expect(atClientOption).toBeVisible(),
+        expect(sickOption).toBeVisible(),
+        expect(otherOption).toBeVisible(),
+      ]);
+
+      // Close the sidebar
+      const closeButton = page.locator('button[aria-label="Close sidebar"]');
+
+      await closeButton.click();
+
+      await Promise.all([expect(page).toHaveURL(/\/today/), expect(sidebar).toBeHidden()]);
     });
   });
 });
