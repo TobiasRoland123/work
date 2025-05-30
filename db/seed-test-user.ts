@@ -1,9 +1,19 @@
 import { db } from '.';
-import { users } from './schema';
+import { users, organisations } from './schema';
 import { eq } from 'drizzle-orm';
 
 const seedTestUser = async () => {
   try {
+    // Ensure organisation exists
+    let [org] = await db.select().from(organisations).where(eq(organisations.id, 1));
+    if (!org) {
+      const result = await db
+        .insert(organisations)
+        .values({ organisationName: 'Test Organisation' })
+        .returning();
+      org = result[0];
+    }
+
     // Check if the user already exists
     const existing = await db.select().from(users).where(eq(users.userId, 'test-user-uuid'));
     if (existing.length > 0) {
@@ -15,7 +25,7 @@ const seedTestUser = async () => {
       firstName: 'Test',
       lastName: 'User',
       email: 'testuser@example.com',
-      organisationId: 1,
+      organisationId: org.id,
       mobilePhone: '1234567890',
     });
   } catch (error) {
