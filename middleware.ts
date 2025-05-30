@@ -23,10 +23,6 @@ const VERCEL_CRON_HEADER = 'x-vercel-cron';
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
 
-  if (pathname === CHECK_USERS_API_PATH) {
-    console.log('HEADERS:', JSON.stringify([...request.headers]));
-  }
-
   if (pathname === CHECK_USERS_API_PATH && request.headers.get(VERCEL_CRON_HEADER)) {
     return NextResponse.next();
   }
