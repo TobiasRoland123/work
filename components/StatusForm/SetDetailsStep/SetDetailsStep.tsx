@@ -18,6 +18,7 @@ export function SetDetailsStep({ form }: SetDetailsStepProps) {
   return (
     <div className={'md:pt-8 flex flex-col gap-8'}>
       <DatePickerWithRange form={form} />
+
       <ActionTime form={form} />
       <DetailsField form={form} />
     </div>
