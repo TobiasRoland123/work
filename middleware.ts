@@ -17,11 +17,9 @@ const DEFAULT_AUTH_REDIRECT = '/today';
 const DEFAULT_UNAUTH_REDIRECT = '/login';
 
 export async function middleware(request: NextRequest) {
-  // E2E test bypass: short-circuit all auth logic if header is present
+  // E2E test bypass: short-circuit all login logic if header is present
   if (request.headers.get(`x-e2e-test-bypass${process.env.BYPASS_SECRET}`) === 'true') {
-    const response = NextResponse.next();
-    response.cookies.set('x-mock-user-id', 'test-user-uuid', { path: '/' });
-    return response;
+    return NextResponse.next();
   }
 
   const pathname = request.nextUrl.pathname;

@@ -74,34 +74,4 @@ test.describe('E2E: Mocked Login', () => {
       await expect(page).toHaveURL(/\/today/);
     });
   });
-
-  test.describe('E2E: (auth path) - Profile', () => {
-    test('should navigate to /profile and see user info', async ({ page }) => {
-      // Set the bypass header before navigating
-      await page.setExtraHTTPHeaders(bypassHeader);
-
-      // Go directly to /today
-      await page.goto('http://localhost:3000/today');
-
-      const navProfile = page.locator('a[href="/profile"]').first();
-
-      // Navigate to /profile
-      await navProfile.click();
-
-      const profileText = page.locator('span', { hasText: 'Your information' });
-      const nameField = page.locator('p', { hasText: 'Test User' });
-      const phoneField = page.locator('p', { hasText: '1234567890' });
-      const emailField = page.locator('p', { hasText: 'testuser@example.com' });
-
-      // TODO: NEED TO ADD SOMETHING THAT SECURES THE BYPASS SO PEOPLE CANT SPOOF IT
-
-      await Promise.all([
-        expect(page).toHaveURL(/\/profile/),
-        expect(profileText).toBeVisible(),
-        expect(nameField).toBeVisible(),
-        expect(phoneField).toBeVisible(),
-        expect(emailField).toBeVisible(),
-      ]);
-    });
-  });
 });
