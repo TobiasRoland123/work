@@ -12,9 +12,10 @@ export type StatusType =
 export type StatusProps = {
   status: StatusType;
   asLabel?: boolean;
+  children?: React.ReactNode;
 };
 
-export function Status({ status, asLabel = true }: StatusProps) {
+export function Status({ status, asLabel = true, children }: StatusProps) {
   // Map status types to display messages and colors
   const statusConfig: Record<StatusType, { message: string; color: string }> = {
     IN_OFFICE: { message: 'In office', color: 'bg-light-blue' },
@@ -33,12 +34,12 @@ export function Status({ status, asLabel = true }: StatusProps) {
   return (
     <>
       {asLabel ? (
-        <div className={`w-fit px-1.5 py-0.5 ${color} rounded-md`} role="status">
-          <p className="text-sm font-mono">{message}</p>
+        <div className={`w-fit px-1.5 py-0.5 h-fit text-nowrap ${color} rounded-md`} role="status">
+          <p className="text-sm font-mono">{children ? children : message}</p>
         </div>
       ) : (
-        <p className={'font-mono md:'} role={'status'}>
-          {message}
+        <p className={'font-mono h-fit'} role={'status'}>
+          {children ? children : message}
         </p>
       )}
     </>
