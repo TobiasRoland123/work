@@ -13,7 +13,7 @@ describe('isValidCharlieTangoEmail', () => {
     expect(isValidCharlieTangoEmail('testuser@charlietango')).toBe(false);
   });
 
-  it('should return false for empty or null input', () => {
+  it('should return false for empty input', () => {
     expect(isValidCharlieTangoEmail('')).toBe(false);
   });
 });
