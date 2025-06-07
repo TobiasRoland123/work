@@ -76,6 +76,28 @@ describe('fetchers', () => {
       );
       expect(result).toEqual({ fallback: true });
     });
+
+    it('omits Authorization header when no session is returned', async () => {
+      vi.mocked(auth).mockResolvedValue(null as any);
+      global.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ noAuth: true }),
+      });
+
+      const result = await fetchData('no-auth');
+
+      expect(global.fetch).toHaveBeenCalledWith(
+        'http://localhost:4000/api/no-auth',
+        expect.objectContaining({
+          method: 'GET',
+          headers: {
+            'Content-type': 'application/json',
+          },
+          cache: 'no-store',
+        })
+      );
+      expect(result).toEqual({ noAuth: true });
+    });
   });
 
   describe('sendData', () => {

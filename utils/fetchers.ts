@@ -3,12 +3,17 @@ import { auth } from '@/auth';
 export const fetchData = async (params: string) => {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
   const session = await auth();
+  const headers: Record<string, string> = {
+    'Content-type': 'application/json',
+  };
+
+  if (session?.accessToken) {
+    headers.Authorization = `Bearer ${session.accessToken}`;
+  }
+
   const res = await fetch(`${baseUrl}/api/${params}`, {
     method: 'GET',
-    headers: {
-      'Content-type': 'application/json',
-      Authorization: `Bearer ${session?.accessToken}`,
-    },
+    headers,
     cache: 'no-store',
   });
   if (!res.ok) {
