@@ -14,7 +14,7 @@ export function DatePickerWithRange({ form }: DatePickerWithRangeProps) {
   if (chosenStatus === 'ON_LEAVE' || chosenStatus === 'VACATION') {
     return (
       <FormField
-        name={'fromDate'}
+        name={'dateRange'}
         control={form.control}
         render={() => (
           <FormItem className={'flex gap-11 justify-between items-end'}>
