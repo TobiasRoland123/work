@@ -53,9 +53,7 @@
       "compositePrimaryKeys": {},
       "uniqueConstraints": {
         "users_email_unique": {
-          "columns": [
-            "email"
-          ],
+          "columns": ["email"],
           "nullsNotDistinct": false,
           "name": "users_email_unique"
         }
@@ -68,11 +66,7 @@
   "enums": {
     "public.system_role": {
       "name": "system_role",
-      "values": [
-        "ADMIN",
-        "USER",
-        "GUEST"
-      ],
+      "values": ["ADMIN", "USER", "GUEST"],
       "schema": "public"
     }
   },
