@@ -4,6 +4,7 @@ import { getDetailsPlaceholder } from '@/components/AppContent';
 import { UseFormReturn } from 'react-hook-form';
 import { z } from 'zod';
 import { formSchema } from '@/components/StatusForm/StatusForm';
+import { useEffect } from 'react';
 
 type DetailsFieldProps = {
   form: UseFormReturn<z.infer<typeof formSchema>>;
@@ -11,6 +12,12 @@ type DetailsFieldProps = {
 
 export function DetailsField({ form }: DetailsFieldProps) {
   const chosenStatus = form.watch('status');
+
+  useEffect(() => {
+    if (chosenStatus !== 'ON_LEAVE' && chosenStatus !== 'VACATION') {
+      form.setValue('dateRange', undefined);
+    }
+  }, [form, chosenStatus]);
 
   if (chosenStatus !== 'SICK' && chosenStatus !== undefined) {
     return (
