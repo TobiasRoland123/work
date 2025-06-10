@@ -20,6 +20,8 @@ export const PeopleOverviewWrapper = (props: {
   }, []);
 
   useEffect(() => {
+    if (!supabase) return;
+
     const channel = supabase
       .channel('status-sync')
       .on('broadcast', { event: 'status_updated' }, () => {
@@ -28,7 +30,9 @@ export const PeopleOverviewWrapper = (props: {
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      if (supabase) {
+        supabase.removeChannel(channel);
+      }
     };
   }, [refetchProfiles]);
 

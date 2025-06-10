@@ -54,11 +54,14 @@ export const statusService = {
   // POST METHODS
   async createNewStatus(newStatus: NewStatus) {
     const createdStatus = await db.insert(status).values(newStatus).returning();
-    await supabase.channel('status-sync').send({
-      type: 'broadcast',
-      event: 'status_updated',
-      payload: {},
-    });
+    if (supabase) {
+      await supabase.channel('status-sync').send({
+        type: 'broadcast',
+        event: 'status_updated',
+        payload: {},
+      });
+    }
+
     return createdStatus[0];
   },
 
@@ -69,32 +72,38 @@ export const statusService = {
       .set(updatedStatus)
       .where(eq(status.userID, userID))
       .returning();
-    await supabase.channel('status-sync').send({
-      type: 'broadcast',
-      event: 'status_updated',
-      payload: {},
-    });
+    if (supabase) {
+      await supabase.channel('status-sync').send({
+        type: 'broadcast',
+        event: 'status_updated',
+        payload: {},
+      });
+    }
     return updated[0];
   },
 
   // DELETE METHOD
   async deleteStatusById(id: number) {
     const deleted = await db.delete(status).where(eq(status.id, id)).returning();
-    await supabase.channel('status-sync').send({
-      type: 'broadcast',
-      event: 'status_updated',
-      payload: {},
-    });
+    if (supabase) {
+      await supabase.channel('status-sync').send({
+        type: 'broadcast',
+        event: 'status_updated',
+        payload: {},
+      });
+    }
     return deleted[0];
   },
 
   async deleteStatusByUserUserId(userId: string) {
     const deleted = await db.delete(status).where(eq(status.userID, userId)).returning();
-    await supabase.channel('status-sync').send({
-      type: 'broadcast',
-      event: 'status_updated',
-      payload: {},
-    });
+    if (supabase) {
+      await supabase.channel('status-sync').send({
+        type: 'broadcast',
+        event: 'status_updated',
+        payload: {},
+      });
+    }
     return deleted[0];
   },
 };
