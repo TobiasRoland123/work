@@ -31,10 +31,11 @@ const s3 = new S3Client({
 export async function GET(request: Request) {
   const authHeader = request.headers.get('authorization');
   if (authHeader !== process.env.CRON_SECRET) {
-    console.error('missing authHeader in route');
-    return new Response(authHeader, {
-      status: 401,
-    });
+    console.error('Unauthorized: missing or invalid authorization header in /api/check-users');
+    return NextResponse.json(
+      { error: 'Unauthorized: missing or invalid authorization header' },
+      { status: 401 }
+    );
   }
   const accessToken = await getAccessToken();
   let allNeonUsers = [];
