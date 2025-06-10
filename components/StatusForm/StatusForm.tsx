@@ -102,9 +102,14 @@ export function StatusForm({
         userID: userId,
         status: values.status,
         details: values.detailsString,
-        time: values.actionTime ? timeStringToDate(values.actionTime) : null,
-        fromDate: values.dateRange?.from,
-        toDate: values.dateRange?.to,
+        time:
+          values.status === 'SICK'
+            ? null
+            : values.actionTime
+              ? timeStringToDate(values.actionTime)
+              : null,
+        fromDate: values?.status === 'SICK' ? undefined : values.dateRange?.from,
+        toDate: values?.status === 'SICK' ? undefined : values.dateRange?.to,
       });
 
       if (newStatus && newStatus.status) {
