@@ -11,7 +11,7 @@ type DetailsFieldProps = {
 
 export function DetailsField({ form }: DetailsFieldProps) {
   const chosenStatus = form.watch('status');
-  return null;
+
   if (chosenStatus !== 'SICK' && chosenStatus !== undefined) {
     return (
       <FormField
