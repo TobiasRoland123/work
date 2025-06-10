@@ -30,7 +30,6 @@ export function DatePickerWithRange({ className, form }: DateRangePickerProps) {
   useEffect(() => {
     if (chosenStatus !== 'ON_LEAVE' && chosenStatus !== 'VACATION') return;
     if (date != undefined && date.from && date.to) {
-
       form.setValue('actionTime', undefined);
       form.setValue('fromDate', format(date.from, 'yyy-MM-dd'));
       form.setValue('toDate', format(date.to, 'yyyy-MM-dd'));
