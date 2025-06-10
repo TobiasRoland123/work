@@ -149,7 +149,7 @@ async function seedGraphUsers() {
             .webp({ quality: 80 })
             .toBuffer();
           const mimeType = photoResponse.headers.get('content-type') || 'image/jpeg';
-          const key = `profile-images/${graphUser.id}`;
+          const key = `profile-images/${graphUser.mail}`;
 
           await s3.send(
             new PutObjectCommand({
