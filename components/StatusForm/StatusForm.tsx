@@ -22,7 +22,7 @@ const dateRangeSchema = z.object({
 export const formSchema = z
   .object({
     status: z.enum(userStatus.enumValues),
-    detailsString: z.string().optional(),
+    detailsString: z.string().default('').optional(),
     actionTime: z.string().time().optional(),
     dateRange: dateRangeSchema.optional(),
   })
