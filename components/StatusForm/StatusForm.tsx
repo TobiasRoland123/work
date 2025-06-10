@@ -89,7 +89,7 @@ export function StatusForm({
   // 2. Add "status" to defaultValues
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {},
+    defaultValues: { detailsString: '' },
   });
 
   // if (!userId) return <div>Could not update Status.</div>;
