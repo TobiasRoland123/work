@@ -123,7 +123,7 @@ export async function GET(request: Request) {
               .webp({ quality: 80 })
               .toBuffer();
             const mimeType = photoResponse.headers.get('content-type') || 'image/jpeg';
-            const key = `profile-images/${neonUser.userId}`;
+            const key = `profile-images/${neonUser.email}`;
 
             await s3.send(
               new PutObjectCommand({
@@ -187,7 +187,7 @@ export async function GET(request: Request) {
               .webp({ quality: 80 })
               .toBuffer();
             const mimeType = photoResponse.headers.get('content-type') || 'image/jpeg';
-            const key = `profile-images/${entra.id}`;
+            const key = `profile-images/${entra.mail}`;
 
             await s3.send(
               new PutObjectCommand({
@@ -236,7 +236,7 @@ export async function GET(request: Request) {
     removedNeonUsers.map(async (neonUser: UserWithExtras) => {
       try {
         if (neonUser.profilePicture) {
-          const key = `profile-images/${neonUser.userId}`;
+          const key = `profile-images/${neonUser.email}`;
           try {
             await s3.send(
               new DeleteObjectCommand({
