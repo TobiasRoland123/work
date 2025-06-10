@@ -7,7 +7,7 @@ dotenv.config();
 
 // Create a PostgreSQL connection pool
 const pool = new Pool(
-  process.env.NODE_ENV === 'production'
+  process.env.NODE_ENV !== 'production'
     ? { connectionString: process.env.NEXT_PUBLIC_DATABASE_URL }
     : {
         user: process.env.PGUSER,
