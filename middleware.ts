@@ -6,7 +6,6 @@ import { auth } from './auth';
 const PUBLIC_PATHS = [
   '/login',
   '/api/auth',
-  '/api/auth/session',
   '/api/check-users',
   // Add any other public routes here
 ];
@@ -55,8 +54,6 @@ export async function middleware(request: NextRequest) {
   const isPublicPath = PUBLIC_PATHS.some(
     (path) => pathname === path || pathname.startsWith(`${path}/`)
   );
-
-  const isExemptApiEndpoint = pathname === '/api/auth/session';
 
   // Check if the path is an API route
   const isApiRoute = pathname.startsWith('/api/');
@@ -120,7 +117,7 @@ export async function middleware(request: NextRequest) {
     }
 
     // If user is logged in and trying to access a public-only path
-    if (isAuthenticated && !isSessionExpired && isPublicPath && !isExemptApiEndpoint) {
+    if (isAuthenticated && !isSessionExpired && isPublicPath) {
       const url = new URL(DEFAULT_AUTH_REDIRECT, request.url);
       return NextResponse.redirect(url);
     }
