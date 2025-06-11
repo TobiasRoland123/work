@@ -1,0 +1,1 @@
+ALTER POLICY "allow_service_role_select" ON "status" TO service_role USING (true);

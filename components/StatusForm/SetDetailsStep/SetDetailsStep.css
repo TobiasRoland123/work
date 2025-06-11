@@ -1,10 +1,8 @@
 /* This styling is applied to change the color of the Clock icon inside the Time picker*/
-input[type="time"]::-webkit-calendar-picker-indicator  {
-    filter: invert(1) brightness(2);
-
+input[type='time']::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(2);
 }
 
-input[type="date"]::-webkit-calendar-picker-indicator {
-    filter: invert(1) brightness(2);
-
+input[type='date']::-webkit-calendar-picker-indicator {
+  filter: invert(1) brightness(2);
 }

@@ -7,7 +7,7 @@ const PUBLIC_PATHS = [
   '/login',
   '/api/auth',
   '/api/auth/session',
-
+  '/api/check-users',
   // Add any other public routes here
 ];
 
@@ -17,16 +17,8 @@ const DEFAULT_AUTH_REDIRECT = '/today';
 // Route to redirect to when unauthenticated user tries to access protected routes
 const DEFAULT_UNAUTH_REDIRECT = '/login';
 
-const CHECK_USERS_API_PATH = '/api/check-users';
-
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-  const cronHeader = request.headers.get('x-vercel-cron');
-
-  // BYPASS: Allow Vercel cron job with x-vercel-cron header
-  if (pathname === CHECK_USERS_API_PATH && cronHeader) {
-    return NextResponse.next();
-  }
 
   let authData;
   try {
@@ -105,10 +97,7 @@ export async function middleware(request: NextRequest) {
       // Return 401 for unauthenticated API requests
       if (!isAuthenticated) {
         // Allow Vercel cron job to access /api/check-users with x-vercel-cron header
-        if (pathname === CHECK_USERS_API_PATH && cronHeader) {
-          return NextResponse.next();
-        }
-        console.error('Returning 401 from second catch block');
+
         return new NextResponse(JSON.stringify({ error: 'Unauthorized, is not authenticated' }), {
           status: 401,
           headers: {
@@ -140,7 +129,6 @@ export async function middleware(request: NextRequest) {
 
     // Return 401 for API routes on error
     if (isApiRoute) {
-      console.error('Returning 401 from third catch block');
       return new NextResponse(
         JSON.stringify({ error: 'Unauthorized: error in second catch block (middleware)' }),
         {

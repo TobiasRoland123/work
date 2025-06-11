@@ -3,7 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
-import { Form } from '@/components/ui/form';
+import { Form, FormMessage } from '@/components/ui/form';
 import React, { useState } from 'react';
 import { userStatus } from '@/db/schema';
 import { SetStatusStep } from '@/components/StatusForm/SetStatusStep/SetStatusStep';
@@ -14,29 +14,59 @@ import { Button } from '@/components/ui/Button/Button';
 import { toast } from 'sonner';
 import { timeStringToDate } from '@/utils/TimeConverter';
 
+const dateRangeSchema = z.object({
+  from: z.string().date(),
+  to: z.string().date(),
+});
+
 export const formSchema = z
   .object({
     status: z.enum(userStatus.enumValues),
-    detailsString: z.string().optional(),
+    detailsString: z.string().default('').optional(),
     actionTime: z.string().time().optional(),
-    fromDate: z.string().date().optional(),
-    toDate: z.string().date().optional(),
+    dateRange: dateRangeSchema.optional(),
   })
   .superRefine((data, ctx) => {
-    if ((data.status === 'IN_LATE' || data.status === 'LEAVING_EARLY') && !data.actionTime) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        path: ['actionTime'],
-        message: 'Time is required for this status.',
-      });
-    }
     if (data.status === 'VACATION' || data.status === 'ON_LEAVE') {
-      if (!data.fromDate || !data.toDate) {
+      const to = data.dateRange?.to;
+      const today = new Date().toISOString().split('T')[0];
+
+      if (!data.dateRange?.from || !data.dateRange?.to) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
-          path: ['fromDate', 'toDate'],
-          message: 'Dates are required for this status.',
+          path: ['dateRange'],
+          message: 'Both from and to dates are required.',
         });
+      }
+
+      if (to && to < today) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['dateRange'],
+          message: 'End date must be today or in the future.',
+        });
+      }
+    }
+    if (data.status === 'IN_LATE' || data.status === 'LEAVING_EARLY') {
+      if (!data.actionTime) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['actionTime'],
+          message: 'Time is required for this status.',
+        });
+      } else {
+        const now = new Date();
+        const [hours, minutes] = data.actionTime.split(':').map(Number);
+        const actionDate = new Date();
+        actionDate.setHours(hours, minutes, 0, 0);
+
+        if (actionDate <= now) {
+          ctx.addIssue({
+            code: z.ZodIssueCode.custom,
+            path: ['actionTime'],
+            message: 'Time must be in the future.',
+          });
+        }
       }
     }
   });
@@ -68,16 +98,34 @@ export function StatusForm({
     if (!userId) return;
 
     try {
-      const newStatus = await createNewStatusAction({
-        userID: userId,
-        status: values.status,
-        details: values.detailsString,
-        time: values.actionTime ? timeStringToDate(values.actionTime) : null,
-        fromDate: values.fromDate,
-        toDate: values.toDate,
-      });
+      let newStatus;
+      if (values.status === 'SICK') {
+        newStatus = await createNewStatusAction({
+          userID: userId,
+          status: values.status,
+        });
+      } else {
+        newStatus = await createNewStatusAction({
+          userID: userId,
+          status: values.status,
+          details: values.detailsString,
+          time: values.actionTime ? timeStringToDate(values.actionTime) : null,
+          fromDate: values.dateRange?.from,
+          toDate: values.dateRange?.to,
+        });
+      }
 
       if (newStatus && newStatus.status) {
+        if (setOpenSidebar) {
+          setOpenSidebar('navigation');
+          setTimeout(() => {
+            setCurrentStep(1);
+          }, 500);
+        }
+        if (setOpenDrawer) {
+          setOpenDrawer(false);
+        }
+
         toast('Status has been updated✨');
       } else toast('Something went wrong, status not updated 🚫');
     } catch (error) {
@@ -102,6 +150,7 @@ export function StatusForm({
       </header>
       <div className={'h-full pt-6'}>
         <Form {...form}>
+          <FormMessage className={'bg-green-500 z-50 text-white'} />
           <form
             onSubmit={(e) => {
               e.preventDefault();
@@ -123,17 +172,6 @@ export function StatusForm({
                 type="submit"
                 variant={'large'}
                 className={'text-black text-2xl mt-12 md:mt-auto md: mb-5'}
-                handleClick={() => {
-                  if (setOpenSidebar) {
-                    setOpenSidebar('navigation');
-                    setTimeout(() => {
-                      setCurrentStep(1);
-                    }, 500);
-                  }
-                  if (setOpenDrawer) {
-                    setOpenDrawer(false);
-                  }
-                }}
               >
                 Register
               </Button>
