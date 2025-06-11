@@ -30,7 +30,7 @@ const s3 = new S3Client({
 
 export async function GET(request: Request) {
   const authHeader = request.headers.get('authorization');
-  if (authHeader !== process.env.CRON_SECRET) {
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     console.error('Unauthorized: missing or invalid authorization header in /api/check-users');
     return NextResponse.json(
       { error: 'Unauthorized: missing or invalid authorization header' },
