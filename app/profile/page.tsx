@@ -3,6 +3,7 @@ import ProfileInfo from '@/components/ui/ProfileInfo/ProfileInfo';
 
 import { userService } from '@/lib/services/userService';
 import React from 'react';
+import { Toaster } from 'sonner';
 
 const page = async () => {
   const session = await auth();
@@ -17,7 +18,11 @@ const page = async () => {
     return <div>User not found.</div>;
   }
 
-  return <div>{user && <ProfileInfo user={user} />}</div>;
+  return (
+    <div>
+      {user && <ProfileInfo user={user} />} <Toaster />
+    </div>
+  );
 };
 
 export default page;
