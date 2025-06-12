@@ -19,7 +19,7 @@ export type ButtonProps = {
 };
 
 const variants = cva(
-  'bg-light-blue text-black font-mono px-5 py-3.5 h-14 flex items-center justify-center hover:bg-light-blue-hover active:bg-light-blue-pressed text-center w-fit focus:outline-light-blue-focus',
+  'bg-light-blue text-black font-mono px-5 py-3.5 h-14 flex items-center justify-center hover:bg-light-blue-hover active:bg-light-blue-pressed text-center w-fit focus:outline-light-blue-focus cursor-pointer',
   {
     variants: {
       variant: {
