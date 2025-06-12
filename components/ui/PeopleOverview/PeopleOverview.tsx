@@ -31,8 +31,8 @@ const PeopleOverview = ({
   });
 
   return (
-    <div>
-      <div className="px-3 pt-4 pb-7 sticky top-0 bg-white">
+    <div className="md:h-screen md:overflow-y-scroll">
+      <div className="px-3 pt-4 pb-7  sticky top-0 bg-white ">
         <PeopleCounter
           officeStatus={officeStatus}
           setOfficeStatus={setOfficeStatus}

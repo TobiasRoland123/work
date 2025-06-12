@@ -69,13 +69,14 @@ export function ProfileListItem({ user, showStatus = false }: ProfileListItemPro
               </a>
             </div>
           )}
-
-          <a
-            href={`mailto:${user.email}`}
-            className="text-base font-sans font-light leading-5 underline text-link-blue hover:text-light-blue-hover"
-          >
-            {user.email}
-          </a>
+          <div>
+            <a
+              href={`mailto:${user.email}`}
+              className="text-base font-sans font-light leading-5 underline text-link-blue hover:text-light-blue-hover"
+            >
+              {user.email}
+            </a>
+          </div>
         </div>
       </div>
     </div>
