@@ -22,7 +22,7 @@ const dateRangeSchema = z.object({
 export const formSchema = z
   .object({
     status: z.enum(userStatus.enumValues),
-    detailsString: z.string().default('').optional(),
+    detailsString: z.string().optional(),
     actionTime: z.string().time().optional(),
     dateRange: dateRangeSchema.optional(),
   })
@@ -89,7 +89,7 @@ export function StatusForm({
   // 2. Add "status" to defaultValues
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {},
+    defaultValues: { detailsString: '' },
   });
 
   const [isLoading, setIsLoading] = useState(false);
