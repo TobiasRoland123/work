@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import {
   pgTable,
   unique,
@@ -8,6 +9,7 @@ import {
   pgEnum,
   integer,
   date,
+  pgPolicy,
 } from 'drizzle-orm/pg-core';
 
 export const systemRole = pgEnum('system_role', ['ADMIN', 'USER', 'GUEST']);
@@ -78,15 +80,26 @@ export const users_business_phone_numbers = pgTable('users_business_phone_number
     .references(() => business_phone_numbers.id),
 });
 
-export const status = pgTable('status', {
-  id: serial().primaryKey().notNull(),
-  userID: varchar('user_id', { length: 36 })
-    .notNull()
-    .references(() => users.userId, { onDelete: 'cascade' }),
-  status: userStatus('status').default('IN_OFFICE').notNull(),
-  details: text('details'),
-  time: timestamp('time'),
-  fromDate: date('from_date'),
-  toDate: date('to_date'),
-  createdAt: timestamp('created_at', { mode: 'string' }).defaultNow().notNull(),
-});
+export const status = pgTable(
+  'status',
+  {
+    id: serial().primaryKey().notNull(),
+    userID: varchar('user_id', { length: 36 })
+      .notNull()
+      .references(() => users.userId, { onDelete: 'cascade' }),
+    status: userStatus('status').default('IN_OFFICE').notNull(),
+    details: text('details'),
+    time: timestamp('time'),
+    fromDate: date('from_date'),
+    toDate: date('to_date'),
+    createdAt: timestamp('created_at', { mode: 'string' }).defaultNow().notNull(),
+  },
+  () => [
+    pgPolicy('allow_service_role_select', {
+      as: 'permissive',
+      for: 'select',
+      to: 'service_role',
+      using: sql`true`,
+    }),
+  ]
+).enableRLS();
