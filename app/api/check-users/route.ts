@@ -1,7 +1,7 @@
 import { UserWithExtras } from '@/db/types';
 import { userService } from '@/lib/services/userService';
 import { getAccessToken } from '@/scripts/seed';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import sharp from 'sharp';
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 
@@ -28,7 +28,7 @@ const s3 = new S3Client({
   },
 });
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     console.error('Unauthorized: missing or invalid authorization header in /api/check-users');
