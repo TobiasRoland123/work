@@ -4,6 +4,7 @@ import { cn } from '@/lib/className';
 import { cva } from 'class-variance-authority';
 import React from 'react';
 import './button.css';
+import { Spinner } from '../Spinner/Spinner';
 
 export type ButtonProps = {
   label?: string;
@@ -14,7 +15,7 @@ export type ButtonProps = {
   className?: string;
   handleClick?: () => void;
   type?: 'button' | 'submit' | 'reset';
-  isLoading?: boolean; // New prop for loading state
+  isLoading?: boolean; 
 };
 
 const variants = cva(
@@ -48,13 +49,14 @@ export function Button({
         href={link.href}
         aria-label={ariaLabel}
         target={link.target || '_self'}
-        className={cn(variants({ variant, className }), isLoading && 'opacity-50 pointer-events-none')}
+        className={cn(
+          variants({ variant, className }),
+          isLoading && 'opacity-50 pointer-events-none'
+        )}
         tabIndex={isLoading ? -1 : 0}
         aria-disabled={isLoading}
       >
-        {isLoading ? (
-          <span className="loader mr-2" aria-hidden="true" />
-        ) : null}
+        {isLoading ? <span className="loader mr-2" aria-hidden="true" /> : null}
         {link.label || children}
       </Link>
     );
@@ -64,14 +66,14 @@ export function Button({
       type={type}
       aria-label={ariaLabel}
       onClick={handleClick}
-      className={cn(variants({ variant, className }), isLoading && 'opacity-50 pointer-events-none')}
+      className={cn(
+        variants({ variant, className }),
+        isLoading && 'opacity-50 pointer-events-none'
+      )}
       disabled={isLoading}
       aria-busy={isLoading}
     >
-      {isLoading ? (
-        <span className="loader mr-2" aria-hidden="true" />
-      ) : null}
-      {label || children}
+      {isLoading ? <Spinner /> : label || children}
     </button>
   );
 }
