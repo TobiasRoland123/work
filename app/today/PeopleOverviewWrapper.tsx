@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { UserWithExtras } from '@/db/types';
 import { getAllUsersAction } from '../actions/userActions';
 import { supabase } from '@/lib/supabaseClient';
+import { useWebSocket } from '@/hooks/useWebSocket';
 
 export const PeopleOverviewWrapper = (props: {
   initialProfiles: UserWithExtras[];
@@ -35,6 +36,23 @@ export const PeopleOverviewWrapper = (props: {
       }
     };
   }, [refetchProfiles]);
+
+  const handleMessage = useCallback(
+    (msg: string) => {
+      try {
+        const data = JSON.parse(msg);
+        if (data.type === 'STATUS_UPDATE' || data.type === 'USER_UPDATE') {
+          refetchProfiles();
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    },
+    [refetchProfiles]
+  );
+  const wsUrl = 'ws://localhost:3001';
+
+  useWebSocket(wsUrl, handleMessage);
 
   function getProfilesInAndOutOfOffice(profiles: Array<UserWithExtras>) {
     const profilesInOffice: UserWithExtras[] = [];
