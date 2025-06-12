@@ -4,6 +4,7 @@ import ProfileInfoField from './ProfileInfoField';
 import { UserWithExtras } from '@/db/types';
 import { Logo } from '@/components/ui/Logo/Logo';
 import ProfileImageUploader from '@/components/ProfileImageUploader/ProfileImageUploader';
+import Link from 'next/link';
 
 interface UserProps {
   user: UserWithExtras;
@@ -14,7 +15,9 @@ const ProfileInfo = ({ user }: UserProps) => {
   const heading = name ? name : 'Profile';
   return (
     <section className="p-4  ">
-      <Logo />
+      <Link href={'/'}>
+        <Logo />
+      </Link>
       <div className={'pt-9 flex flex-col lg:flex-row lg:gap-10 items-center'}>
         <ProfileImageUploader
           currentImage={user?.profilePicture ? user.profilePicture : null}
