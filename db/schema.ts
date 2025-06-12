@@ -45,7 +45,6 @@ export const users = pgTable(
     }),
     mobilePhone: varchar('mobile_phone', { length: 20 }),
     profilePicture: text('profile_picture'),
-    // hasUpdatedProfilePicture: boolean('has_updated_profile_picture').default(false),
   },
   (table) => [unique('users_email_unique').on(table.email)]
 );
