@@ -34,7 +34,7 @@ const PeopleOverview = ({
 
   return (
     <div className="md:h-screen md:overflow-y-scroll">
-      <div className="px-3 pt-4 pb-7">
+      <div className="px-3 pt-4 pb-7  sticky top-0 bg-white ">
         <Link href={'/'}>
           <Logo />
         </Link>
