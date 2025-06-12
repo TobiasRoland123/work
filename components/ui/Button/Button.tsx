@@ -15,7 +15,7 @@ export type ButtonProps = {
   className?: string;
   handleClick?: () => void;
   type?: 'button' | 'submit' | 'reset';
-  isLoading?: boolean; 
+  isLoading?: boolean;
 };
 
 const variants = cva(
