@@ -13,6 +13,11 @@ on:
 jobs:
   setup:
     runs-on: ubuntu-latest
+    env:
+      HETZNER_BUCKET_URL: ${{ secrets.HETZNER_BUCKET_URL }}
+      HETZNER_BUCKET_NAME: ${{ secrets.HETZNER_BUCKET_NAME }}
+      HETZNER_BUCKET_ACCESS_KEY: ${{ secrets.HETZNER_BUCKET_ACCESS_KEY }}
+      HETZNER_BUCKET_SECRET_KEY: ${{ secrets.HETZNER_BUCKET_SECRET_KEY }}
     outputs:
       pnpm-store-path: ~/.pnpm-store
     steps:
