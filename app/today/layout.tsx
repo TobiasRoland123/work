@@ -8,7 +8,7 @@ import Loading from './loading';
 export default async function DashboardLayout({ children }: { children: ReactNode }) {
   const session = await auth();
   return (
-    <main>
+    <main className="w-screen h-screen overflow-y-auto pl-[calc(100vw - 100%)]">
       <SidebarProviderWrapper links={menuLinks} showStatusSidebar userId={session?.userId}>
         <Suspense fallback={<Loading />}>{children}</Suspense>
       </SidebarProviderWrapper>
