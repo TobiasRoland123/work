@@ -132,8 +132,8 @@ export const userService = {
     };
   },
 
-  async getAllUsers() {
-    const usersList = await db.select().from(users);
+  async getAllUsers(sortByStatus: boolean = true) {
+    const usersList = await db.select().from(users).orderBy(users.firstName, users.lastName);
 
     const usersWithExtras = await Promise.all(
       usersList.map(async (user) => {
@@ -183,6 +183,14 @@ export const userService = {
         };
       })
     );
+
+    if (sortByStatus) {
+      usersWithExtras.sort((a, b) => {
+        if (a.status && !b.status) return -1;
+        if (!a.status && b.status) return 1;
+        return 0;
+      });
+    }
 
     return usersWithExtras;
   },
