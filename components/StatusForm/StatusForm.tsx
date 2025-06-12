@@ -22,7 +22,7 @@ const dateRangeSchema = z.object({
 export const formSchema = z
   .object({
     status: z.enum(userStatus.enumValues),
-    detailsString: z.string().default('').optional(),
+    detailsString: z.string().optional(),
     actionTime: z.string().time().optional(),
     dateRange: dateRangeSchema.optional(),
   })
@@ -89,8 +89,10 @@ export function StatusForm({
   // 2. Add "status" to defaultValues
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
-    defaultValues: {},
+    defaultValues: { detailsString: '' },
   });
+
+  const [isLoading, setIsLoading] = useState(false);
 
   // if (!userId) return <div>Could not update Status.</div>;
   // 3. Update handler to show status toos
@@ -98,6 +100,7 @@ export function StatusForm({
     if (!userId) return;
 
     try {
+      setIsLoading(true);
       let newStatus;
       if (values.status === 'SICK') {
         newStatus = await createNewStatusAction({
@@ -125,12 +128,13 @@ export function StatusForm({
         if (setOpenDrawer) {
           setOpenDrawer(false);
         }
-
+        setIsLoading(false);
         toast('Status has been updated✨');
       } else toast('Something went wrong, status not updated 🚫');
     } catch (error) {
       // Handle error (e.g., show a notification)
       console.error(error);
+      setIsLoading(false);
     }
   }
 
@@ -171,6 +175,7 @@ export function StatusForm({
                 ariaLabel={'Register Status'}
                 type="submit"
                 variant={'large'}
+                isLoading={isLoading}
                 className={'text-black text-2xl mt-12 md:mt-auto md: mb-5'}
               >
                 Register

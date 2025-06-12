@@ -32,7 +32,7 @@ export function SidebarProviderWrapper({
           <SidebarTrigger
             open={open}
             setOpen={setOpen}
-            className="fixed bottom-5 right-3.5 hidden md:block"
+            className="fixed bottom-5 right-3.5 mr-3 hidden md:block"
           />
           <StatusSidebar open={open} setOpen={setOpen} userId={userId} />
         </>
