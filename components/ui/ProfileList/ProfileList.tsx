@@ -14,7 +14,7 @@ export function ProfileList({ profiles, showStatus = false }: ProfileListProps) 
         <li
           key={index}
           className={`border-b border-gray-400 pb-1 ${
-            index === profiles.length - 1 && profiles.length % 2 === 1 ? 'md:col-span-2' : ''
+            index === profiles.length - 1 && profiles.length % 2 === 1 ? 'lg:col-span-2' : ''
           }`}
         >
           <ProfileListItem user={profile} showStatus={showStatus} />
