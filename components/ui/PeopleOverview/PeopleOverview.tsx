@@ -32,7 +32,7 @@ const PeopleOverview = ({
 
   return (
     <div>
-      <div className="px-3 pt-4 pb-7">
+      <div className="px-3 pt-4 pb-7 sticky top-0 bg-white">
         <PeopleCounter
           officeStatus={officeStatus}
           setOfficeStatus={setOfficeStatus}
