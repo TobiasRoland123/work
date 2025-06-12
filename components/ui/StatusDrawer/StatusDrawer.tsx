@@ -33,10 +33,7 @@ export function StatusDrawer({ userId }: StatusDrawerProps) {
           Report status
         </Button>
       </DrawerTrigger>
-      <DrawerContent
-        className={'bg-black text-white font-mono pt-7 pb-5 px-3.5'}
-        aria-describedby={undefined}
-      >
+      <DrawerContent className={'bg-black text-white font-mono pt-7 pb-5 px-3.5'}>
         <DrawerHeader className={'justify-between flex-row p-0 hidden'}>
           <DrawerTitle>Status picker</DrawerTitle>
         </DrawerHeader>

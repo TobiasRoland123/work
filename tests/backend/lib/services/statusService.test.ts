@@ -33,8 +33,8 @@ describe('StatusService Tests', () => {
     status: 'FROM_HOME',
     details: 'Test status details',
     time: new Date(Date.now()),
-    fromDate: format(fromDate, 'yyy-MM-dd'),
-    toDate: format(toDate, 'yyy-MM-dd'),
+    fromDate: format(fromDate, 'yyyy-MM-dd'),
+    toDate: format(toDate, 'yyyy-MM-dd'),
   };
 
   beforeAll(async () => {
