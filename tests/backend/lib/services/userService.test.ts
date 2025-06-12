@@ -10,7 +10,7 @@ import {
   DeleteObjectsCommand,
   ListObjectsV2Command,
   PutObjectCommand,
-  S3,
+  S3Client,
 } from '@aws-sdk/client-s3';
 
 const pool = new Pool({
@@ -201,7 +201,7 @@ describe('UserService Tests', () => {
       vi.spyOn(sharp.prototype, 'toBuffer').mockResolvedValue(processedBuffer);
 
       // Mock S3 list, put, and delete
-      vi.spyOn(S3.prototype, 'send').mockImplementation(async (cmd) => {
+      vi.spyOn(S3Client.prototype, 'send').mockImplementation(async (cmd) => {
         if (cmd instanceof ListObjectsV2Command) {
           return { Contents: [] };
         }
