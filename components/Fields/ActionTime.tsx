@@ -31,7 +31,14 @@ export function ActionTime({ form }: ActionTimeProps) {
 
               <FormControl className={'w-full'}>
                 <div className="flex flex-col gap-2">
-                  <Input {...field} type="time" id="action-time" name="Action Time" required />
+                  <Input
+                    {...field}
+                    type="time"
+                    id="action-time"
+                    name="Action Time"
+                    required
+                    value={field.value ?? ''}
+                  />
                 </div>
               </FormControl>
             </div>
