@@ -19,7 +19,7 @@ export function ProfileListItem({ user, showStatus = false }: ProfileListItemPro
 
   return (
     <div className="flex items-start gap-3 px-2 py-1 border-gray-400 max-w-[60ch] ">
-      <div className="w-[60px] h-[60px] rounded-full overflow-hidden flex items-center justify-center bg-gray-400 shrink-0">
+      <div className="w-[60px] h-[60px] rounded-full overflow-hidden flex items-center justify-center bg-neutral-500 shrink-0">
         {user.profilePicture ? (
           <Image
             key={user.profilePicture}
