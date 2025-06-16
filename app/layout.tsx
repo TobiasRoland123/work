@@ -37,9 +37,13 @@ const ibxMono = localFont({
 export const metadata: Metadata = {
   title: 'WØRK',
   description: 'Make sure your colleagues know how to get a hold of you!',
-  viewport: {
-    interactiveWidget: 'resizes-content',
-  },
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default async function RootLayout({
