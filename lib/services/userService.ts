@@ -1,4 +1,4 @@
-import { NewUser, UserWithExtras } from '@/db/types';
+import { NewUser, Status, UserWithExtras } from '@/db/types';
 import { db } from '@/db';
 import {
   users,
@@ -9,7 +9,7 @@ import {
   business_phone_numbers,
   organisations,
 } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { inArray, eq } from 'drizzle-orm';
 import { statusService } from './statusService';
 import {
   PutObjectCommand,
@@ -133,56 +133,84 @@ export const userService = {
   },
 
   async getAllUsers(sortByStatus: boolean = true) {
+    // 1. Fetch all users
     const usersList = await db.select().from(users).orderBy(users.firstName, users.lastName);
 
-    const usersWithExtras = await Promise.all(
-      usersList.map(async (user) => {
-        // Fetch organisation roles for this user
-        let organisation = null;
-        if (user.organisationId !== null && user.organisationId !== undefined) {
-          [organisation] = await db
-            .select({ id: organisations.id, organisationName: organisations.organisationName })
-            .from(organisations)
-            .where(eq(organisations.id, user.organisationId))
-            .limit(1);
-        }
+    if (usersList.length === 0) return [];
 
-        // Fetch latest status row for this user
-        const latestStatus = await statusService.getActiveStatusByUserUserId(user.userId);
+    // 2. Gather all userIds and organisationIds
+    const userIds = usersList.map((u) => u.userId);
+    const organisationIds = usersList
+      .map((u) => u.organisationId)
+      .filter((id): id is number => typeof id === 'number');
 
-        // Fetch all organisation roles for this user
-        const roles = await db
-          .select({ role: organisation_roles.role_name })
-          .from(users_organisation_roles)
-          .leftJoin(
-            organisation_roles,
-            eq(users_organisation_roles.organisationRoleId, organisation_roles.id)
-          )
-          .where(eq(users_organisation_roles.userId, user.userId));
+    // 3. Fetch all organisations in one query
+    const organisationsList = organisationIds.length
+      ? await db
+          .select({ id: organisations.id, organisationName: organisations.organisationName })
+          .from(organisations)
+          .where(inArray(organisations.id, organisationIds))
+      : [];
+    const orgMap = new Map(organisationsList.map((o) => [o.id, o.organisationName]));
 
-        // Fetch business phone numbers for this user
-        const businessPhones = await db
-          .select({ businessPhoneNumber: business_phone_numbers.businessPhoneNumber })
-          .from(users_business_phone_numbers)
-          .leftJoin(
-            business_phone_numbers,
-            eq(users_business_phone_numbers.businessPhoneNumberId, business_phone_numbers.id)
-          )
-          .where(eq(users_business_phone_numbers.userId, user.userId));
-
-        const businessPhoneNumber = businessPhones[0]?.businessPhoneNumber ?? null;
-
-        return {
-          ...user,
-          status: latestStatus ?? null,
-          organisationRoles: roles
-            .map((r) => r.role)
-            .filter((role): role is string => typeof role === 'string'),
-          businessPhoneNumber,
-          organisation: organisation?.organisationName ?? null,
-        };
+    // 4. Fetch all roles for all users in one query
+    const rolesList = await db
+      .select({
+        userId: users_organisation_roles.userId,
+        role: organisation_roles.role_name,
       })
-    );
+      .from(users_organisation_roles)
+      .leftJoin(
+        organisation_roles,
+        eq(users_organisation_roles.organisationRoleId, organisation_roles.id)
+      )
+      .where(inArray(users_organisation_roles.userId, userIds));
+    const rolesMap = new Map<string, string[]>();
+    for (const { userId, role } of rolesList) {
+      if (!rolesMap.has(userId)) rolesMap.set(userId, []);
+      if (role) rolesMap.get(userId)!.push(role);
+    }
+
+    // 5. Fetch all business phone numbers for all users in one query
+    const phonesList = await db
+      .select({
+        userId: users_business_phone_numbers.userId,
+        businessPhoneNumber: business_phone_numbers.businessPhoneNumber,
+      })
+      .from(users_business_phone_numbers)
+      .leftJoin(
+        business_phone_numbers,
+        eq(users_business_phone_numbers.businessPhoneNumberId, business_phone_numbers.id)
+      )
+      .where(inArray(users_business_phone_numbers.userId, userIds));
+    const phoneMap = new Map<string, string>();
+    for (const { userId, businessPhoneNumber } of phonesList) {
+      if (businessPhoneNumber && !phoneMap.has(userId)) {
+        phoneMap.set(userId, businessPhoneNumber);
+      }
+    }
+
+    // 6. Fetch all statuses for all users in one query
+    const statusesList = await db.select().from(status).where(inArray(status.userID, userIds));
+    // Pick the latest status per user (assuming createdAt or similar field exists)
+    const statusMap = new Map<string, Status>();
+    for (const s of statusesList) {
+      if (
+        !statusMap.has(s.userID) ||
+        (s.createdAt && (statusMap.get(s.userID)?.createdAt ?? 0) < s.createdAt)
+      ) {
+        statusMap.set(s.userID, s);
+      }
+    }
+
+    // 7. Assemble the final result
+    const usersWithExtras = usersList.map((user) => ({
+      ...user,
+      status: statusMap.get(user.userId) ?? null,
+      organisationRoles: rolesMap.get(user.userId) ?? [],
+      businessPhoneNumber: phoneMap.get(user.userId) ?? null,
+      organisation: user.organisationId ? (orgMap.get(user.organisationId) ?? null) : null,
+    }));
 
     if (sortByStatus) {
       usersWithExtras.sort((a, b) => {
