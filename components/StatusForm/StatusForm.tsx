@@ -132,6 +132,7 @@ export function StatusForm({
         if (setOpenDrawer) {
           setOpenDrawer(false);
         }
+        form.reset();
         setIsLoading(false);
         toast('Status has been updated✨');
       } else toast('Something went wrong, status not updated 🚫');
