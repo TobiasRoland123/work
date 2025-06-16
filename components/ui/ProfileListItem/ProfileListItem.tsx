@@ -11,15 +11,18 @@ export function ProfileListItem({ user, showStatus = false }: ProfileListItemPro
   const formattedTimed = user?.status?.time?.toLocaleTimeString('da-dk').substring(0, 5);
   const fromDate = user.status?.fromDate ? new Date(user.status?.fromDate) : null;
   const toDate = user.status?.toDate ? new Date(user.status?.toDate) : null;
+
   const formattedDates =
     fromDate && toDate
       ? `${fromDate.toLocaleDateString('da-DK')}-${toDate.toLocaleDateString('da-DK')}`
       : null;
+
   return (
     <div className="flex items-start gap-3 px-2 py-1 border-gray-400 max-w-[60ch] ">
       {user.profilePicture ? (
         <Image
           src={user.profilePicture}
+          key={user.profilePicture}
           alt={`Profile picture of ${user.firstName} ${user.lastName}`}
           style={{ objectFit: 'cover' }}
           width={60}
