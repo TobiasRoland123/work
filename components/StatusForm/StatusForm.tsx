@@ -142,7 +142,10 @@ export function StatusForm({
 
   return (
     <>
-      <header className={'flex justify-between items-center relative'}>
+      <header
+        className={'flex justify-between items-center relative'}
+        aria-label="Status Form Header"
+      >
         <h3>
           {currentStatus && currentStatus !== 'IN_OFFICE' ? (
             <Status status={currentStatus} asLabel={false} />

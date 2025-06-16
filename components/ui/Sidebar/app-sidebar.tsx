@@ -23,7 +23,7 @@ export function AppSidebar({ linkList, ...props }: AppSidebarProps) {
           </Link>
         </SidebarHeader>
         <SidebarContent className={'h-full pb-5 px-4'}>
-          <nav className={'mt-auto'}>
+          <nav className={'mt-auto'} aria-label="App Navigation">
             <ul className={'flex gap-8 flex-col justify-end'}>
               {linkList &&
                 linkList?.length > 0 &&
