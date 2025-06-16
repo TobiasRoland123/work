@@ -30,7 +30,11 @@ export function ProfileListItem({ user, showStatus = false }: ProfileListItemPro
             className="object-cover w-full h-full"
           />
         ) : (
-          <span className="text-white font-bold text-lg">
+          <span
+            className="text-white font-bold text-lg"
+            role="img"
+            aria-label={`Profile initials for ${user.firstName} ${user.lastName}`}
+          >
             {user.email.slice(0, user.email.indexOf('@')).toUpperCase()}
           </span>
         )}
