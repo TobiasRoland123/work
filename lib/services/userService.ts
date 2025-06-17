@@ -305,7 +305,11 @@ export const userService = {
       }
     }
 
-    // Handle businessPhoneNumber separately if needed...
+    // Invalidate cache for this user
+    userCache.delete(`userService:getUserById:${userId}`);
+    if (updateData.email) {
+      userCache.delete(`userService:getUserByEmail:${updateData.email}`);
+    }
 
     return this.getUserById(userId);
   },
@@ -380,6 +384,9 @@ export const userService = {
       const url = `${process.env.HETZNER_BUCKET_URL!.replace(/\/$/, '')}/${process.env.HETZNER_BUCKET_NAME}/${key}`;
       // Update the user's profileImage field in the database
       await db.update(users).set({ profilePicture: url }).where(eq(users.email, email));
+
+      // Invalidate the cache for this user
+      userCache.delete(`userService:getUserByEmail:${email}`);
 
       // Delete the old image from S3 if it exists and is not the same as the new one
       if (oldImageKey && oldImageKey !== key) {
