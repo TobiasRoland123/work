@@ -23,11 +23,12 @@ export function ProfileListItem({ user, showStatus = false }: ProfileListItemPro
         {user.profilePicture ? (
           <Image
             key={user.profilePicture}
-            src={user.profilePicture}
+            src={`/api/image-proxy?url=${encodeURIComponent(user.profilePicture)}`}
             alt={`Profile picture of ${user.firstName} ${user.lastName}`}
             width={60}
             height={60}
             className="object-cover w-full h-full"
+            loading="lazy"
           />
         ) : (
           <span
