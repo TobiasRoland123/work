@@ -179,15 +179,28 @@ export function StatusForm({
               />
             )}
             {currentStep === 2 ? (
-              <Button
-                ariaLabel={'Register Status'}
-                type="submit"
-                variant={'large'}
-                isLoading={isLoading}
-                className={'text-black text-2xl mt-12 md:mt-auto md: mb-5'}
-              >
-                Register
-              </Button>
+              <div className="flex flex-col gap-3.5 text-black pb-8 mt-auto">
+                <Button
+                  ariaLabel={'Register Status'}
+                  type="submit"
+                  variant={'large'}
+                  isLoading={isLoading}
+                >
+                  Register
+                </Button>
+                <Button
+                  ariaLabel={'Go back'}
+                  type="button"
+                  variant={'large'}
+                  isLoading={isLoading}
+                  handleClick={() => {
+                    form.reset();
+                    setCurrentStep(currentStep - 1);
+                  }}
+                >
+                  Back
+                </Button>
+              </div>
             ) : null}
           </form>
         </Form>

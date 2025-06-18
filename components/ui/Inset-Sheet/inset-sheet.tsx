@@ -84,20 +84,21 @@ interface InsetSheetContentProps extends React.HTMLAttributes<HTMLDivElement> {
   side?: 'top' | 'right' | 'bottom' | 'left';
   hideCloseButton?: boolean;
 }
-
 function InsetSheetOverlay() {
   const { open, onOpenChange } = useInsetSheet();
 
-  if (!open) return null;
-
   return (
     <div
-      className="fixed inset-0 z-40 transition-opacity"
+      className={cn(
+        "fixed inset-0 bg-black/50 backdrop-blur-xs z-40 transition-all duration-200 ease-in-out",
+        open ? "opacity-100" : "opacity-0 pointer-events-none"
+      )}
       onClick={() => onOpenChange(false)}
       aria-hidden="true"
     />
   );
 }
+
 
 function InsetSheetContent({
   children,

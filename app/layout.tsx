@@ -56,6 +56,9 @@ export default async function RootLayout({
       lang="en"
       className={`${monumentGrotesk.variable} ${ibxMono.variable} font-sans antialiased`}
     >
+      <head>
+        <link rel="icon" href="./icon.svg" sizes="any" />
+      </head>
       <body>{children}</body>
     </html>
   );
