@@ -290,10 +290,7 @@ export const userService = {
     }
 
     // Invalidate cache for this user
-    userCache.delete(`userService:getUserById:${userId}`);
-    if (updateData.email) {
-      userCache.delete(`userService:getUserByEmail:${updateData.email}`);
-    }
+    invalidateUserCache(userId);
 
     return this.getUserById(userId);
   },
