@@ -19,8 +19,15 @@ type StatusDrawerProps = {
 
 export function StatusDrawer({ userId }: StatusDrawerProps) {
   const [open, setOpen] = useState(false);
+  const [currentStep, setCurrentStep] = useState(1);
   return (
-    <Drawer open={open} onClose={() => setOpen(false)}>
+    <Drawer
+      open={open}
+      onClose={() => {
+        setOpen(false);
+        setCurrentStep(1);
+      }}
+    >
       <DrawerTrigger asChild>
         <Button
           variant={'default'}
@@ -40,6 +47,8 @@ export function StatusDrawer({ userId }: StatusDrawerProps) {
 
         <div className={'gap-7 flex flex-col'}>
           <StatusForm
+            currentStep={currentStep}
+            setCurrentStep={setCurrentStep}
             userId={userId}
             setOpenDrawer={setOpen}
             closeButton={

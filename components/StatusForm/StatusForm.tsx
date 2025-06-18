@@ -74,6 +74,8 @@ export const formSchema = z
 type StatusFormProps = {
   closeButton?: React.ReactNode;
   userId?: string;
+  currentStep: number;
+  setCurrentStep: (currentStep: number) => void;
   setOpenSidebar?: (open: 'navigation' | 'status') => void;
   setOpenDrawer?: (open: boolean) => void;
 };
@@ -81,11 +83,13 @@ type StatusFormProps = {
 export function StatusForm({
   closeButton,
   userId,
+  currentStep,
+  setCurrentStep,
   setOpenSidebar,
   setOpenDrawer,
 }: StatusFormProps) {
   // const session = await();
-  const [currentStep, setCurrentStep] = useState(1);
+
   // 2. Add "status" to defaultValues
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -128,6 +132,7 @@ export function StatusForm({
         if (setOpenDrawer) {
           setOpenDrawer(false);
         }
+        form.reset();
         setIsLoading(false);
         toast('Status has been updated✨');
       } else toast('Something went wrong, status not updated 🚫');
@@ -142,9 +147,12 @@ export function StatusForm({
 
   return (
     <>
-      <header className={'flex justify-between items-center relative'}>
+      <header
+        className={'flex justify-between items-center relative'}
+        aria-label="Status Form Header"
+      >
         <h3>
-          {currentStatus && currentStatus !== 'IN_OFFICE' ? (
+          {currentStatus && currentStatus !== 'IN_OFFICE' && currentStep !== 1 ? (
             <Status status={currentStatus} asLabel={false} />
           ) : (
             'Where are you today?'
