@@ -40,12 +40,14 @@ export function StatusDrawer({ userId }: StatusDrawerProps) {
           Report status
         </Button>
       </DrawerTrigger>
-      <DrawerContent className={'bg-black text-white font-mono pt-7 pb-5 px-3.5'}>
+      <DrawerContent
+        className={'bg-black text-white font-mono pt-7 pb-5 px-3.5 h-full max-h-[80svh]'}
+      >
         <DrawerHeader className={'justify-between flex-row p-0 hidden'}>
           <DrawerTitle>Status picker</DrawerTitle>
         </DrawerHeader>
 
-        <div className={'gap-7 flex flex-col'}>
+        <div className={'gap-7 flex flex-col h-full min-h-[80svh]'}>
           <StatusForm
             currentStep={currentStep}
             setCurrentStep={setCurrentStep}
