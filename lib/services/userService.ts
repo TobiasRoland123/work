@@ -34,16 +34,25 @@ type CacheEntry<T> = { value: T; expiresAt: number };
 const userCache = new Map<string, CacheEntry<UserWithExtras | null>>();
 const userWithExtraCache = new Map<string, CacheEntry<UserWithExtras[] | null>>();
 
+const updateUserInAllUsersCache = (updatedUser: UserWithExtras) => {
+  for (const [cacheKey, entry] of userWithExtraCache.entries()) {
+    if (cacheKey.startsWith('userService:getAllUsers')) {
+      if (entry && entry.value) {
+        const idx = entry.value.findIndex((u) => u.userId === updatedUser.userId);
+        if (idx !== -1) {
+          entry.value[idx] = updatedUser;
+          entry.expiresAt = Date.now() + CACHE_TTL;
+        }
+      }
+    }
+  }
+};
+
 export const userService = {
+  // Cache helper
+  updateUserInAllUsersCache,
   // GET METHODS
   async getUserByEmail(email: string) {
-    // Cache check
-    const cacheKey = `userService:getUserByEmail:${email}`;
-    const cached = userCache.get(cacheKey);
-    if (cached && cached.expiresAt > Date.now()) {
-      return cached.value;
-    }
-
     const userArr = await db.select().from(users).where(eq(users.email, email)).limit(1);
     const user = userArr[0];
     if (!user) return null;
@@ -92,16 +101,10 @@ export const userService = {
       businessPhoneNumber,
       organisation: organisation?.organisationName ?? null,
     };
-    userCache.set(cacheKey, { value: result, expiresAt: Date.now() + CACHE_TTL });
     return result;
   },
 
   async getUserById(id: string) {
-    const cacheKey = `userService:getUserById:${id}`;
-    const cached = userCache.get(cacheKey);
-    if (cached && cached.expiresAt > Date.now()) {
-      return cached.value;
-    }
     const userArr = await db.select().from(users).where(eq(users.userId, id)).limit(1);
     const user = userArr[0];
     if (!user) return null;
@@ -150,12 +153,11 @@ export const userService = {
       businessPhoneNumber,
       organisation: organisation?.organisationName ?? null,
     };
-    userCache.set(cacheKey, { value: result, expiresAt: Date.now() + CACHE_TTL });
     return result;
   },
 
   async getAllUsers(sortByStatus: boolean = true) {
-    const cacheKey = `userService:getAllUsers:${sortByStatus}`;
+    const cacheKey = `userService:getAllUsers`;
     const cached = userWithExtraCache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) {
       return cached.value || [];
@@ -383,10 +385,11 @@ export const userService = {
 
       const url = `${process.env.HETZNER_BUCKET_URL!.replace(/\/$/, '')}/${process.env.HETZNER_BUCKET_NAME}/${key}`;
       // Update the user's profileImage field in the database
-      await db.update(users).set({ profilePicture: url }).where(eq(users.email, email));
-
-      // Invalidate the cache for this user
-      userCache.delete(`userService:getUserByEmail:${email}`);
+      const user = await db
+        .update(users)
+        .set({ profilePicture: url })
+        .where(eq(users.email, email))
+        .returning();
 
       // Delete the old image from S3 if it exists and is not the same as the new one
       if (oldImageKey && oldImageKey !== key) {
@@ -398,7 +401,13 @@ export const userService = {
         );
       }
 
-      return await this.getUserByEmail(email);
+      // Invalidate the cache for this user
+      const updatedUser = await userService.getUserById(user[0].userId);
+      if (updatedUser) {
+        updatedUser.profilePicture = url;
+        userService.updateUserInAllUsersCache(updatedUser);
+      }
+      return user[0];
     } catch (err) {
       throw new Error('Failed to upload profile image to S3', { cause: err });
     }

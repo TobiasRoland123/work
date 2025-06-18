@@ -131,6 +131,9 @@ export function StatusForm({
         }
         if (setOpenDrawer) {
           setOpenDrawer(false);
+          setTimeout(() => {
+            setCurrentStep(1);
+          }, 500);
         }
         form.reset();
         setIsLoading(false);
