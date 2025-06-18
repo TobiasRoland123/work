@@ -1,6 +1,5 @@
 'use client';
 
-import React from 'react';
 import OfficeSwitch from '../OfficeSwitch/OfficeSwitch';
 
 interface PeopleCounterProps {

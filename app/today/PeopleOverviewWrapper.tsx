@@ -79,6 +79,13 @@ export const PeopleOverviewWrapper = (props: {
 
   const [profilesInOffice, profilesOutOfOffice] = getProfilesInAndOutOfOffice(profiles);
 
+  useEffect(() => {
+    const main = document.getElementById('dashboard-main');
+    if (main) {
+      main.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [officeStatus]);
+
   return (
     <PeopleOverview
       profiles={officeStatus ? profilesInOffice : profilesOutOfOffice}
