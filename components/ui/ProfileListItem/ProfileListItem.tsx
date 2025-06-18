@@ -56,7 +56,7 @@ export function ProfileListItem({ user, showStatus = false }: ProfileListItemPro
             <Status status={user.status.status}>{formattedDates}</Status>
           ) : null}
         </div>
-        {user?.status?.details && (
+        {showStatus && user?.status?.details && (
           <div className={'mt-2'}>
             <small>Details:</small>
             <div className={'flex justify-between'}>
