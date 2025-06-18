@@ -34,7 +34,23 @@ type CacheEntry<T> = { value: T; expiresAt: number };
 const userCache = new Map<string, CacheEntry<UserWithExtras | null>>();
 const userWithExtraCache = new Map<string, CacheEntry<UserWithExtras[] | null>>();
 
+const updateUserInAllUsersCache = (updatedUser: UserWithExtras) => {
+  for (const [cacheKey, entry] of userWithExtraCache.entries()) {
+    if (cacheKey.startsWith('userService:getAllUsers')) {
+      if (entry && entry.value) {
+        const idx = entry.value.findIndex((u) => u.userId === updatedUser.userId);
+        if (idx !== -1) {
+          entry.value[idx] = updatedUser;
+          entry.expiresAt = Date.now() + CACHE_TTL;
+        }
+      }
+    }
+  }
+};
+
 export const userService = {
+  // Cache helper
+  updateUserInAllUsersCache,
   // GET METHODS
   async getUserByEmail(email: string) {
     // Cache check
@@ -155,7 +171,7 @@ export const userService = {
   },
 
   async getAllUsers(sortByStatus: boolean = true) {
-    const cacheKey = `userService:getAllUsers:${sortByStatus}`;
+    const cacheKey = `userService:getAllUsers`;
     const cached = userWithExtraCache.get(cacheKey);
     if (cached && cached.expiresAt > Date.now()) {
       return cached.value || [];

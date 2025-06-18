@@ -1,3 +1,4 @@
+import { userService } from './userService';
 import { NewStatus } from '@/db/types';
 import { status } from '@/db/schema';
 import { db } from '@/db';
@@ -61,7 +62,12 @@ export const statusService = {
         payload: {},
       });
     }
-
+    // Re-fetch the updated user with extras
+    const updatedUser = await userService.getUserById(newStatus.userID);
+    if (updatedUser) {
+      updatedUser.status = createdStatus[0];
+      userService.updateUserInAllUsersCache(updatedUser);
+    }
     return createdStatus[0];
   },
 
@@ -79,6 +85,11 @@ export const statusService = {
         payload: {},
       });
     }
+    // Re-fetch the updated user with extras
+    const updatedUser = await userService.getUserById(userID);
+    if (updatedUser) {
+      userService.updateUserInAllUsersCache(updatedUser);
+    }
     return updated[0];
   },
 
@@ -92,6 +103,11 @@ export const statusService = {
         payload: {},
       });
     }
+    // Re-fetch the updated user with extras
+    const updatedUser = await userService.getUserById(deleted[0].userID);
+    if (updatedUser) {
+      userService.updateUserInAllUsersCache(updatedUser);
+    }
     return deleted[0];
   },
 
@@ -103,6 +119,11 @@ export const statusService = {
         event: 'status_updated',
         payload: {},
       });
+    }
+    // Re-fetch the updated user with extras
+    const updatedUser = await userService.getUserById(deleted[0].userID);
+    if (updatedUser) {
+      userService.updateUserInAllUsersCache(updatedUser);
     }
     return deleted[0];
   },
