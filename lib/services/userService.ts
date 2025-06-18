@@ -28,9 +28,22 @@ const s3 = new S3Client({
   },
 });
 
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
+
+type CacheEntry<T> = { value: T; expiresAt: number };
+const userCache = new Map<string, CacheEntry<UserWithExtras | null>>();
+const userWithExtraCache = new Map<string, CacheEntry<UserWithExtras[] | null>>();
+
 export const userService = {
   // GET METHODS
   async getUserByEmail(email: string) {
+    // Cache check
+    const cacheKey = `userService:getUserByEmail:${email}`;
+    const cached = userCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.value;
+    }
+
     const userArr = await db.select().from(users).where(eq(users.email, email)).limit(1);
     const user = userArr[0];
     if (!user) return null;
@@ -70,7 +83,7 @@ export const userService = {
 
     const businessPhoneNumber = businessPhones[0]?.businessPhoneNumber ?? null;
 
-    return {
+    const result = {
       ...user,
       status: latestStatus ?? null,
       organisationRoles: roles
@@ -79,9 +92,16 @@ export const userService = {
       businessPhoneNumber,
       organisation: organisation?.organisationName ?? null,
     };
+    userCache.set(cacheKey, { value: result, expiresAt: Date.now() + CACHE_TTL });
+    return result;
   },
 
   async getUserById(id: string) {
+    const cacheKey = `userService:getUserById:${id}`;
+    const cached = userCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.value;
+    }
     const userArr = await db.select().from(users).where(eq(users.userId, id)).limit(1);
     const user = userArr[0];
     if (!user) return null;
@@ -121,7 +141,7 @@ export const userService = {
 
     const businessPhoneNumber = businessPhones[0]?.businessPhoneNumber ?? null;
 
-    return {
+    const result = {
       ...user,
       status: latestStatus ?? null,
       organisationRoles: roles
@@ -130,9 +150,16 @@ export const userService = {
       businessPhoneNumber,
       organisation: organisation?.organisationName ?? null,
     };
+    userCache.set(cacheKey, { value: result, expiresAt: Date.now() + CACHE_TTL });
+    return result;
   },
 
   async getAllUsers(sortByStatus: boolean = true) {
+    const cacheKey = `userService:getAllUsers:${sortByStatus}`;
+    const cached = userWithExtraCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) {
+      return cached.value || [];
+    }
     // 1. Fetch all users
     const usersList = await db.select().from(users).orderBy(users.firstName, users.lastName);
 
@@ -220,6 +247,11 @@ export const userService = {
       });
     }
 
+    userWithExtraCache.set(cacheKey, {
+      value: usersWithExtras,
+      expiresAt: Date.now() + CACHE_TTL,
+    });
+
     return usersWithExtras;
   },
 
@@ -273,7 +305,11 @@ export const userService = {
       }
     }
 
-    // Handle businessPhoneNumber separately if needed...
+    // Invalidate cache for this user
+    userCache.delete(`userService:getUserById:${userId}`);
+    if (updateData.email) {
+      userCache.delete(`userService:getUserByEmail:${updateData.email}`);
+    }
 
     return this.getUserById(userId);
   },
@@ -348,6 +384,9 @@ export const userService = {
       const url = `${process.env.HETZNER_BUCKET_URL!.replace(/\/$/, '')}/${process.env.HETZNER_BUCKET_NAME}/${key}`;
       // Update the user's profileImage field in the database
       await db.update(users).set({ profilePicture: url }).where(eq(users.email, email));
+
+      // Invalidate the cache for this user
+      userCache.delete(`userService:getUserByEmail:${email}`);
 
       // Delete the old image from S3 if it exists and is not the same as the new one
       if (oldImageKey && oldImageKey !== key) {
