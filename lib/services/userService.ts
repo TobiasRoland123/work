@@ -28,29 +28,15 @@ const s3 = new S3Client({
   },
 });
 
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes in milliseconds
+const userCache = new Map();
 
-type CacheEntry<T> = { value: T; expiresAt: number };
-const userCache = new Map<string, CacheEntry<UserWithExtras | null>>();
-const userWithExtraCache = new Map<string, CacheEntry<UserWithExtras[] | null>>();
-
-const updateUserInAllUsersCache = (updatedUser: UserWithExtras) => {
-  for (const [cacheKey, entry] of userWithExtraCache.entries()) {
-    if (cacheKey.startsWith('userService:getAllUsers')) {
-      if (entry && entry.value) {
-        const idx = entry.value.findIndex((u) => u.userId === updatedUser.userId);
-        if (idx !== -1) {
-          entry.value[idx] = updatedUser;
-          entry.expiresAt = Date.now() + CACHE_TTL;
-        }
-      }
-    }
-  }
+const invalidateUserCache = (userId: string) => {
+  userCache.delete(userId);
 };
 
 export const userService = {
-  // Cache helper
-  updateUserInAllUsersCache,
+  // Cache invalidation function
+  invalidateUserCache,
   // GET METHODS
   async getUserByEmail(email: string) {
     const userArr = await db.select().from(users).where(eq(users.email, email)).limit(1);
@@ -105,6 +91,10 @@ export const userService = {
   },
 
   async getUserById(id: string) {
+    if (userCache.has(id)) {
+      return userCache.get(id);
+    }
+
     const userArr = await db.select().from(users).where(eq(users.userId, id)).limit(1);
     const user = userArr[0];
     if (!user) return null;
@@ -153,15 +143,12 @@ export const userService = {
       businessPhoneNumber,
       organisation: organisation?.organisationName ?? null,
     };
+
+    userCache.set(id, result);
     return result;
   },
 
   async getAllUsers(sortByStatus: boolean = true) {
-    const cacheKey = `userService:getAllUsers`;
-    const cached = userWithExtraCache.get(cacheKey);
-    if (cached && cached.expiresAt > Date.now()) {
-      return cached.value || [];
-    }
     // 1. Fetch all users
     const usersList = await db.select().from(users).orderBy(users.firstName, users.lastName);
 
@@ -249,11 +236,6 @@ export const userService = {
       });
     }
 
-    userWithExtraCache.set(cacheKey, {
-      value: usersWithExtras,
-      expiresAt: Date.now() + CACHE_TTL,
-    });
-
     return usersWithExtras;
   },
 
@@ -308,10 +290,7 @@ export const userService = {
     }
 
     // Invalidate cache for this user
-    userCache.delete(`userService:getUserById:${userId}`);
-    if (updateData.email) {
-      userCache.delete(`userService:getUserByEmail:${updateData.email}`);
-    }
+    invalidateUserCache(userId);
 
     return this.getUserById(userId);
   },
@@ -405,7 +384,7 @@ export const userService = {
       const updatedUser = await userService.getUserById(user[0].userId);
       if (updatedUser) {
         updatedUser.profilePicture = url;
-        userService.updateUserInAllUsersCache(updatedUser);
+        invalidateUserCache(updatedUser.userId);
       }
       return user[0];
     } catch (err) {
