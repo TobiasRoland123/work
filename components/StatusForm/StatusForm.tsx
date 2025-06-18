@@ -163,7 +163,7 @@ export function StatusForm({
         </h3>
         {closeButton ? closeButton : null}
       </header>
-      <div className={'h-full pt-6'}>
+      <div className={'h-full pb-8 md:pb-0'}>
         <Form {...form}>
           <FormMessage className={'bg-green-500 z-50 text-white'} />
           <form
@@ -171,7 +171,7 @@ export function StatusForm({
               e.preventDefault();
               form.handleSubmit(onSubmit)(e);
             }}
-            className="h-full flex flex-col gap-8 "
+            className="h-full flex flex-col justify-between gap-8 "
           >
             {currentStep === 1 && <SetStatusStep setCurrentStep={setCurrentStep} form={form} />}
             {currentStep === 2 && (
@@ -195,7 +195,6 @@ export function StatusForm({
                   ariaLabel={'Go back'}
                   type="button"
                   variant={'large'}
-                  isLoading={isLoading}
                   handleClick={() => {
                     form.reset();
                     setCurrentStep(currentStep - 1);
