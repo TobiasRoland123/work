@@ -192,7 +192,7 @@ export function StatusForm({
                   ariaLabel={'Go back'}
                   type="button"
                   variant={'large'}
-                  isLoading={isLoading}
+                  isLoading={false}
                   handleClick={() => {
                     form.reset();
                     setCurrentStep(currentStep - 1);
