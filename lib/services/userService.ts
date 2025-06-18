@@ -144,7 +144,7 @@ export const userService = {
       organisation: organisation?.organisationName ?? null,
     };
 
-    userCache.set(id, result);
+    userCache.set(result.userId, result);
     return result;
   },
 
@@ -370,6 +370,12 @@ export const userService = {
         .where(eq(users.email, email))
         .returning();
 
+      // Invalidate the cache for this user
+      invalidateUserCache(user[0].userId);
+
+      // Now fetch the updated user
+      const updatedUser = await userService.getUserById(user[0].userId);
+
       // Delete the old image from S3 if it exists and is not the same as the new one
       if (oldImageKey && oldImageKey !== key) {
         await s3.send(
@@ -380,13 +386,7 @@ export const userService = {
         );
       }
 
-      // Invalidate the cache for this user
-      const updatedUser = await userService.getUserById(user[0].userId);
-      if (updatedUser) {
-        updatedUser.profilePicture = url;
-        invalidateUserCache(updatedUser.userId);
-      }
-      return user[0];
+      return updatedUser;
     } catch (err) {
       throw new Error('Failed to upload profile image to S3', { cause: err });
     }
