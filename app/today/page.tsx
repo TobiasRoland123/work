@@ -9,7 +9,7 @@ export default async function Home() {
 
   return (
     <div>
-      <PeopleOverviewWrapper initialProfiles={users} initialOfficeStatus />
+      <PeopleOverviewWrapper initialProfiles={users} />
       <Toaster />
     </div>
   );
