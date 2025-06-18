@@ -219,8 +219,8 @@ describe('UserService Tests', () => {
 
       // Assert
       expect(updatedUser).toBeDefined();
-      expect(updatedUser[0]?.profilePicture).toContain('profile-images/');
-      expect(updatedUser[0]?.profilePicture).toContain(email);
+      expect(updatedUser?.profilePicture).toContain('profile-images/');
+      expect(updatedUser?.profilePicture).toContain(email);
 
       // Clean up: reset mocks
       vi.restoreAllMocks();

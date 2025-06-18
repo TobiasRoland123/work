@@ -407,7 +407,7 @@ export const userService = {
         updatedUser.profilePicture = url;
         userService.updateUserInAllUsersCache(updatedUser);
       }
-      return user;
+      return user[0];
     } catch (err) {
       throw new Error('Failed to upload profile image to S3', { cause: err });
     }
