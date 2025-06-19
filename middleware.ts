@@ -148,9 +148,9 @@ export async function middleware(request: NextRequest) {
 }
 
 // Configure the middleware to run on all paths except static assets
-// export const config = {
-//   matcher: [
-//     // Apply to all routes except for static assets
-//     '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
-//   ],
-// };
+export const config = {
+  matcher: [
+    // Apply to all routes except for static assets
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
+};
