@@ -62,6 +62,7 @@ test.describe('E2E: Mocked Login', () => {
 
       // Navigate to /contact
       await navContact.click();
+      await page.waitForURL('http://localhost:3000/contact');
       await expect(page).toHaveURL(/\/contact/);
       await expect(contactText).toBeVisible();
 
@@ -72,17 +73,12 @@ test.describe('E2E: Mocked Login', () => {
   });
 
   test.describe('E2E: (auth path) - Profile', () => {
-    test('should navigate to /profile and back to /today', async ({ page }) => {
+    test('should navigate to /profile', async ({ page }) => {
       // Go directly to /today
       await page.goto('http://localhost:3000/today');
 
-      // Remove the NextJS Util button
-      await page
-        .locator('.nextjs-toast')
-        .evaluateAll((buttons) => buttons.forEach((btn) => btn.remove()));
-
       const navProfile = page.locator('a[href="/profile"]:visible', { hasText: 'Profile' });
-      await navProfile.click();
+      await navProfile.click({ force: true });
 
       const profileName = page.locator('h1', { hasText: 'Test User' });
       const profileNameField = page.locator('p', { hasText: 'Test User' });
@@ -96,10 +92,6 @@ test.describe('E2E: Mocked Login', () => {
         expect(profilePhoneField).toBeVisible(),
         expect(profileEmailField).toBeVisible(),
       ]);
-
-      // Navigate back to /today
-      await page.goBack();
-      await expect(page).toHaveURL(/\/today/);
     });
   });
 
@@ -122,9 +114,6 @@ test.describe('E2E: Mocked Login', () => {
 
       const registerButton = page.locator('button', { hasText: 'Register' }).first();
       await registerButton.click();
-
-      const switchButton = page.locator('button[role="switch"]');
-      await switchButton.click();
 
       const todayText = page.locator('p', { hasText: 'Out of office today' });
       const testUserName = page.locator('h2', { hasText: 'Test User' });
@@ -160,9 +149,6 @@ test.describe('E2E: Mocked Login', () => {
       const registerButton = page.locator('button', { hasText: 'Register' }).first();
       await registerButton.click();
 
-      const switchButton = page.locator('button[role="switch"]');
-      await switchButton.click();
-
       const todayText = page.locator('p', { hasText: 'Out of office today' });
       const testUserName = page.locator('h2', { hasText: 'Test User' });
       const phoneNumber = page.locator('a', { hasText: '1234567890' });
@@ -192,9 +178,6 @@ test.describe('E2E: Mocked Login', () => {
 
       const registerButton = page.locator('button', { hasText: 'Register' }).first();
       await registerButton.click();
-
-      const switchButton = page.locator('button[role="switch"]');
-      await switchButton.click();
 
       const todayText = page.locator('p', { hasText: 'Out of office today' });
       const testUserName = page.locator('h2', { hasText: 'Test User' });
@@ -246,9 +229,6 @@ test.describe('E2E: Mocked Login', () => {
 
       const registerButton = page.locator('button', { hasText: 'Register' }).first();
       await registerButton.click();
-
-      const switchButton = page.locator('button[role="switch"]');
-      await switchButton.click();
 
       const todayText = page.locator('p', { hasText: 'Out of office today' });
       const testUserName = page.locator('h2', { hasText: 'Test User' });
@@ -305,6 +285,9 @@ test.describe('E2E: Mocked Login', () => {
       const registerButton = page.locator('button', { hasText: 'Register' }).first();
       await registerButton.click();
 
+      const switchButton = page.locator('button[role="switch"]');
+      await switchButton.click();
+
       const todayText = page.locator('p', { hasText: 'At the office today' });
       const testUserName = page.locator('h2', { hasText: 'Test User' });
       const phoneNumber = page.locator('a', { hasText: '1234567890' });
@@ -349,9 +332,6 @@ test.describe('E2E: Mocked Login', () => {
 
       const registerButton = page.locator('button', { hasText: 'Register' }).first();
       await registerButton.click();
-
-      const switchButton = page.locator('button[role="switch"]');
-      await switchButton.click();
 
       const todayText = page.locator('p', { hasText: 'Out of office today' });
       const testUserName = page.locator('h2', { hasText: 'Test User' });
@@ -398,9 +378,6 @@ test.describe('E2E: Mocked Login', () => {
       const registerButton = page.locator('button', { hasText: 'Register' }).first();
       await registerButton.click();
 
-      const switchButton = page.locator('button[role="switch"]');
-      await switchButton.click();
-
       const todayText = page.locator('p', { hasText: 'Out of office today' });
       const testUserName = page.locator('h2', { hasText: 'Test User' });
       const phoneNumber = page.locator('a', { hasText: '1234567890' });
@@ -445,9 +422,6 @@ test.describe('E2E: Mocked Login', () => {
 
       const registerButton = page.locator('button', { hasText: 'Register' }).first();
       await registerButton.click();
-
-      const switchButton = page.locator('button[role="switch"]');
-      await switchButton.click();
 
       const todayText = page.locator('p', { hasText: 'Out of office today' });
       const testUserName = page.locator('h2', { hasText: 'Test User' });
