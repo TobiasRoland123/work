@@ -1,11 +1,10 @@
 'use client';
 import PeopleOverview from '@/components/ui/PeopleOverview/PeopleOverview';
-import { useCallback } from 'react';
-import { useWebSocket } from '@/hooks/useWebSocket';
-
+import { useCallback, useEffect, useState } from 'react';
 import { UserWithExtras } from '@/db/types';
-import { useState } from 'react';
 import { getAllUsersAction } from '../actions/userActions';
+import { supabase } from '@/lib/supabaseClient';
+import { useWebSocket } from '@/hooks/useWebSocket';
 
 export const PeopleOverviewWrapper = (props: {
   initialProfiles: UserWithExtras[];
@@ -21,6 +20,23 @@ export const PeopleOverviewWrapper = (props: {
     }
   }, []);
 
+  useEffect(() => {
+    if (!supabase) return;
+
+    const channel = supabase
+      .channel('status-sync')
+      .on('broadcast', { event: 'status_updated' }, () => {
+        refetchProfiles();
+      })
+      .subscribe();
+
+    return () => {
+      if (supabase) {
+        supabase.removeChannel(channel);
+      }
+    };
+  }, [refetchProfiles]);
+
   const handleMessage = useCallback(
     (msg: string) => {
       try {
@@ -34,8 +50,7 @@ export const PeopleOverviewWrapper = (props: {
     },
     [refetchProfiles]
   );
-  const wsUrl =
-    process.env.NODE_ENV === 'production' ? process.env.NEXT_PUBLIC_WS_URL! : 'ws://localhost:3001';
+  const wsUrl = 'ws://localhost:3001';
 
   useWebSocket(wsUrl, handleMessage);
 
@@ -63,6 +78,13 @@ export const PeopleOverviewWrapper = (props: {
   }
 
   const [profilesInOffice, profilesOutOfOffice] = getProfilesInAndOutOfOffice(profiles);
+
+  useEffect(() => {
+    const main = document.getElementById('dashboard-main');
+    if (main) {
+      main.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  }, [officeStatus]);
 
   return (
     <PeopleOverview

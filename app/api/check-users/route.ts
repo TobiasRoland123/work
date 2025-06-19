@@ -1,7 +1,7 @@
 import { UserWithExtras } from '@/db/types';
 import { userService } from '@/lib/services/userService';
 import { getAccessToken } from '@/scripts/seed';
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import sharp from 'sharp';
 import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
 
@@ -28,13 +28,14 @@ const s3 = new S3Client({
   },
 });
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   const authHeader = request.headers.get('authorization');
-  if (authHeader !== process.env.CRON_SECRET) {
-    console.error('missing authHeader in route');
-    return new Response(authHeader, {
-      status: 401,
-    });
+  if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    console.error('Unauthorized: missing or invalid authorization header in /api/check-users');
+    return NextResponse.json(
+      { error: 'Unauthorized: missing or invalid authorization header' },
+      { status: 401 }
+    );
   }
   const accessToken = await getAccessToken();
   let allNeonUsers = [];
@@ -122,7 +123,7 @@ export async function GET(request: Request) {
               .webp({ quality: 80 })
               .toBuffer();
             const mimeType = photoResponse.headers.get('content-type') || 'image/jpeg';
-            const key = `profile-images/${neonUser.userId}`;
+            const key = `profile-images/${neonUser.email}`;
 
             await s3.send(
               new PutObjectCommand({
@@ -186,7 +187,7 @@ export async function GET(request: Request) {
               .webp({ quality: 80 })
               .toBuffer();
             const mimeType = photoResponse.headers.get('content-type') || 'image/jpeg';
-            const key = `profile-images/${entra.id}`;
+            const key = `profile-images/${entra.mail}`;
 
             await s3.send(
               new PutObjectCommand({
@@ -235,7 +236,7 @@ export async function GET(request: Request) {
     removedNeonUsers.map(async (neonUser: UserWithExtras) => {
       try {
         if (neonUser.profilePicture) {
-          const key = `profile-images/${neonUser.userId}`;
+          const key = `profile-images/${neonUser.email}`;
           try {
             await s3.send(
               new DeleteObjectCommand({

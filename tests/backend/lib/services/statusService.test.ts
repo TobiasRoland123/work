@@ -5,7 +5,7 @@ import { statusService } from '@/lib/services/statusService';
 import { eq } from 'drizzle-orm';
 import { Pool } from 'pg';
 import { afterAll, beforeAll, describe, expect, test } from 'vitest';
-import { addDays } from 'date-fns';
+import { addDays, format } from 'date-fns';
 
 const fromDate = new Date().toLocaleDateString();
 const toDate = addDays(new Date(), 7).toLocaleDateString();
@@ -33,8 +33,8 @@ describe('StatusService Tests', () => {
     status: 'FROM_HOME',
     details: 'Test status details',
     time: new Date(Date.now()),
-    fromDate: fromDate,
-    toDate: toDate,
+    fromDate: format(fromDate, 'yyyy-MM-dd'),
+    toDate: format(toDate, 'yyyy-MM-dd'),
   };
 
   beforeAll(async () => {

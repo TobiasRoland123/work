@@ -12,10 +12,9 @@ import { eq, and } from 'drizzle-orm';
 import { db } from '../db';
 import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import sharp from 'sharp';
-
 import path from 'path';
 
-dotenv.config({ path: path.resolve(process.cwd(), '.env.local') });
+dotenv.config({ path: path.resolve(process.cwd(), '.env') });
 
 const s3 = new S3Client({
   region: 'eu-central',
@@ -149,7 +148,7 @@ async function seedGraphUsers() {
             .webp({ quality: 80 })
             .toBuffer();
           const mimeType = photoResponse.headers.get('content-type') || 'image/jpeg';
-          const key = `profile-images/${graphUser.id}`;
+          const key = `profile-images/${graphUser.mail}`;
 
           await s3.send(
             new PutObjectCommand({
@@ -280,3 +279,31 @@ seedGraphUsers()
     console.error('Fatal error during seeding:', error);
     process.exit(1);
   });
+
+// ######### This is a function to clear hetzner storage if needed.
+
+// async function deleteAllProfileImages() {
+//   const Bucket = process.env.HETZNER_BUCKET_NAME!;
+//   const Prefix = 'profile-images/';
+//   let ContinuationToken: string | undefined = undefined;
+
+//   do {
+//     const listParams = { Bucket, Prefix, ContinuationToken };
+//     const listResponse = await s3.send(new ListObjectsV2Command(listParams));
+//     const objects = listResponse.Contents || [];
+
+//     if (objects.length > 0) {
+//       const deleteParams = {
+//         Bucket,
+//         Delete: {
+//           Objects: objects.map((obj) => ({ Key: obj.Key! })),
+//         },
+//       };
+//       await s3.send(new DeleteObjectsCommand(deleteParams));
+//     }
+
+//     ContinuationToken = listResponse.IsTruncated ? listResponse.NextContinuationToken : undefined;
+//   } while (ContinuationToken);
+// }
+
+// deleteAllProfileImages();

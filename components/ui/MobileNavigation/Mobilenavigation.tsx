@@ -11,7 +11,10 @@ type MobileNavigationProps = {
 export function MobileNavigation({ linkList, userId, onToday = false }: MobileNavigationProps) {
   return (
     <>
-      <nav className={'bg-black  md:hidden w-full text-white sticky bottom-0 font-mono  px-6 py-5'}>
+      <nav
+        className={'bg-black md:hidden w-full text-white fixed bottom-0 font-mono px-6 py-5'}
+        aria-label="Mobile Navigation"
+      >
         <ul className={'flex gap-8'}>
           {linkList &&
             linkList?.length > 0 &&

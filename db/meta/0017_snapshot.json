@@ -141,12 +141,8 @@
           "name": "status_user_id_users_user_id_fk",
           "tableFrom": "status",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "user_id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["user_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -234,12 +230,8 @@
           "name": "users_organisation_id_organisations_id_fk",
           "tableFrom": "users",
           "tableTo": "organisations",
-          "columnsFrom": [
-            "organisation_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organisation_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -249,9 +241,7 @@
         "users_email_unique": {
           "name": "users_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       },
       "policies": {},
@@ -287,12 +277,8 @@
           "name": "users_business_phone_numbers_user_id_users_user_id_fk",
           "tableFrom": "users_business_phone_numbers",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "user_id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["user_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -300,12 +286,8 @@
           "name": "users_business_phone_numbers_business_phone_numbers_id_business_phone_numbers_id_fk",
           "tableFrom": "users_business_phone_numbers",
           "tableTo": "business_phone_numbers",
-          "columnsFrom": [
-            "business_phone_numbers_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["business_phone_numbers_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -345,12 +327,8 @@
           "name": "users_organisation_roles_user_id_users_user_id_fk",
           "tableFrom": "users_organisation_roles",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "user_id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["user_id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -358,12 +336,8 @@
           "name": "users_organisation_roles_organisation_role_id_organisation_roles_id_fk",
           "tableFrom": "users_organisation_roles",
           "tableTo": "organisation_roles",
-          "columnsFrom": [
-            "organisation_role_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["organisation_role_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -379,11 +353,7 @@
     "public.system_role": {
       "name": "system_role",
       "schema": "public",
-      "values": [
-        "ADMIN",
-        "USER",
-        "GUEST"
-      ]
+      "values": ["ADMIN", "USER", "GUEST"]
     },
     "public.user_status": {
       "name": "user_status",

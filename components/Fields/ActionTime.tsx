@@ -14,8 +14,8 @@ export function ActionTime({ form }: ActionTimeProps) {
 
   useEffect(() => {
     if (chosenStatus === 'IN_LATE' || chosenStatus === 'LEAVING_EARLY') {
-      form.setValue('fromDate', undefined);
-      form.setValue('toDate', undefined);
+      form.setValue('dateRange', undefined);
+      form.setValue('dateRange', undefined);
     }
   }, [chosenStatus, form]);
 
@@ -25,14 +25,23 @@ export function ActionTime({ form }: ActionTimeProps) {
         name={'actionTime'}
         control={form?.control}
         render={({ field }) => (
-          <FormItem className={'flex gap-11 justify-between items-end'}>
-            <FormLabel className={'min-w-[80px]'}>Time</FormLabel>
+          <FormItem>
+            <div className={'flex gap-11 justify-between items-end'}>
+              <FormLabel className={'min-w-[80px]'}>Time</FormLabel>
 
-            <FormControl className={'w-full'}>
-              <div className="flex flex-col gap-2">
-                <Input {...field} type="time" id="action-time" name="Action Time" required />
-              </div>
-            </FormControl>
+              <FormControl className={'w-full'}>
+                <div className="flex flex-col gap-2">
+                  <Input
+                    {...field}
+                    type="time"
+                    id="action-time"
+                    name="Action Time"
+                    required
+                    value={field.value ?? ''}
+                  />
+                </div>
+              </FormControl>
+            </div>
             <FormMessage />
           </FormItem>
         )}

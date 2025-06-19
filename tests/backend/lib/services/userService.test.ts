@@ -1,10 +1,17 @@
-import { describe, expect, test, beforeAll, afterAll } from 'vitest';
+import { describe, expect, test, beforeAll, afterAll, vi } from 'vitest';
 import { userService } from '@/lib/services/userService';
 import { NewUser } from '@/db/types';
 import { db } from '@/db';
 import { organisation_roles, users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 import { Pool } from 'pg';
+import sharp from 'sharp';
+import {
+  DeleteObjectsCommand,
+  ListObjectsV2Command,
+  PutObjectCommand,
+  S3Client,
+} from '@aws-sdk/client-s3';
 
 const pool = new Pool({
   user: process.env.PGUSER,
@@ -177,5 +184,47 @@ describe('UserService Tests', () => {
       await db.delete(users).where(eq(users.userId, existingUser.userId));
       await db.delete(users).where(eq(users.email, existingUser.email));
     });
+  });
+
+  describe('updateUserProfilePicture', () => {
+    test('should update user profile picture', async () => {
+      // ...existing code...
+
+      // Arrange
+      const email = testUser.email;
+      const fakeBuffer = Buffer.from('fake image data');
+      const processedBuffer = Buffer.from('processed image data');
+
+      // Mock sharp
+      vi.spyOn(sharp.prototype, 'resize').mockReturnThis();
+      vi.spyOn(sharp.prototype, 'webp').mockReturnThis();
+      vi.spyOn(sharp.prototype, 'toBuffer').mockResolvedValue(processedBuffer);
+
+      // Mock S3 list, put, and delete
+      vi.spyOn(S3Client.prototype, 'send').mockImplementation(async (cmd) => {
+        if (cmd instanceof ListObjectsV2Command) {
+          return { Contents: [] };
+        }
+        if (cmd instanceof PutObjectCommand) {
+          return { $metadata: { httpStatusCode: 200 } };
+        }
+        if (cmd instanceof DeleteObjectsCommand) {
+          return {};
+        }
+        return {};
+      });
+
+      // Act
+      const updatedUser = await userService.uploadAndProcessProfileImage(fakeBuffer, email);
+
+      // Assert
+      expect(updatedUser).toBeDefined();
+      expect(updatedUser?.profilePicture).toContain('profile-images/');
+      expect(updatedUser?.profilePicture).toContain(email);
+
+      // Clean up: reset mocks
+      vi.restoreAllMocks();
+    });
+    // ...existing code...
   });
 });

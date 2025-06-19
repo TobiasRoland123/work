@@ -11,28 +11,35 @@ export function ProfileListItem({ user, showStatus = false }: ProfileListItemPro
   const formattedTimed = user?.status?.time?.toLocaleTimeString('da-dk').substring(0, 5);
   const fromDate = user.status?.fromDate ? new Date(user.status?.fromDate) : null;
   const toDate = user.status?.toDate ? new Date(user.status?.toDate) : null;
+
   const formattedDates =
     fromDate && toDate
       ? `${fromDate.toLocaleDateString('da-DK')}-${toDate.toLocaleDateString('da-DK')}`
       : null;
+
   return (
     <div className="flex items-start gap-3 px-2 py-1 border-gray-400 max-w-[60ch] ">
-      {user.profilePicture ? (
-        <Image
-          src={user.profilePicture}
-          alt={`Profile picture of ${user.firstName} ${user.lastName}`}
-          style={{ objectFit: 'cover' }}
-          width={60}
-          height={60}
-          className="rounded-full items-start bottom-2 aspect-square"
-        />
-      ) : (
-        <div
-          className="size-15 aspect-square bg-gray-400 rounded-full flex items-center justify-center  bottom-2"
-          role="img"
-          aria-label={`Default profile picture for ${user.firstName} ${user.lastName}`}
-        ></div>
-      )}
+      <div className="w-[60px] h-[60px] rounded-full overflow-hidden flex items-center justify-center bg-neutral-500 shrink-0">
+        {user.profilePicture ? (
+          <Image
+            key={user.profilePicture}
+            src={`/api/image-proxy?url=${encodeURIComponent(user.profilePicture)}`}
+            alt={`Profile picture of ${user.firstName} ${user.lastName}`}
+            width={60}
+            height={60}
+            className="object-cover w-full h-full"
+            loading="lazy"
+          />
+        ) : (
+          <span
+            className="text-white font-bold text-lg"
+            role="img"
+            aria-label={`Profile initials for ${user.firstName} ${user.lastName}`}
+          >
+            {user.email.slice(0, user.email.indexOf('@')).toUpperCase()}
+          </span>
+        )}
+      </div>
       <div className="flex flex-col gap-1">
         <h2 className="text-24 leading-8 font-mono">{user.firstName + ' ' + user.lastName}</h2>
         <div className="flex items-center gap-2 flex-wrap">
@@ -49,7 +56,7 @@ export function ProfileListItem({ user, showStatus = false }: ProfileListItemPro
             <Status status={user.status.status}>{formattedDates}</Status>
           ) : null}
         </div>
-        {user?.status?.details && (
+        {showStatus && user?.status?.details && (
           <div className={'mt-2'}>
             <small>Details:</small>
             <div className={'flex justify-between'}>
@@ -69,13 +76,14 @@ export function ProfileListItem({ user, showStatus = false }: ProfileListItemPro
               </a>
             </div>
           )}
-
-          <a
-            href={`mailto:${user.email}`}
-            className="text-base font-sans font-light leading-5 underline text-link-blue hover:text-light-blue-hover"
-          >
-            {user.email}
-          </a>
+          <div>
+            <a
+              href={`mailto:${user.email}`}
+              className="text-base font-sans font-light leading-5 underline text-link-blue hover:text-light-blue-hover"
+            >
+              {user.email}
+            </a>
+          </div>
         </div>
       </div>
     </div>

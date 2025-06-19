@@ -4,6 +4,7 @@ export function useWebSocket(url: string, onMessage: (msg: string) => void) {
   const ws = useRef<WebSocket | null>(null);
 
   useEffect(() => {
+    if (process.env.NODE_ENV === 'production') return;
     ws.current = new WebSocket(url);
 
     ws.current.onmessage = (event) => {

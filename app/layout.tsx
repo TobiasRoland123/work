@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+
 import localFont from 'next/font/local';
 import './globals.css';
 import type * as React from 'react';
@@ -11,6 +12,8 @@ const monumentGrotesk = localFont({
     },
   ],
   variable: '--font-monument-grotesk',
+  display: 'block',
+  preload: true,
 });
 
 const ibxMono = localFont({
@@ -27,11 +30,20 @@ const ibxMono = localFont({
     },
   ],
   variable: '--font-ibx-mono', // CSS variable for the font
+  display: 'block',
+  preload: true,
 });
 
 export const metadata: Metadata = {
   title: 'WØRK',
-  description: 'Track developer work locations and availability in real time.',
+  description: 'Make sure your colleagues know how to get a hold of you!',
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
 };
 
 export default async function RootLayout({
@@ -40,10 +52,14 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={`${monumentGrotesk.variable} ${ibxMono.variable} font-sans antialiased`}>
-        {children}
-      </body>
+    <html
+      lang="en"
+      className={`${monumentGrotesk.variable} ${ibxMono.variable} font-sans antialiased`}
+    >
+      <head>
+        <link rel="icon" href="./icon.svg" sizes="any" />
+      </head>
+      <body>{children}</body>
     </html>
   );
 }

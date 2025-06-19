@@ -7,6 +7,7 @@ import {
   InsetSheetWrapper,
 } from '../Inset-Sheet/inset-sheet';
 import { StatusForm } from '@/components/StatusForm/StatusForm';
+import { useState } from 'react';
 
 type StatusSidebarProps = {
   open: string;
@@ -15,11 +16,13 @@ type StatusSidebarProps = {
 };
 
 export function StatusSidebar({ open, setOpen, userId }: StatusSidebarProps) {
+  const [currentStep, setCurrentStep] = useState(1);
   return (
     <InsetSheet
       open={open === 'status'}
       onOpenChange={(isOpen) => {
         setOpen(isOpen ? 'status' : 'navigation');
+        setCurrentStep(isOpen ? currentStep : 1);
       }}
       side="right" // Explicitly set side if needed
     >
@@ -32,6 +35,8 @@ export function StatusSidebar({ open, setOpen, userId }: StatusSidebarProps) {
       <InsetSheetContent className={'bg-black py-6 px-3.5 border-0 '} hideCloseButton>
         <InsetSheetDescription className={'text-white h-full'}>
           <StatusForm
+            currentStep={currentStep}
+            setCurrentStepAction={setCurrentStep}
             userId={userId}
             setOpenSidebar={setOpen}
             closeButton={

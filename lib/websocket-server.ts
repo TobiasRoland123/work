@@ -7,16 +7,13 @@ dotenv.config();
 const server = http.createServer();
 export const wss = new WebSocketServer({ server });
 
-const pgClient =
-  process.env.NODE_ENV === 'production'
-    ? new Client({ connectionString: process.env.DATABASE_URL })
-    : new Client({
-        user: process.env.PGUSER,
-        password: process.env.PGPASSWORD,
-        host: process.env.PGHOST,
-        port: Number(process.env.PGPORT),
-        database: process.env.PGDATABASE,
-      });
+const pgClient = new Client({
+  user: process.env.PGUSER,
+  password: process.env.PGPASSWORD,
+  host: process.env.PGHOST,
+  port: Number(process.env.PGPORT),
+  database: process.env.PGDATABASE,
+});
 pgClient.connect();
 pgClient.query('LISTEN status_update');
 pgClient.query('LISTEN user_update');
