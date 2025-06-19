@@ -36,7 +36,7 @@ export function StatusSidebar({ open, setOpen, userId }: StatusSidebarProps) {
         <InsetSheetDescription className={'text-white h-full'}>
           <StatusForm
             currentStep={currentStep}
-            setCurrentStepAction={setCurrentStep}
+            setCurrentStep={setCurrentStep}
             userId={userId}
             setOpenSidebar={setOpen}
             closeButton={

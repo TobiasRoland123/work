@@ -50,7 +50,7 @@ export function StatusDrawer({ userId }: StatusDrawerProps) {
         <div className={'gap-7 flex flex-col h-full min-h-[80svh]'}>
           <StatusForm
             currentStep={currentStep}
-            setCurrentStepAction={setCurrentStep}
+            setCurrentStep={setCurrentStep}
             userId={userId}
             setOpenDrawer={setOpen}
             closeButton={

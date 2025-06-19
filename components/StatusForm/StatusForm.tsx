@@ -75,7 +75,7 @@ type StatusFormProps = {
   closeButton?: React.ReactNode;
   userId?: string;
   currentStep: number;
-  setCurrentStepAction: (currentStep: number) => void;
+  setCurrentStep: (currentStep: number) => void;
   setOpenSidebar?: (open: 'navigation' | 'status') => void;
   setOpenDrawer?: (open: boolean) => void;
 };
@@ -84,7 +84,7 @@ export function StatusForm({
   closeButton,
   userId,
   currentStep,
-  setCurrentStepAction,
+  setCurrentStep,
   setOpenSidebar,
   setOpenDrawer,
 }: StatusFormProps) {
@@ -126,13 +126,13 @@ export function StatusForm({
         if (setOpenSidebar) {
           setOpenSidebar('navigation');
           setTimeout(() => {
-            setCurrentStepAction(1);
+            setCurrentStep(1);
           }, 500);
         }
         if (setOpenDrawer) {
           setOpenDrawer(false);
           setTimeout(() => {
-            setCurrentStepAction(1);
+            setCurrentStep(1);
           }, 500);
         }
         form.reset();
@@ -173,12 +173,10 @@ export function StatusForm({
             }}
             className="h-full flex flex-col justify-between gap-8 "
           >
-            {currentStep === 1 && (
-              <SetStatusStep setCurrentStep={setCurrentStepAction} form={form} />
-            )}
+            {currentStep === 1 && <SetStatusStep setCurrentStep={setCurrentStep} form={form} />}
             {currentStep === 2 && (
               <SetDetailsStep
-                setCurrentStep={setCurrentStepAction}
+                setCurrentStep={setCurrentStep}
                 form={form}
                 currentStep={currentStep}
               />
@@ -199,7 +197,7 @@ export function StatusForm({
                   variant={'large'}
                   handleClick={() => {
                     form.reset();
-                    setCurrentStepAction(currentStep - 1);
+                    setCurrentStep(currentStep - 1);
                   }}
                 >
                   Back
