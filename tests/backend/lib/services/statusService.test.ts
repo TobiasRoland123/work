@@ -24,7 +24,7 @@ describe('StatusService Tests', () => {
     userId: 'b0bgfdda-976d-4962-8942-4fef721cddf9',
     firstName: 'Test',
     lastName: 'User',
-    email: 'testuser@example.com',
+    email: 'testuserBE@example.com',
     systemRole: 'USER',
   };
 
