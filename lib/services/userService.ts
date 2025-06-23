@@ -1,4 +1,4 @@
-import { NewUser, Status, UserWithExtras } from '@/db/types';
+import { NewUser, UserWithExtras } from '@/db/types';
 import { db } from '@/db';
 import {
   users,
@@ -18,6 +18,7 @@ import {
   DeleteObjectsCommand,
 } from '@aws-sdk/client-s3';
 import sharp from 'sharp';
+import { log } from 'console';
 
 const s3 = new S3Client({
   region: 'eu-central',
@@ -209,20 +210,52 @@ export const userService = {
     // 6. Fetch all statuses for all users in one query
     const statusesList = await db.select().from(status).where(inArray(status.userID, userIds));
     // Pick the latest status per user (assuming createdAt or similar field exists)
-    const statusMap = new Map<string, Status>();
-    for (const s of statusesList) {
-      if (
-        !statusMap.has(s.userID) ||
-        (s.createdAt && (statusMap.get(s.userID)?.createdAt ?? 0) < s.createdAt)
-      ) {
-        statusMap.set(s.userID, s);
-      }
-    }
+
+    const getActiveStatusByUserUserId = (userId: string) => {
+      const usersStatuses = statusesList.filter((s) => s.userID === userId);
+      log('Before usersStatuses:', usersStatuses);
+      const today = new Date();
+      const latestStatus = usersStatuses.map((status) => {
+        // Check if the status was made today
+
+        const statusDate = status.createdAt ? new Date(status.createdAt) : null;
+        const isToday =
+          statusDate &&
+          statusDate.getFullYear() === today.getFullYear() &&
+          statusDate.getMonth() === today.getMonth() &&
+          statusDate.getDate() === today.getDate();
+
+        if (status.fromDate && status.toDate) {
+          const fromDate = new Date(status.fromDate);
+          const toDate = new Date(status.toDate);
+          const isTodayBetween = fromDate <= today && toDate >= today;
+          if (isTodayBetween) {
+          }
+          return isTodayBetween ? status : undefined;
+        } else if (isToday) {
+          return status;
+        } else {
+          return undefined;
+        }
+      });
+      if (!latestStatus) return null;
+      log('After latestStatus:', latestStatus);
+      // If there are multiple statuses, return the newest one based on createdAt
+      const filteredStatuses = latestStatus.filter((s) => s !== undefined);
+      if (filteredStatuses.length === 0) return null;
+      if (filteredStatuses.length === 1) return filteredStatuses[0];
+      // Sort by createdAt descending and return the first one
+      return filteredStatuses.sort((a, b) => {
+        const aDate = a?.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bDate = b?.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return bDate - aDate;
+      })[0];
+    };
 
     // 7. Assemble the final result
     const usersWithExtras = usersList.map((user) => ({
       ...user,
-      status: statusMap.get(user.userId) ?? null,
+      status: getActiveStatusByUserUserId(user.userId) ?? null,
       organisationRoles: rolesMap.get(user.userId) ?? [],
       businessPhoneNumber: phoneMap.get(user.userId) ?? null,
       organisation: user.organisationId ? (orgMap.get(user.organisationId) ?? null) : null,
