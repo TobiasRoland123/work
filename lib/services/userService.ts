@@ -18,7 +18,6 @@ import {
   DeleteObjectsCommand,
 } from '@aws-sdk/client-s3';
 import sharp from 'sharp';
-import { log } from 'console';
 
 const s3 = new S3Client({
   region: 'eu-central',
@@ -213,7 +212,7 @@ export const userService = {
 
     const getActiveStatusByUserUserId = (userId: string) => {
       const usersStatuses = statusesList.filter((s) => s.userID === userId);
-      log('Before usersStatuses:', usersStatuses);
+
       const today = new Date();
       const latestStatus = usersStatuses.map((status) => {
         // Check if the status was made today
@@ -239,7 +238,7 @@ export const userService = {
         }
       });
       if (!latestStatus) return null;
-      log('After latestStatus:', latestStatus);
+
       // If there are multiple statuses, return the newest one based on createdAt
       const filteredStatuses = latestStatus.filter((s) => s !== undefined);
       if (filteredStatuses.length === 0) return null;
