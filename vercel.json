@@ -4,6 +4,10 @@
     {
       "path": "/api/check-users",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/slack/process",
+      "schedule": "* * * * *"
     }
   ]
 }

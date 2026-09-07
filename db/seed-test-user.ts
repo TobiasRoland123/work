@@ -4,6 +4,8 @@ import { eq } from 'drizzle-orm';
 
 const seedTestUser = async () => {
   try {
+    if (!process.env.SLACK_TEAM_ID)
+      throw new Error('Set SLACK_TEAM_ID for the local test workspace');
     // Ensure organisation exists
     let [org] = await db.select().from(organisations).where(eq(organisations.id, 1));
     if (!org) {
@@ -17,11 +19,21 @@ const seedTestUser = async () => {
     // Check if the user already exists
     const existing = await db.select().from(users).where(eq(users.userId, 'test-user-uuid'));
     if (existing.length > 0) {
+      await db
+        .update(users)
+        .set({
+          slackUserId: 'UTESTE2E',
+          slackTeamId: process.env.SLACK_TEAM_ID,
+          slackDeactivated: false,
+        })
+        .where(eq(users.userId, 'test-user-uuid'));
       return;
     }
     // Insert if not exists
     await db.insert(users).values({
       userId: 'test-user-uuid',
+      slackUserId: 'UTESTE2E',
+      slackTeamId: process.env.SLACK_TEAM_ID,
       firstName: 'Test',
       lastName: 'User',
       email: 'testuser@example.com',

@@ -7,7 +7,8 @@ export type StatusType =
   | 'LEAVING_EARLY'
   | 'VACATION'
   | 'CHILD_SICK'
-  | 'ON_LEAVE';
+  | 'ON_LEAVE'
+  | 'AWAY';
 
 export type StatusProps = {
   status: StatusType;
@@ -27,6 +28,7 @@ export function Status({ status, asLabel = true, children }: StatusProps) {
     VACATION: { message: 'Vacation', color: 'bg-light-red' },
     CHILD_SICK: { message: 'Child sick', color: 'bg-light-red' },
     ON_LEAVE: { message: 'On leave', color: 'bg-light-red' },
+    AWAY: { message: 'Temporarily away', color: 'bg-light-mud' },
   };
 
   const { message, color } = statusConfig[status];

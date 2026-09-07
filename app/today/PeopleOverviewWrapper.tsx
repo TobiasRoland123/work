@@ -37,6 +37,14 @@ export const PeopleOverviewWrapper = (props: {
     };
   }, [refetchProfiles]);
 
+  useEffect(() => {
+    // Timed statuses change applicability without a broadcast event.
+    const timer = window.setInterval(() => {
+      void refetchProfiles();
+    }, 60_000);
+    return () => window.clearInterval(timer);
+  }, [refetchProfiles]);
+
   const handleMessage = useCallback(
     (msg: string) => {
       try {
@@ -58,16 +66,16 @@ export const PeopleOverviewWrapper = (props: {
     const profilesInOffice: UserWithExtras[] = [];
     const profilesOutOfOffice: UserWithExtras[] = [];
 
-    profiles.map((profile) => {
+    profiles.forEach((profile) => {
+      const approximate = profile.status?.startsAtApproximate || profile.status?.endsAtApproximate;
+      const actionTime =
+        profile.status?.time && !approximate ? new Date(profile.status.time).getTime() : null;
+      const now = Date.now();
       if (
         profile.status === null ||
         profile.status?.status === 'IN_OFFICE' ||
-        (profile.status?.status === 'IN_LATE' &&
-          profile.status.time !== null &&
-          profile.status.time < new Date(Date.now())) ||
-        (profile.status?.status === 'LEAVING_EARLY' &&
-          profile.status.time !== null &&
-          profile.status.time > new Date(Date.now()))
+        (profile.status?.status === 'IN_LATE' && actionTime !== null && actionTime < now) ||
+        (profile.status?.status === 'LEAVING_EARLY' && actionTime !== null && actionTime > now)
       ) {
         profilesInOffice.push(profile);
       } else {

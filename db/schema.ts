@@ -10,6 +10,8 @@ import {
   integer,
   date,
   pgPolicy,
+  jsonb,
+  boolean,
 } from 'drizzle-orm/pg-core';
 
 export const systemRole = pgEnum('system_role', ['ADMIN', 'USER', 'GUEST']);
@@ -23,6 +25,7 @@ export const userStatus = pgEnum('user_status', [
   'VACATION',
   'CHILD_SICK',
   'ON_LEAVE',
+  'AWAY',
 ]);
 
 export const organisations = pgTable('organisations', {
@@ -45,8 +48,14 @@ export const users = pgTable(
     }),
     mobilePhone: varchar('mobile_phone', { length: 20 }),
     profilePicture: text('profile_picture'),
+    slackUserId: varchar('slack_user_id', { length: 32 }),
+    slackTeamId: varchar('slack_team_id', { length: 32 }),
+    slackDeactivated: boolean('slack_deactivated').default(false).notNull(),
   },
-  (table) => [unique('users_email_unique').on(table.email)]
+  (table) => [
+    unique('users_email_unique').on(table.email),
+    unique('users_slack_identity_unique').on(table.slackTeamId, table.slackUserId),
+  ]
 );
 
 export const organisation_roles = pgTable('organisation_roles', {
@@ -91,6 +100,12 @@ export const status = pgTable(
     time: timestamp('time'),
     fromDate: date('from_date'),
     toDate: date('to_date'),
+    sourceMessageKey: text('source_message_key'),
+    startsAt: timestamp('starts_at', { withTimezone: true }),
+    endsAt: timestamp('ends_at', { withTimezone: true }),
+    startsAtApproximate: boolean('starts_at_approximate').default(false).notNull(),
+    endsAtApproximate: boolean('ends_at_approximate').default(false).notNull(),
+    announcedAt: timestamp('announced_at', { withTimezone: true }),
     createdAt: timestamp('created_at', { mode: 'string' }).defaultNow().notNull(),
   },
   () => [
@@ -102,3 +117,20 @@ export const status = pgTable(
     }),
   ]
 ).enableRLS();
+
+// Durable inbox. Message text is cleared after processing or after 24 hours on failure.
+// No public RLS policies: only the server database role may access this table.
+export const slackMessages = pgTable('slack_messages', {
+  messageKey: text('message_key').primaryKey(),
+  teamId: text('team_id').notNull(),
+  channelId: text('channel_id').notNull(),
+  messageTs: text('message_ts').notNull(),
+  revision: text('revision').notNull(),
+  slackUserId: text('slack_user_id'),
+  text: text('text'),
+  state: text('state').notNull().default('pending'),
+  attempts: integer('attempts').notNull().default(0),
+  nextAttemptAt: timestamp('next_attempt_at', { withTimezone: true }).defaultNow().notNull(),
+  receivedAt: timestamp('received_at', { withTimezone: true }).defaultNow().notNull(),
+  outcome: jsonb('outcome'),
+}).enableRLS();
