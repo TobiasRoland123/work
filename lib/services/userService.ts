@@ -11,6 +11,7 @@ import {
 } from '@/db/schema';
 import { inArray, eq } from 'drizzle-orm';
 import { statusService } from './statusService';
+import { selectActiveStatus } from '@/lib/status/active';
 import {
   PutObjectCommand,
   S3Client,
@@ -28,10 +29,10 @@ const s3 = new S3Client({
   },
 });
 
-const userCache = new Map();
-
 const invalidateUserCache = (userId: string) => {
-  userCache.delete(userId);
+  // Kept as a compatibility hook for callers; reads are intentionally uncached
+  // because timed statuses can become active or expire without a write event.
+  void userId;
 };
 
 export const userService = {
@@ -91,10 +92,6 @@ export const userService = {
   },
 
   async getUserById(id: string) {
-    if (userCache.has(id)) {
-      return userCache.get(id);
-    }
-
     const userArr = await db.select().from(users).where(eq(users.userId, id)).limit(1);
     const user = userArr[0];
     if (!user) return null;
@@ -144,13 +141,16 @@ export const userService = {
       organisation: organisation?.organisationName ?? null,
     };
 
-    userCache.set(result.userId, result);
     return result;
   },
 
   async getAllUsers(sortByStatus: boolean = true) {
     // 1. Fetch all users
-    const usersList = await db.select().from(users).orderBy(users.firstName, users.lastName);
+    const usersList = await db
+      .select()
+      .from(users)
+      .where(eq(users.slackDeactivated, false))
+      .orderBy(users.firstName, users.lastName);
 
     if (usersList.length === 0) return [];
 
@@ -208,21 +208,17 @@ export const userService = {
 
     // 6. Fetch all statuses for all users in one query
     const statusesList = await db.select().from(status).where(inArray(status.userID, userIds));
-    // Pick the latest status per user (assuming createdAt or similar field exists)
-    const statusMap = new Map<string, Status>();
+    const statusMap = new Map<string, Status[]>();
     for (const s of statusesList) {
-      if (
-        !statusMap.has(s.userID) ||
-        (s.createdAt && (statusMap.get(s.userID)?.createdAt ?? 0) < s.createdAt)
-      ) {
-        statusMap.set(s.userID, s);
-      }
+      const userStatuses = statusMap.get(s.userID) ?? [];
+      userStatuses.push(s);
+      statusMap.set(s.userID, userStatuses);
     }
 
     // 7. Assemble the final result
     const usersWithExtras = usersList.map((user) => ({
       ...user,
-      status: statusMap.get(user.userId) ?? null,
+      status: selectActiveStatus(statusMap.get(user.userId) ?? []),
       organisationRoles: rolesMap.get(user.userId) ?? [],
       businessPhoneNumber: phoneMap.get(user.userId) ?? null,
       organisation: user.organisationId ? (orgMap.get(user.organisationId) ?? null) : null,

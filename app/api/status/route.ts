@@ -1,27 +1,26 @@
 import { statusService } from '@/lib/services/statusService';
 import { NextResponse } from 'next/server';
+import { auth } from '@/auth';
+import { manualStatus } from '@/lib/status/manual';
 
-// GET all statuses
 export async function GET() {
-  try {
-    const allStatuses = await statusService.getAllStatuses();
-    return NextResponse.json(allStatuses);
-  } catch (error) {
-    console.error('Error fetching statuses:', error);
-    const message = error instanceof Error ? error.message : 'Failed to fetch statuses';
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
+  const session = await auth();
+  if (session?.provider !== 'slack' || !session.userId)
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  return NextResponse.json(await statusService.getAllStatuses());
 }
-
-// POST new status
 export async function POST(request: Request) {
+  const session = await auth();
+  if (session?.provider !== 'slack' || !session.userId)
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  let value;
   try {
-    const body = await request.json();
-    const newStatus = await statusService.createNewStatus(body);
-    return NextResponse.json(newStatus, { status: 201 });
-  } catch (error) {
-    console.error('Error creating status:', error);
-    const message = error instanceof Error ? error.message : 'Failed to create status';
-    return NextResponse.json({ error: message }, { status: 500 });
+    value = manualStatus(await request.json());
+  } catch {
+    return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
   }
+  return NextResponse.json(
+    await statusService.createNewStatus({ ...value, userID: session.userId }),
+    { status: 201 }
+  );
 }

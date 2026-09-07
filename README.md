@@ -1,3 +1,7 @@
+# Wørk
+
+Slack login, directory sync and #wørk attendance import are configured in [Slack setup](docs/slack-setup.md). Read that guide before database cutover or deployment.
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 # Getting Started

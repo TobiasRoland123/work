@@ -1,14 +1,11 @@
-import { auth } from '@/auth';
-
 export const fetchData = async (params: string) => {
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
-  const session = await auth();
   const res = await fetch(`${baseUrl}/api/${params}`, {
     method: 'GET',
     headers: {
       'Content-type': 'application/json',
-      Authorization: `Bearer ${session?.accessToken}`,
     },
+    credentials: 'same-origin',
     cache: 'no-store',
   });
   if (!res.ok) {

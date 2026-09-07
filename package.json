@@ -29,11 +29,11 @@
     "chromatic": "npx chromatic --project-token=chpt_91242e07e9e9dc0"
   },
   "dependencies": {
+    "@ai-sdk/openai": "^4.0.60",
     "@auth/core": "^0.39.0",
     "@auth/nextjs": "0.0.0-380f8d56",
     "@aws-sdk/client-s3": "^3.812.0",
     "@hookform/resolvers": "^5.0.1",
-    "@microsoft/microsoft-graph-client": "^3.0.7",
     "@neondatabase/serverless": "^1.0.0",
     "@playwright/test": "^1.52.0",
     "@radix-ui/react-dialog": "^1.1.11",
@@ -44,6 +44,7 @@
     "@radix-ui/react-switch": "^1.2.2",
     "@radix-ui/react-tooltip": "^1.2.3",
     "@supabase/supabase-js": "^2.50.0",
+    "ai": "^7.0.93",
     "bcrypt": "^5.1.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -66,7 +67,7 @@
     "tw-animate-css": "^1.2.5",
     "vaul": "^1.1.2",
     "ws": "^8.18.2",
-    "zod": "^3.24.3"
+    "zod": "^3.25.76"
   },
   "devDependencies": {
     "@chromatic-com/storybook": "^3",
