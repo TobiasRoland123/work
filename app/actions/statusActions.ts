@@ -1,61 +1,36 @@
 'use server';
-
 import { NewStatus } from '@/db/types';
 import { statusService } from '@/lib/services/statusService';
+import { requireUserId } from '@/lib/auth/require-user';
+import { manualStatus } from '@/lib/status/manual';
 
 export async function getAllStatusesAction() {
-  try {
-    return await statusService.getAllStatuses();
-  } catch (error) {
-    // Handle error as needed, e.g., log or rethrow
-    throw error;
-  }
+  await requireUserId();
+  return statusService.getAllStatuses();
 }
-
 export async function getStatusByUserUserIdAction(userID: string) {
-  try {
-    return await statusService.getStatusByUserUserId(userID);
-  } catch (error) {
-    // Handle error as needed, e.g., log or rethrow
-    throw error;
-  }
+  await requireUserId();
+  return statusService.getStatusByUserUserId(userID);
 }
-
 export async function createNewStatusAction(newStatus: NewStatus) {
-  try {
-    return await statusService.createNewStatus(newStatus);
-  } catch (error) {
-    // Handle error as needed, e.g., log or rethrow
-    throw error;
-  }
+  const userID = await requireUserId();
+  return statusService.createNewStatus({ ...manualStatus(newStatus), userID });
 }
-
 export async function updateStatusByUserUserIdAction(
   userID: string,
   updatedStatus: Partial<NewStatus>
 ) {
-  try {
-    return await statusService.updateStatusByUserUserId(userID, updatedStatus);
-  } catch (error) {
-    // Handle error as needed, e.g., log or rethrow
-    throw error;
-  }
+  if (userID !== (await requireUserId())) throw new Error('Forbidden');
+  // A correction is a new announcement, preserving the original history/source.
+  return statusService.createNewStatus({ ...manualStatus(updatedStatus), userID });
 }
-
 export async function deleteStatusByIdAction(id: number) {
-  try {
-    return await statusService.deleteStatusById(id);
-  } catch (error) {
-    // Handle error as needed, e.g., log or rethrow
-    throw error;
-  }
+  const userID = await requireUserId();
+  const own = await statusService.getStatusByUserUserId(userID);
+  if (!own.some((row) => row.id === id)) throw new Error('Forbidden');
+  return statusService.deleteStatusById(id);
 }
-
 export async function deleteStatusByUserUserIdAction(userID: string) {
-  try {
-    return await statusService.deleteStatusByUserUserId(userID);
-  } catch (error) {
-    // Handle error as needed, e.g., log or rethrow
-    throw error;
-  }
+  if (userID !== (await requireUserId())) throw new Error('Forbidden');
+  return statusService.deleteStatusByUserUserId(userID);
 }

@@ -1,32 +1,14 @@
 import { auth } from '@/auth';
 import { NextResponse } from 'next/server';
+import { userService } from '@/lib/services/userService';
 
 export async function GET() {
   const session = await auth();
 
-  if (!session?.accessToken) {
-    console.error('Ingen accessToken i session');
+  if (session?.provider !== 'slack' || !session.userId)
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-  }
-
-  const res = await fetch('https://graph.microsoft.com/v1.0/me', {
-    method: 'GET',
-    headers: {
-      Authorization: `Bearer ${session.accessToken}`,
-      'Content-Type': 'application/json',
-    },
-  });
-
-  if (!res.ok) {
-    const error = await res.text();
-    console.error('Graph API fejl:', error);
-    return NextResponse.json(
-      { error: 'Microsoft Graph fejl', detail: error },
-      { status: res.status }
-    );
-  }
-
-  const user = await res.json();
-
-  return NextResponse.json(user);
+  const user = await userService.getUserById(session.userId);
+  return user
+    ? NextResponse.json(user)
+    : NextResponse.json({ error: 'User not found' }, { status: 404 });
 }

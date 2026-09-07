@@ -3,8 +3,8 @@ import React from 'react';
 import ProfileInfoField from './ProfileInfoField';
 import { UserWithExtras } from '@/db/types';
 import { Logo } from '@/components/ui/Logo/Logo';
-import ProfileImageUploader from '@/components/ProfileImageUploader/ProfileImageUploader';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface UserProps {
   user: UserWithExtras;
@@ -13,17 +13,41 @@ interface UserProps {
 const ProfileInfo = ({ user }: UserProps) => {
   const name = `${user.firstName} ${user.lastName}`.trim();
   const heading = name ? name : 'Profile';
+  const initials = name
+    ? name
+        .split(/\s+/)
+        .map((part) => part[0])
+        .join('')
+        .slice(0, 2)
+        .toUpperCase()
+    : user.email.slice(0, 2).toUpperCase();
   return (
     <section className="p-4  ">
       <Link href={'/'}>
         <Logo />
       </Link>
       <div className={'pt-9 flex flex-col lg:flex-row lg:gap-10 items-center'}>
-        <ProfileImageUploader
-          currentImage={user?.profilePicture ? user.profilePicture : null}
-          userEmail={user.email}
-          alt={`Profile picture of ${user.firstName} ${user.lastName}`}
-        />
+        <div className="flex flex-col items-center gap-2">
+          <div className="w-[120px] h-[120px] rounded-full overflow-hidden flex items-center justify-center bg-neutral-500">
+            {user.profilePicture ? (
+              <Image
+                src={`/api/image-proxy?url=${encodeURIComponent(user.profilePicture)}`}
+                alt={`Profile picture of ${name || user.email}`}
+                width={120}
+                height={120}
+                className="object-cover w-full h-full"
+              />
+            ) : (
+              <span
+                className="text-white font-bold text-3xl"
+                aria-label={`Profile initials for ${name || user.email}`}
+              >
+                {initials}
+              </span>
+            )}
+          </div>
+          <small className="text-center text-neutral-600">Profile photo is synced from Slack</small>
+        </div>
         <div className="mt-6 lg:mt-0">
           <span className="font-mono text-base text-center pt-4 md:text-start mx-auto block">
             Your information

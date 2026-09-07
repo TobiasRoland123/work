@@ -1,3 +1,4 @@
+import SlackImportNotice from '@/components/SlackImportNotice';
 import { auth } from '@/auth';
 import ProfileInfo from '@/components/ui/ProfileInfo/ProfileInfo';
 
@@ -20,7 +21,9 @@ const page = async () => {
 
   return (
     <div>
-      {user && <ProfileInfo user={user} />} <Toaster />
+      <ProfileInfo user={user} />
+      <SlackImportNotice userId={session.userId} />
+      <Toaster />
     </div>
   );
 };
