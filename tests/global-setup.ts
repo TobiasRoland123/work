@@ -8,7 +8,9 @@ const STATE = 'playwright/.auth/test-user.json';
 
 const globalSetup = async () => {
   // next-auth/jwt is ESM-only → pull it in with dynamic import
-  const { encode } = await import('next-auth/jwt');
+  const { encode } = (await import('next-auth/jwt')) as unknown as {
+    encode: (options: { secret: string; salt: string; token: Record<string, unknown> }) => Promise<string>;
+  };
 
   const jwt = await encode({
     secret: process.env.AUTH_SECRET!,
@@ -18,7 +20,7 @@ const globalSetup = async () => {
       id: 'test-user-uuid',
       name: 'Test User',
       email: 'test@example.com',
-      access_token: 'fake-ms-token',
+      userId: 'test-user-uuid',
       iat: Math.floor(Date.now() / 1000),
       exp: Math.floor(Date.now() / 1000) + 60 * 60,
     },

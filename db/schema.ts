@@ -10,6 +10,8 @@ import {
   integer,
   date,
   pgPolicy,
+  boolean,
+  primaryKey,
 } from 'drizzle-orm/pg-core';
 
 export const systemRole = pgEnum('system_role', ['ADMIN', 'USER', 'GUEST']);
@@ -79,6 +81,27 @@ export const users_business_phone_numbers = pgTable('users_business_phone_number
     .references(() => business_phone_numbers.id),
 });
 
+// Stable app IDs and all existing relations survive the provider migration.
+export const slackIdentities = pgTable('slack_identities', {
+  teamId: text('team_id').notNull(),
+  slackUserId: text('slack_user_id').notNull(),
+  userId: varchar('user_id', { length: 36 }).notNull().references(() => users.userId, { onDelete: 'restrict' }),
+  active: boolean('active').default(true).notNull(),
+}, (table) => [primaryKey({ columns: [table.teamId, table.slackUserId] }), unique('slack_identity_user_unique').on(table.userId)]);
+
+export const slackMessages = pgTable('slack_messages', {
+  key: text('key').primaryKey(),
+  channelId: text('channel_id').notNull(),
+  messageTs: text('message_ts').notNull(),
+  contentHash: text('content_hash').notNull(),
+  processedAt: timestamp('processed_at', { withTimezone: true }).defaultNow().notNull(),
+});
+
+export const slackSyncState = pgTable('slack_sync_state', {
+  channelId: text('channel_id').primaryKey(),
+  completedAt: timestamp('completed_at', { withTimezone: true }).notNull(),
+});
+
 export const status = pgTable(
   'status',
   {
@@ -91,9 +114,16 @@ export const status = pgTable(
     time: timestamp('time'),
     fromDate: date('from_date'),
     toDate: date('to_date'),
+    slackMessageKey: text('slack_message_key').references(() => slackMessages.key, { onDelete: 'cascade' }),
+    sourceIndex: integer('source_index'),
+    startsAt: timestamp('starts_at', { withTimezone: true }),
+    endsAt: timestamp('ends_at', { withTimezone: true }),
+    timePrecision: text('time_precision'),
+    timeLabel: text('time_label'),
     createdAt: timestamp('created_at', { mode: 'string' }).defaultNow().notNull(),
   },
-  () => [
+  (table) => [
+    unique('status_slack_source_unique').on(table.slackMessageKey, table.sourceIndex),
     pgPolicy('allow_service_role_select', {
       as: 'permissive',
       for: 'select',

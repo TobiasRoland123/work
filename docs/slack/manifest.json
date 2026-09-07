@@ -1,0 +1,27 @@
+{
+  "_metadata": {
+    "major_version": 1,
+    "minor_version": 1
+  },
+  "display_information": {
+    "name": "WORK 2.0"
+  },
+  "oauth_config": {
+    "redirect_urls": [
+      "https://YOUR_PRODUCTION_HOST.example/api/auth/callback/slack"
+    ],
+    "scopes": {
+      "user": [
+        "openid",
+        "profile",
+        "email"
+      ],
+      "bot": [
+        "users:read",
+        "users:read.email",
+        "channels:read",
+        "channels:history"
+      ]
+    }
+  }
+}
