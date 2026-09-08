@@ -11,14 +11,14 @@
     }
   },
   "oauth_config": {
-    "redirect_urls": ["https://YOUR_HOST/api/auth/callback/slack"],
+    "redirect_urls": ["https://work-ivory-six.vercel.app/api/auth/callback/slack"],
     "scopes": {
       "bot": ["users:read", "users:read.email", "channels:history"]
     }
   },
   "settings": {
     "event_subscriptions": {
-      "request_url": "https://YOUR_HOST/api/slack/events",
+      "request_url": "https://work-ivory-six.vercel.app/api/slack/events",
       "bot_events": ["message.channels"]
     },
     "org_deploy_enabled": false,

@@ -4,13 +4,30 @@ Wørk now uses Slack OpenID for login, Slack's directory for people/photos, and 
 
 ## Required Slack setup
 
-Reuse the existing WORK 2.0 Slack app, ID `A0BVDBKEYBV`, in Charlie Tango workspace `T02HKL21R`. Do not create a duplicate app. The user can create apps but cannot install them in this workspace, so administrator approval is an external prerequisite. No installation or approval request is performed by this repository. The template in `slack-manifest.json` is for updating the existing app after replacing its hostname placeholder, not for creating another app.
+### Saved app settings, verified 8 September 2026
 
-1. Under OAuth & Permissions, add the exact HTTPS redirect URL `https://YOUR_HOST/api/auth/callback/slack`. Use an approved HTTPS tunnel or development host for local login testing. Set `AUTH_URL` to that origin.
+WORK 2.0 now has these required Bot Token Scopes saved in Slack: `users:read`, `users:read.email`, and `channels:history`. The saved scopes were verified by reopening the OAuth & Permissions page. User Token Scopes remain empty. No installation or administrator approval request was submitted.
+
+The #wørk channel ID was verified in Slack as `C94UDEF8X`, in workspace `T02HKL21R`.
+
+The user confirmed `https://work-ivory-six.vercel.app` as the intended deployment origin for the new code. The following settings are saved in Slack and were verified after reloading the settings pages:
+
+- Redirect URL: `https://work-ivory-six.vercel.app/api/auth/callback/slack`.
+- Event Subscriptions: On, with Request URL `https://work-ivory-six.vercel.app/api/slack/events`.
+- Bot event: `message.channels`.
+- Socket Mode: Off. It was found enabled and changed to HTTP delivery to match the Vercel implementation.
+
+The event URL is saved but **not verified**. Slack's actual challenge request returned an HTTP error, and the page reports that the URL did not respond correctly. The user confirmed the new Slack code has not been deployed yet, so this is expected. After deployment and server environment configuration, use **Retry** beside the event URL and verify that Slack accepts the challenge. No deployment, Vercel environment changes, installation, or administrator approval request was performed during this setup.
+
+The manifest and environment example use the confirmed origin. Saving these settings does not establish a working Slack connection; installation, bot invitation, deployment configuration, and live tests remain outstanding.
+
+Reuse the existing WORK 2.0 Slack app, ID `A0BVDBKEYBV`, in Charlie Tango workspace `T02HKL21R`. Do not create a duplicate app. The user can create apps but cannot install them in this workspace, so administrator approval is an external prerequisite. No installation or approval request is performed by this repository. The template in `slack-manifest.json` is for updating the existing app using the confirmed Vercel hostname, not for creating another app.
+
+1. Under OAuth & Permissions, add the exact HTTPS redirect URL `https://work-ivory-six.vercel.app/api/auth/callback/slack`. Use an approved HTTPS tunnel or development host for local login testing. Set `AUTH_URL` to that origin.
 2. Sign-in requests only `openid profile email`. Do not combine these with bot scopes. Slack requires sign-in and app installation to use separate OAuth flows. The app's `AUTH_SLACK_ID` and `AUTH_SLACK_SECRET` are the Client ID and Client Secret from Basic Information. [Slack OpenID documentation](https://docs.slack.dev/authentication/sign-in-with-slack/)
 3. The separate bot installation needs `users:read` and `users:read.email` for names, pictures and email matching, plus `channels:history` for a public #wørk. If #wørk is private, use `groups:history` instead. No write scopes, `channels:read`, DM scopes or user token scopes are needed for the integration when its channel ID is known. [Directory scopes](https://docs.slack.dev/reference/methods/users.list/), [message event scopes](https://docs.slack.dev/reference/events/message/)
 4. Install through Slack's OAuth & Permissions page and save the resulting Bot User OAuth Token as `SLACK_BOT_TOKEN`. Invite the bot to #wørk. Get the workspace ID and the channel's stable ID from Slack; names and spelling are not used as identifiers.
-5. Under Event Subscriptions, set Request URL to `https://YOUR_HOST/api/slack/events`. Subscribe to bot event `message.channels`, or `message.groups` for a private channel. Save the Signing Secret from Basic Information as `SLACK_SIGNING_SECRET`. The handler validates signatures, their five-minute age limit, workspace ID and channel ID. [Request verification](https://docs.slack.dev/authentication/verifying-requests-from-slack/), [Events API delivery/retries](https://docs.slack.dev/apis/events-api/)
+5. Under Event Subscriptions, set Request URL to `https://work-ivory-six.vercel.app/api/slack/events`. Subscribe to bot event `message.channels`, or `message.groups` for a private channel. Save the Signing Secret from Basic Information as `SLACK_SIGNING_SECRET`. The handler validates signatures, their five-minute age limit, workspace ID and channel ID. [Request verification](https://docs.slack.dev/authentication/verifying-requests-from-slack/), [Events API delivery/retries](https://docs.slack.dev/apis/events-api/)
 6. The endpoint must be reachable when Slack validates the URL. No deployment, app installation, credential creation or live Slack connection has been performed as part of this migration.
 
 ## Application configuration
