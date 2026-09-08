@@ -2,6 +2,25 @@
 
 Wørk now uses Slack OpenID for login, Slack's directory for people/photos, and messages from one configured channel for attendance. It never calls `users.profile.set`, posts messages, or changes anyone's Slack status. Existing internal user IDs, attendance history, roles and phone relationships are preserved. A unique, case-insensitive email match links an old account to its Slack identity. Conflicts stop that account's import for manual investigation. Directory sync preserves absent/deactivated users and their history, marks previously mapped inactive accounts as deactivated, and hides them from the directory. Active full workspace members can log in; guest, bot, invited and deactivated accounts are excluded.
 
+## Installation callback repair, 8 September 2026
+
+The administrator installation reached `/api/auth/callback/slack`, which handles OpenID sign-in and cannot exchange a bot installation code. Production also lacked the Slack client ID during that attempt. The handoff reports that client credentials have since been deployed. Installation has not yet been verified.
+
+The dedicated bot flow uses `/api/slack/install` and `/api/slack/install/callback`, with the existing three bot scopes. The initiation link requires a signature from the deployment operator and expires after 15 minutes. The callback requires a matching signed, ten-minute, HTTP-only browser cookie before calling `oauth.v2.access`, and checks the returned workspace, bot token type and required scopes. It does not create an application login session or return/log the token.
+
+Deployment and installation procedure:
+
+1. Deploy the callback repair. Add `https://work-ivory-six.vercel.app/api/slack/install/callback` to Slack OAuth & Permissions redirect URLs. Keep `https://work-ivory-six.vercel.app/api/auth/callback/slack` for website login. The setup link explicitly selects the installation redirect. Do not resume the old approval link, which may still select the sign-in callback. A direct request to the new callback without an installation cookie is intentionally rejected with restart instructions.
+2. Generate a setup link with `SLACK_INSTALL_ENV_FILE=/absolute/path/to/private.env pnpm exec tsx scripts/slack-install-link.ts`. The private file must contain the deployment's `AUTH_URL`, `AUTH_SECRET`, Slack client credentials and `SLACK_TEAM_ID`. Keep the resulting link private and do not save it in logs or tickets. It authorizes starting installation until its 15-minute expiry.
+3. Have an approved workspace installer open that link and finish Slack authorization in the same browser within ten minutes. Start from a fresh link after administrator approval, rather than reusing an earlier approval callback or expired code. Slack still enforces its workspace installation policy.
+4. On the verified completion page, retrieve the Bot User OAuth Token from the app's OAuth & Permissions page and save it directly as sensitive `SLACK_BOT_TOKEN` in Vercel Production. The callback deliberately leaves token storage with Slack and the deployment operator. Redeploy and verify `auth.test` matches the configured team before testing website sign-in.
+
+Slack also documents a console-managed install for an app's original workspace, which may avoid the custom flow. Approval alone does not prove that installation generated a token. [Slack installation and distribution](https://docs.slack.dev/app-management/distribution/), [bot OAuth](https://docs.slack.dev/authentication/installing-with-oauth/), [OpenID sign-in](https://docs.slack.dev/authentication/sign-in-with-slack/).
+
+Repair deployment `dpl_HdBiFSvazxpByqWidSaaV2wzGcYS` is Ready at the production origin. Both redirect URLs were verified in Slack after reloading OAuth & Permissions. Production checks confirmed HTTP 403 with `no-store` for installation requests without a ticket and callbacks without a matching state cookie; `/api/me` still returns HTTP 401 without sign-in. The actual Slack code exchange and token installation remain untested. Slack still shows “Request to Workspace Install Submitted” and no bot token.
+
+The following saved-settings section is historical and predates the deployment and approval actions recorded in the handoff.
+
 ## Required Slack setup
 
 ### Saved app settings, verified 8 September 2026

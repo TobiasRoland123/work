@@ -4,7 +4,13 @@ import { authConfig } from './auth.config';
 
 // This configuration has no database imports and can run at the Edge.
 const { auth } = NextAuth(authConfig);
-const serviceRoutes = ['/api/check-users', '/api/slack/events', '/api/slack/process'];
+const serviceRoutes = [
+  '/api/check-users',
+  '/api/slack/events',
+  '/api/slack/process',
+  '/api/slack/install',
+  '/api/slack/install/callback',
+];
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
