@@ -88,7 +88,8 @@ export function ProfileListItem({ user, showStatus = false }: ProfileListItemPro
         {profilePicture ? (
           <Image
             key={profilePicture}
-            src={`/api/image-proxy?url=${encodeURIComponent(profilePicture)}`}
+            src={profilePicture}
+            unoptimized
             alt={`Profile picture of ${user.firstName} ${user.lastName}`}
             width={60}
             height={60}

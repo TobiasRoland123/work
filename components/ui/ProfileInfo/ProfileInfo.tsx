@@ -33,7 +33,8 @@ const ProfileInfo = ({ user }: UserProps) => {
           <div className="w-[120px] h-[120px] rounded-full overflow-hidden flex items-center justify-center bg-neutral-500">
             {profilePicture ? (
               <Image
-                src={`/api/image-proxy?url=${encodeURIComponent(profilePicture)}`}
+                src={profilePicture}
+                unoptimized
                 alt={`Profile picture of ${name || user.email}`}
                 width={120}
                 height={120}

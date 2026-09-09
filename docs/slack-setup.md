@@ -2,7 +2,7 @@
 
 Wørk now uses Slack OpenID for login, Slack's directory for people/photos, and messages from one configured channel for attendance. It never calls `users.profile.set`, posts messages, or changes anyone's Slack status. Existing internal user IDs, attendance history, roles and phone relationships are preserved. A unique, case-insensitive email match links an old account to its Slack identity. Conflicts stop that account's import for manual investigation. Directory sync preserves absent/deactivated users and their history, marks previously mapped inactive accounts as deactivated, and hides them from the directory. Active full workspace members can log in; guest, bot, invited and deactivated accounts are excluded.
 
-Profile photos use Slack-hosted URLs only. Legacy bucket uploads are no longer supported. Existing bucket URLs display initials until the next directory sync or Slack sign-in replaces them. Missing Slack photos also display initials. No bucket credentials are needed.
+Profile photos load directly from Slack-hosted URLs in the browser, without the authenticated image proxy or Next.js image optimization. Legacy bucket uploads are no longer supported. Existing bucket URLs display initials until the next directory sync or Slack sign-in replaces them. Missing Slack photos also display initials. No bucket credentials are needed.
 
 ## Installation callback repair, 8 September 2026
 
