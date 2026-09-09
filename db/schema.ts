@@ -95,7 +95,8 @@ export const status = pgTable(
     userID: varchar('user_id', { length: 36 })
       .notNull()
       .references(() => users.userId, { onDelete: 'cascade' }),
-    status: userStatus('status').default('IN_OFFICE').notNull(),
+    // Null allows a Slack description when no attendance status fits.
+    status: userStatus('status').default('IN_OFFICE'),
     details: text('details'),
     time: timestamp('time'),
     fromDate: date('from_date'),

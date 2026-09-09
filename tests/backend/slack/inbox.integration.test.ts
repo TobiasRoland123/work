@@ -16,6 +16,12 @@ import { syncSlackUsers } from '@/scripts/seed';
 import { userService } from '@/lib/services/userService';
 import { resolveSlackIdentity } from '@/lib/slack/identity';
 
+const broadcastSend = vi.hoisted(() => vi.fn().mockResolvedValue({ status: 'ok' }));
+const broadcastChannel = vi.hoisted(() => vi.fn(() => ({ send: broadcastSend })));
+
+vi.mock('@/lib/supabaseClient', () => ({
+  supabase: { channel: broadcastChannel },
+}));
 vi.mock('@/lib/slack/extraction', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/lib/slack/extraction')>()),
   extractAttendance: vi.fn(),
@@ -57,11 +63,11 @@ const extraction = {
 
 // Poll a due job deterministically: PostgreSQL now() includes microseconds, whereas
 // the worker's JS clock has millisecond precision. A real scheduled poll occurs later.
-async function makeQueuedMessageDue() {
+async function makeQueuedMessageDue(messageKey = key) {
   await db
     .update(slackMessages)
     .set({ nextAttemptAt: new Date(0) })
-    .where(eq(slackMessages.messageKey, key));
+    .where(eq(slackMessages.messageKey, messageKey));
 }
 
 // Opt-in only. Never run these mutations against the developer's normal database.
@@ -84,6 +90,8 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
       await db.delete(status).where(eq(status.userID, userID));
       await db.delete(slackMessages).where(eq(slackMessages.messageKey, key));
       vi.mocked(extractAttendance).mockReset().mockResolvedValue(extraction);
+      broadcastSend.mockClear();
+      broadcastChannel.mockClear();
     });
     afterAll(async () => {
       await db.delete(slackMessages).where(eq(slackMessages.messageKey, key));
@@ -102,6 +110,128 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
       const [job] = await db.select().from(slackMessages).where(eq(slackMessages.messageKey, key));
       expect(job.text).toBeNull();
       expect(job.state).toBe('applied');
+    });
+    it('applies uncertain status as a source-linked description using the original message text and Copenhagen day', async () => {
+      const uncertainMessageTs = '1788733800.000001';
+      const uncertainKey = `${team}:${channel}:${uncertainMessageTs}`;
+      const uncertainMessage = {
+        ...original,
+        event: {
+          ...original.event,
+          ts: uncertainMessageTs,
+          text: 'Maybe I can work from home',
+        },
+      };
+      vi.mocked(extractAttendance).mockResolvedValue({
+        decision: 'review',
+        reason: 'uncertain_status',
+        intervals: [],
+      });
+      try {
+        await enqueueSlackEvent(uncertainMessage);
+        await makeQueuedMessageDue(uncertainKey);
+        expect(await processSlackInbox(1, uncertainKey)).toMatchObject({ applied: 1 });
+        const [row] = await db.select().from(status).where(eq(status.userID, userID));
+        expect(row).toMatchObject({
+          userID,
+          status: null,
+          details: uncertainMessage.event.text,
+          fromDate: '2026-09-07',
+          toDate: '2026-09-07',
+          sourceMessageKey: uncertainKey,
+        });
+        const [job] = await db
+          .select()
+          .from(slackMessages)
+          .where(eq(slackMessages.messageKey, uncertainKey));
+        expect(job).toMatchObject({ state: 'applied', text: null });
+        expect(job.outcome).toEqual({ reason: 'uncertain_status' });
+        expect(broadcastChannel).toHaveBeenCalledWith('status-sync');
+        expect(broadcastSend).toHaveBeenCalledWith({
+          type: 'broadcast',
+          event: 'status_updated',
+          payload: {},
+        });
+      } finally {
+        await db.delete(slackMessages).where(eq(slackMessages.messageKey, uncertainKey));
+      }
+    });
+    it('updates and removes an uncertain status description with Slack edits and deletion', async () => {
+      const uncertainMessageTs = '1788733800.000001';
+      const uncertainKey = `${team}:${channel}:${uncertainMessageTs}`;
+      const editedRevision = '1788737400.000001';
+      const uncertainMessage = {
+        ...original,
+        event: {
+          ...original.event,
+          ts: uncertainMessageTs,
+          text: 'Maybe I can work from home',
+        },
+      };
+      vi.mocked(extractAttendance).mockResolvedValue({
+        decision: 'review',
+        reason: 'uncertain_status',
+        intervals: [],
+      });
+      try {
+        await enqueueSlackEvent(uncertainMessage);
+        await makeQueuedMessageDue(uncertainKey);
+        await processSlackInbox(1, uncertainKey);
+        await enqueueSlackEvent({
+          ...uncertainMessage,
+          event: {
+            ...uncertainMessage.event,
+            subtype: 'message_changed',
+            event_ts: editedRevision,
+            message: {
+              ...uncertainMessage.event,
+              text: 'Possibly working from home',
+              edited: { ts: editedRevision },
+            },
+          },
+        });
+        await makeQueuedMessageDue(uncertainKey);
+        await processSlackInbox(1, uncertainKey);
+        expect(await db.select().from(status).where(eq(status.userID, userID))).toMatchObject([
+          { details: 'Possibly working from home', sourceMessageKey: uncertainKey },
+        ]);
+        await enqueueSlackEvent({
+          ...uncertainMessage,
+          event: {
+            type: 'message',
+            subtype: 'message_deleted',
+            channel,
+            deleted_ts: uncertainMessageTs,
+            event_ts: '1788737500.000001',
+            previous_message: uncertainMessage.event,
+          },
+        });
+        await expect(
+          processQueuedSlackMessage(uncertainKey, '1788737500.000001')
+        ).resolves.toBeUndefined();
+        expect(await db.select().from(status).where(eq(status.userID, userID))).toHaveLength(0);
+      } finally {
+        await db.delete(slackMessages).where(eq(slackMessages.messageKey, uncertainKey));
+      }
+    });
+    it.each([
+      'uncertain_date',
+      'uncertain_time',
+      'other_person',
+      'conflicting',
+      'unsupported',
+    ] as const)('keeps %s extraction decisions in review', async (reason) => {
+      vi.mocked(extractAttendance).mockResolvedValue({
+        decision: 'review',
+        reason,
+        intervals: [],
+      });
+      await enqueueSlackEvent(original);
+      expect(await processSlackInbox(1, key)).toMatchObject({ review: 1, applied: 0 });
+      expect(await db.select().from(status).where(eq(status.userID, userID))).toHaveLength(0);
+      const [job] = await db.select().from(slackMessages).where(eq(slackMessages.messageKey, key));
+      expect(job).toMatchObject({ state: 'review', text: null, outcome: { reason } });
+      expect(broadcastSend).not.toHaveBeenCalled();
     });
     it('processes a newly received message immediately, ahead of unrelated backlog', async () => {
       const newer = { ...original, event: { ...original.event, ts: '1788766300.000001' } };
@@ -242,7 +372,7 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
       });
       await expect(processQueuedSlackMessage(key, messageTs)).resolves.toBeUndefined();
     });
-    it('persists and updates AI-separated comments while preserving unclear edits and deletion behavior', async () => {
+    it('persists and updates AI-separated comments while applying uncertain descriptions and deletion behavior', async () => {
       const real =
         await vi.importActual<typeof import('@/lib/slack/extraction')>('@/lib/slack/extraction');
       vi.mocked(extractAttendance).mockImplementation(real.extractAttendance);
@@ -324,7 +454,7 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
         expect((await read())[0].details).toBe('waiting for a repair technician');
         await enqueueSlackEvent(edited('maybe later', '1788766700.000001'));
         await processSlackInbox();
-        expect((await read())[0].details).toBe('waiting for a repair technician');
+        expect((await read())[0].details).toBe('maybe later');
         await enqueueSlackEvent(edited('in later', '1788766800.000001'));
         await processSlackInbox();
         expect((await read())[0].details).toBe('Arrival time unspecified');

@@ -2,7 +2,7 @@ import { and, eq, lte, sql } from 'drizzle-orm';
 import { db } from '@/db';
 import { slackMessages, status, users } from '@/db/schema';
 import { inspectSlackEvent } from './events';
-import { extractAttendance, statusRows } from './extraction';
+import { descriptionRows, extractAttendance, statusRows } from './extraction';
 import { supabase } from '@/lib/supabaseClient';
 
 export async function enqueueSlackEvent(input: unknown) {
@@ -137,6 +137,11 @@ export async function processSlackInbox(limit = 2, messageKey?: string, revision
         job.text ?? '',
         new Date(Number(job.messageTs) * 1000)
       );
+      const rows =
+        extraction.decision === 'apply'
+          ? statusRows(extraction)
+          : descriptionRows(extraction, job.text ?? '', new Date(Number(job.messageTs) * 1000));
+      const hasRows = rows.length > 0;
       failureReason = 'status_write_failed';
       const applied = await db.transaction(async (tx) => {
         const [current] = await tx
@@ -146,10 +151,10 @@ export async function processSlackInbox(limit = 2, messageKey?: string, revision
           .for('update');
         if (!current || current.revision !== job.revision || current.state !== 'pending')
           return false;
-        if (extraction.decision === 'apply') {
+        if (hasRows) {
           await tx.delete(status).where(eq(status.sourceMessageKey, job.messageKey));
           await tx.insert(status).values(
-            statusRows(extraction).map((row) => ({
+            rows.map((row) => ({
               ...row,
               userID: user.id,
               sourceMessageKey: job.messageKey,
@@ -162,24 +167,19 @@ export async function processSlackInbox(limit = 2, messageKey?: string, revision
           .update(slackMessages)
           .set({
             text: null,
-            state:
-              extraction.decision === 'apply'
-                ? 'applied'
-                : extraction.decision === 'ignore'
-                  ? 'ignored'
-                  : 'review',
+            state: hasRows ? 'applied' : extraction.decision === 'ignore' ? 'ignored' : 'review',
             outcome: { reason: extraction.reason },
           })
           .where(eq(slackMessages.messageKey, job.messageKey));
         return true;
       });
       if (!applied) counts.superseded++;
-      else if (extraction.decision === 'apply') counts.applied++;
+      else if (hasRows) counts.applied++;
       else if (extraction.decision === 'review') counts.review++;
       else counts.ignored++;
       console.info('slack_processing', {
         messageKey: job.messageKey,
-        outcome: applied ? extraction.decision : 'superseded',
+        outcome: applied ? (hasRows ? 'apply' : extraction.decision) : 'superseded',
         reason: extraction.reason,
       });
     } catch {
