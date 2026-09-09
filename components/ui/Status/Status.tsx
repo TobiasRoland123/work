@@ -11,12 +11,14 @@ export type StatusType =
   | 'AWAY';
 
 export type StatusProps = {
-  status: StatusType;
+  status: StatusType | null;
   asLabel?: boolean;
   children?: React.ReactNode;
 };
 
 export function Status({ status, asLabel = true, children }: StatusProps) {
+  if (status === null) return null;
+
   // Map status types to display messages and colors
   const statusConfig: Record<StatusType, { message: string; color: string }> = {
     IN_OFFICE: { message: 'In office', color: 'bg-light-blue' },

@@ -260,6 +260,13 @@
       "when": 1788818981967,
       "tag": "0036_status_announcement_time",
       "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1788954225992,
+      "tag": "0037_slack_description_only",
+      "breakpoints": true
     }
   ]
 }

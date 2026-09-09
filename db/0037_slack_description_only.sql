@@ -1,0 +1,1 @@
+ALTER TABLE "status" ALTER COLUMN "status" DROP NOT NULL;

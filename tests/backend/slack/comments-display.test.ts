@@ -2,7 +2,7 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, afterEach, describe, expect, it, vi } from 'vitest';
 import { ProfileListItem } from '@/components/ui/ProfileListItem/ProfileListItem';
-import { statusRows, validateExtraction } from '@/lib/slack/extraction';
+import { descriptionRows, statusRows, validateExtraction } from '@/lib/slack/extraction';
 
 // The backend test project compiles JSX in classic mode; Next compiles the actual UI.
 beforeEach(() => {
@@ -79,5 +79,74 @@ describe('sender comment display', () => {
     const html = render('<script>alert("test")</script>');
     expect(html).not.toContain('<script>');
     expect(html).toContain('&lt;script&gt;');
+  });
+});
+
+describe('unclassified attendance descriptions', () => {
+  const sent = new Date('2026-09-07T22:30:00Z');
+  const extraction = { decision: 'review', reason: 'uncertain_status', intervals: [] } as const;
+  const message = '  My day is complicated\n<script>hello</script>  ';
+  const rows = () => descriptionRows({ ...extraction, intervals: [] }, message, sent);
+
+  it('preserves the full message and uses the original Copenhagen day', () => {
+    expect(rows()).toEqual([
+      expect.objectContaining({
+        status: null,
+        details: message,
+        fromDate: '2026-09-08',
+        toDate: '2026-09-08',
+        startsAt: new Date('2026-09-07T22:00:00Z'),
+        endsAt: new Date('2026-09-08T22:00:00Z'),
+      }),
+    ]);
+  });
+
+  it.each([
+    'uncertain_date',
+    'uncertain_time',
+    'other_person',
+    'conflicting',
+    'unsupported',
+  ] as const)('leaves %s in review', (reason) => {
+    expect(descriptionRows({ decision: 'review', reason, intervals: [] }, message, sent)).toEqual(
+      []
+    );
+  });
+
+  it('does not display unrelated or empty messages', () => {
+    expect(
+      descriptionRows(
+        { decision: 'ignore', reason: 'not_attendance', intervals: [] },
+        message,
+        sent
+      )
+    ).toEqual([]);
+    expect(descriptionRows({ ...extraction, intervals: [] }, '  ', sent)).toEqual([]);
+  });
+
+  it('renders the message safely without a status badge or date badge', () => {
+    const html = renderToStaticMarkup(
+      React.createElement(ProfileListItem, {
+        showStatus: true,
+        user: {
+          userId: 'local-user',
+          email: 'synthetic@example.com',
+          firstName: 'Test',
+          lastName: 'Person',
+          status: {
+            ...rows()[0],
+            id: 1,
+            userID: 'local-user',
+            createdAt: sent.toISOString(),
+            announcedAt: sent,
+            sourceMessageKey: 'T:C:1788810600.000001',
+          },
+        },
+      })
+    );
+    expect(html).toContain('&lt;script&gt;hello&lt;/script&gt;');
+    expect(html).not.toContain('<script>');
+    expect(html).not.toContain('role="status"');
+    expect(html).toContain('View Slack message');
   });
 });
