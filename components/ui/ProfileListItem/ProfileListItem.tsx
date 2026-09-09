@@ -64,7 +64,9 @@ export function ProfileListItem({ user, showStatus = false }: ProfileListItemPro
   const toDate = user.status?.toDate ?? null;
 
   const formattedDates =
-    fromDate && toDate ? `${formatDate(fromDate)}-${formatDate(toDate)}` : null;
+    fromDate && toDate && fromDate !== toDate
+      ? `${formatDate(fromDate)}-${formatDate(toDate)}`
+      : null;
   const formattedInterval = imported
     ? formatInterval(
         user.status?.startsAt,
