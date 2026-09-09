@@ -5,5 +5,16 @@
       "path": "/api/check-users",
       "schedule": "0 0 * * *"
     }
-  ]
+  ],
+  "functions": {
+    "app/api/queues/slack-status/route.ts": {
+      "experimentalTriggers": [
+        {
+          "type": "queue/v2beta",
+          "topic": "slack-status",
+          "retryAfterSeconds": 60
+        }
+      ]
+    }
+  }
 }

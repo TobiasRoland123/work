@@ -1,5 +1,5 @@
 import NextAuth from 'next-auth';
-import MicrosoftEntraID from 'next-auth/providers/microsoft-entra-id';
+import { authConfig } from './auth.config';
 
 export const {
   auth,
@@ -7,49 +7,51 @@ export const {
   signIn,
   signOut,
 } = NextAuth({
-  providers: [
-    MicrosoftEntraID({
-      clientId: process.env.AUTH_MICROSOFT_ENTRA_ID_ID!,
-      clientSecret: process.env.AUTH_MICROSOFT_ENTRA_ID_SECRET!,
-      issuer: `https://login.microsoftonline.com/${process.env.AUTH_MICROSOFT_ENTRA_ID_TENANT_ID}/v2.0`,
-      authorization: {
-        params: {
-          scope: 'openid profile email User.Read User.Read.All',
-        },
-      },
-    }),
-  ],
+  ...authConfig,
   callbacks: {
-    async jwt({ token, account }) {
-      if (account?.access_token) {
-        token.access_token = account.access_token;
+    async jwt({ token, account, profile }) {
+      if (account) {
+        token.provider = account.provider;
+        if (account.provider === 'slack') {
+          const { resolveSlackIdentity, validateSlackProfile } = await import(
+            '@/lib/slack/identity'
+          );
+          const identity = validateSlackProfile((profile ?? {}) as Record<string, unknown>);
+          const { validateSlackBotTeam, getSlackUser, isActiveSlackMember } = await import(
+            '@/lib/slack/client'
+          );
+          await validateSlackBotTeam();
+          const member = await getSlackUser(identity.slackUserId);
+          if (!isActiveSlackMember(member))
+            throw new Error('Slack membership does not permit access');
+          const user = await resolveSlackIdentity(identity);
+          token.sub = user.userId;
+          token.userId = user.userId;
+        }
       }
-
-      // Add user id to token if available
-      const res = await fetch('https://graph.microsoft.com/v1.0/me', {
-        headers: {
-          Authorization: `Bearer ${token.access_token}`,
-        },
-      });
-      const user = await res.json();
-
-      if (user?.id) {
-        token.id = user.id;
+      if (token.provider === 'slack' && token.userId) {
+        const { db } = await import('@/db');
+        const { users } = await import('@/db/schema');
+        const { and, eq } = await import('drizzle-orm');
+        const [active] = await db
+          .select({ id: users.userId })
+          .from(users)
+          .where(
+            and(
+              eq(users.userId, token.userId),
+              eq(users.slackTeamId, process.env.SLACK_TEAM_ID ?? ''),
+              eq(users.slackDeactivated, false)
+            )
+          )
+          .limit(1);
+        if (!active) return null;
       }
-
       return token;
     },
-    async authorized({ auth }) {
-      // Basic implementation - customize based on your requirements
-      return !!auth; // Only allows authenticated users
-    },
-
     async session({ session, token }) {
-      return {
-        ...session,
-        accessToken: token.access_token as string,
-        userId: token.id,
-      };
+      return token.provider === 'slack'
+        ? { ...session, userId: token.userId ?? token.sub, provider: 'slack' }
+        : { ...session, userId: undefined, provider: undefined };
     },
   },
   secret: process.env.AUTH_SECRET,

@@ -5,7 +5,6 @@ vi.mock('@/auth', () => ({
   auth: vi.fn(),
 }));
 
-import { auth } from '@/auth';
 import { fetchData, sendData } from '@/utils/fetchers'; // adjust path
 
 describe('fetchers', () => {
@@ -20,9 +19,6 @@ describe('fetchers', () => {
 
   describe('fetchData', () => {
     it('calls auth, fetches with correct headers, and returns json', async () => {
-      // Use vi.mocked to get the typed mock function
-      vi.mocked(auth).mockResolvedValue({ accessToken: 'mocktoken' } as any);
-
       global.fetch = vi.fn().mockResolvedValue({
         ok: true,
         json: async () => ({ foo: 'bar' }),
@@ -36,8 +32,8 @@ describe('fetchers', () => {
           method: 'GET',
           headers: {
             'Content-type': 'application/json',
-            Authorization: 'Bearer mocktoken',
           },
+          credentials: 'same-origin',
           cache: 'no-store',
         })
       );
@@ -45,7 +41,6 @@ describe('fetchers', () => {
     });
 
     it('throws if fetch response is not ok', async () => {
-      vi.mocked(auth).mockResolvedValue({ accessToken: 'mocktoken' } as any);
       global.fetch = vi.fn().mockResolvedValue({
         ok: false,
         json: async () => ({}),
@@ -56,7 +51,6 @@ describe('fetchers', () => {
 
     it('falls back to localhost if NEXT_PUBLIC_APP_URL is not set', async () => {
       delete process.env.NEXT_PUBLIC_APP_URL;
-      vi.mocked(auth).mockResolvedValue({ accessToken: 'mocktoken' } as any);
       global.fetch = vi.fn().mockResolvedValue({
         ok: true,
         json: async () => ({ fallback: true }),
@@ -69,8 +63,8 @@ describe('fetchers', () => {
           method: 'GET',
           headers: {
             'Content-type': 'application/json',
-            Authorization: 'Bearer mocktoken',
           },
+          credentials: 'same-origin',
           cache: 'no-store',
         })
       );

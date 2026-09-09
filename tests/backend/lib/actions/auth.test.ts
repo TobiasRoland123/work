@@ -9,10 +9,10 @@ vi.mock('@/auth', () => ({
 import { login, logout } from '@/lib/actions/auth'; // Adjust path as needed
 
 describe('auth', () => {
-  it('calls signIn with MicrosoftEntraID and correct options', async () => {
+  it('calls signIn with Slack and correct options', async () => {
     const { signIn } = await import('@/auth');
     await login();
-    expect(signIn).toHaveBeenCalledWith('MicrosoftEntraID', { redirectTo: '/' });
+    expect(signIn).toHaveBeenCalledWith('slack', { redirectTo: '/' });
   });
 
   it('calls signOut with correct options', async () => {

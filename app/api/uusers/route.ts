@@ -1,34 +1,25 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
-import 'next-auth';
+import { listSlackUsers, validateSlackBotTeam } from '@/lib/slack/client';
 
 export async function GET() {
   const session = await auth();
-
-  if (!session?.accessToken) {
+  if (session?.provider !== 'slack' || !session.userId)
     return NextResponse.json({ error: 'Not authenticated' }, { status: 401 });
-  }
-
-  const res = await fetch(
-    `https://graph.microsoft.com/v1.0/users?$filter=endswith(mail,'@charlietango.dk') and givenName ne null and jobTitle ne null&$count=true`,
-    {
-      headers: {
-        Authorization: `Bearer ${session.accessToken}`,
-        ConsistencyLevel: 'eventual',
-      },
-    }
-  );
-
-  if (!res.ok) {
-    const error = await res.text();
-    console.error('Graph API fejl:', error);
+  try {
+    await validateSlackBotTeam();
+    const members = await listSlackUsers();
     return NextResponse.json(
-      { error: 'Microsoft Graph fejl', detail: error },
-      { status: res.status }
+      members
+        .filter((member) => !member.deleted && !member.is_bot)
+        .map((member) => ({
+          id: member.id,
+          name: member.profile?.real_name ?? member.real_name,
+          email: member.profile?.email,
+          image: member.profile?.image_512,
+        }))
     );
+  } catch {
+    return NextResponse.json({ error: 'Slack directory unavailable' }, { status: 502 });
   }
-
-  const userData = await res.json();
-
-  return NextResponse.json(userData.value);
 }

@@ -1,0 +1,31 @@
+{
+  "display_information": {
+    "name": "WORK 2.0",
+    "description": "Slack sign-in and attendance for Wørk",
+    "background_color": "#183b4e"
+  },
+  "features": {
+    "bot_user": {
+      "display_name": "WORK 2.0",
+      "always_online": false
+    }
+  },
+  "oauth_config": {
+    "redirect_urls": [
+      "https://work-ivory-six.vercel.app/api/auth/callback/slack",
+      "https://work-ivory-six.vercel.app/api/slack/install/callback"
+    ],
+    "scopes": {
+      "bot": ["users:read", "users:read.email", "channels:history"]
+    }
+  },
+  "settings": {
+    "event_subscriptions": {
+      "request_url": "https://work-ivory-six.vercel.app/api/slack/events",
+      "bot_events": ["message.channels"]
+    },
+    "org_deploy_enabled": false,
+    "socket_mode_enabled": false,
+    "token_rotation_enabled": false
+  }
+}

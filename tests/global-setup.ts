@@ -15,10 +15,10 @@ const globalSetup = async () => {
     salt: 'authjs.session-token', // "__Secure-authjs.session-token" on HTTPS
     token: {
       sub: 'test-user-uuid',
-      id: 'test-user-uuid',
+      userId: 'test-user-uuid',
+      provider: 'slack',
       name: 'Test User',
       email: 'test@example.com',
-      access_token: 'fake-ms-token',
       iat: Math.floor(Date.now() / 1000),
       exp: Math.floor(Date.now() / 1000) + 60 * 60,
     },
