@@ -476,7 +476,7 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
       }
     });
     it.each(['review', 'ignore'] as const)(
-      '%s edits preserve valid rows until explicit deletion and ignore stale replay',
+      '%s edits handle descriptions, preserve manual rows and ignore stale replay',
       async (decision) => {
         await db.insert(status).values({ userID, status: 'VACATION', details: 'manual' });
         await enqueueSlackEvent(original);
@@ -502,13 +502,16 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
           intervals: [],
         });
         await enqueueSlackEvent(edited);
+        await makeQueuedMessageDue();
         await processSlackInbox();
         await enqueueSlackEvent(original);
         await makeQueuedMessageDue();
         let rows = await db.select().from(status).where(eq(status.userID, userID));
         expect(rows).toHaveLength(2);
-        expect(rows.some((row) => row.sourceMessageKey === key && row.status === 'FROM_HOME')).toBe(
-          true
+        expect(rows.find((row) => row.sourceMessageKey === key)).toMatchObject(
+          decision === 'ignore'
+            ? { status: null, details: edited.event.message.text }
+            : { status: 'FROM_HOME' }
         );
         expect(rows.some((row) => row.details === 'manual')).toBe(true);
         await enqueueSlackEvent({

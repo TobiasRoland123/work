@@ -113,14 +113,21 @@ describe('unclassified attendance descriptions', () => {
     );
   });
 
-  it('does not display unrelated or empty messages', () => {
+  it.each([
+    'Playing VECTIDE: Ride the waveform rest of the day',
+    'hello',
+    'https://work-ivory-six.vercel.app/today',
+  ])('displays a message even when the model calls it unrelated: %s', (message) => {
     expect(
       descriptionRows(
         { decision: 'ignore', reason: 'not_attendance', intervals: [] },
         message,
         sent
       )
-    ).toEqual([]);
+    ).toEqual([expect.objectContaining({ status: null, details: message })]);
+  });
+
+  it('does not display empty messages', () => {
     expect(descriptionRows({ ...extraction, intervals: [] }, '  ', sent)).toEqual([]);
   });
 
