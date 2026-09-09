@@ -4,10 +4,15 @@ import { POST as events } from '@/app/api/slack/events/route';
 import { GET as processInbox } from '@/app/api/slack/process/route';
 import { POST as createStatus } from '@/app/api/status/route';
 import { enqueueSlackEvent, processSlackInbox } from '@/lib/slack/inbox';
+import { publishSlackMessage } from '@/lib/slack/queue';
 import { auth } from '@/auth';
 import { statusService } from '@/lib/services/statusService';
 
-vi.mock('@/lib/slack/inbox', () => ({ enqueueSlackEvent: vi.fn(), processSlackInbox: vi.fn() }));
+vi.mock('@/lib/slack/inbox', () => ({
+  enqueueSlackEvent: vi.fn(),
+  processSlackInbox: vi.fn(),
+}));
+vi.mock('@/lib/slack/queue', () => ({ publishSlackMessage: vi.fn() }));
 vi.mock('@/auth', () => ({ auth: vi.fn() }));
 vi.mock('@/lib/services/statusService', () => ({ statusService: { createNewStatus: vi.fn() } }));
 
@@ -46,6 +51,7 @@ describe('Slack HTTP authentication boundaries', () => {
     );
     expect(response.status).toBe(401);
     expect(enqueueSlackEvent).not.toHaveBeenCalled();
+    expect(publishSlackMessage).not.toHaveBeenCalled();
   });
   it('answers only a valid signed challenge without queue work', async () => {
     const response = await events(
@@ -53,6 +59,7 @@ describe('Slack HTTP authentication boundaries', () => {
     );
     expect(await response.json()).toEqual({ challenge: 'verified' });
     expect(enqueueSlackEvent).not.toHaveBeenCalled();
+    expect(publishSlackMessage).not.toHaveBeenCalled();
   });
   it('rejects stale signatures', async () => {
     const request = signed('{}', String(Math.floor(Date.now() / 1000) - 301));
@@ -75,7 +82,7 @@ describe('Slack HTTP authentication boundaries', () => {
     expect(processSlackInbox).not.toHaveBeenCalled();
   });
   it('acknowledges only after the queue write resolves, without processing AI inline', async () => {
-    let release!: (value: boolean) => void;
+    let release!: (value: Awaited<ReturnType<typeof enqueueSlackEvent>>) => void;
     vi.mocked(enqueueSlackEvent).mockReturnValue(
       new Promise((resolve) => {
         release = resolve;
@@ -88,9 +95,107 @@ describe('Slack HTTP authentication boundaries', () => {
     });
     await vi.waitFor(() => expect(enqueueSlackEvent).toHaveBeenCalledOnce());
     expect(completed).toBe(false);
-    release(true);
+    release({
+      outcome: 'queued',
+      messageKey: 'TTEST:CTEST:1788766200.000001',
+      revision: '1788766200.000001',
+    });
+    expect(completed).toBe(false);
+    await vi.waitFor(() => expect(publishSlackMessage).toHaveBeenCalledOnce());
     expect((await pending).status).toBe(200);
     expect(processSlackInbox).not.toHaveBeenCalled();
+  });
+  it('waits for publication of the exact committed message before acknowledging', async () => {
+    const messageKey = 'TTEST:CTEST:1788766200.000001';
+    const revision = '1788766200.000001';
+    vi.mocked(enqueueSlackEvent).mockResolvedValue({ outcome: 'queued', messageKey, revision });
+    let release!: () => void;
+    vi.mocked(publishSlackMessage).mockReturnValue(
+      new Promise((resolve) => {
+        release = resolve;
+      })
+    );
+    let completed = false;
+    const pending = events(signed('{}')).then((response) => {
+      completed = true;
+      return response;
+    });
+    await vi.waitFor(() => expect(publishSlackMessage).toHaveBeenCalledOnce());
+    expect(completed).toBe(false);
+    expect(publishSlackMessage).toHaveBeenCalledWith({ messageKey, revision });
+    release();
+    expect((await pending).status).toBe(200);
+    expect(processSlackInbox).not.toHaveBeenCalled();
+  });
+  it('republishes a duplicate delivery after the first publication fails', async () => {
+    const messageKey = 'TTEST:CTEST:1788766200.000001';
+    const revision = '1788766200.000001';
+    vi.mocked(enqueueSlackEvent).mockResolvedValueOnce({ outcome: 'queued', messageKey, revision });
+    vi.mocked(publishSlackMessage).mockRejectedValueOnce(new Error('secret provider response'));
+    expect((await events(signed('{}'))).status).toBe(503);
+    vi.mocked(enqueueSlackEvent).mockResolvedValueOnce({
+      outcome: 'duplicate_or_stale',
+      messageKey,
+      revision,
+    });
+    vi.mocked(publishSlackMessage).mockResolvedValueOnce(undefined);
+    expect((await events(signed('{}'))).status).toBe(200);
+    expect(publishSlackMessage).toHaveBeenNthCalledWith(1, { messageKey, revision });
+    expect(publishSlackMessage).toHaveBeenNthCalledWith(2, { messageKey, revision });
+  });
+  it('logs channel rejection without starting the worker or exposing the message', async () => {
+    const log = vi.spyOn(console, 'info').mockImplementation(() => {});
+    vi.mocked(enqueueSlackEvent).mockResolvedValue({ outcome: 'ignored', reason: 'wrong_channel' });
+    expect((await events(signed(JSON.stringify({ text: 'private message' })))).status).toBe(200);
+    expect(publishSlackMessage).not.toHaveBeenCalled();
+    expect(log).toHaveBeenCalledWith('slack_intake', {
+      outcome: 'ignored',
+      reason: 'wrong_channel',
+    });
+    expect(JSON.stringify(log.mock.calls)).not.toContain('private message');
+    log.mockRestore();
+  });
+  it('publishes a committed deletion without invoking the inbox worker', async () => {
+    const messageKey = 'T:C:1788766200.000001';
+    const revision = '1788766500.000001';
+    vi.mocked(enqueueSlackEvent).mockResolvedValue({
+      outcome: 'deleted',
+      messageKey,
+      revision,
+    });
+    expect((await events(signed('{}'))).status).toBe(200);
+    expect(publishSlackMessage).toHaveBeenCalledWith({ messageKey, revision });
+    expect(processSlackInbox).not.toHaveBeenCalled();
+  });
+  it('returns 503 for publication failures without exposing event text', async () => {
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const messageKey = 'T:C:1788766200.000001';
+    const revision = '1788766200.000001';
+    vi.mocked(enqueueSlackEvent).mockResolvedValue({
+      outcome: 'queued',
+      messageKey,
+      revision,
+    });
+    vi.mocked(publishSlackMessage).mockRejectedValue(new Error('private event text'));
+    const response = await events(signed(JSON.stringify({ text: 'private event text' })));
+    expect(response.status).toBe(503);
+    expect(await response.text()).not.toContain('private event text');
+    expect(JSON.stringify(log.mock.calls)).not.toContain('private event text');
+    log.mockRestore();
+  });
+  it.each(['review', 'ignored'] as const)('does not publish %s intake outcomes', async (outcome) => {
+    vi.mocked(enqueueSlackEvent).mockResolvedValue(
+      outcome === 'review'
+        ? { outcome, messageKey: 'T:C:1788766200.000001', revision: '1788766200.000001' }
+        : { outcome, reason: 'wrong_channel' }
+    );
+    expect((await events(signed(JSON.stringify({ text: 'private message' })))).status).toBe(200);
+    expect(publishSlackMessage).not.toHaveBeenCalled();
+  });
+  it('ignores signed null payloads without crashing', async () => {
+    vi.mocked(enqueueSlackEvent).mockResolvedValue({ outcome: 'ignored', reason: 'invalid_event' });
+    expect((await events(signed('null'))).status).toBe(200);
+    expect(publishSlackMessage).not.toHaveBeenCalled();
   });
   it.each([undefined, 'Bearer wrong', 'synthetic-cron-secret'])(
     'rejects invalid cron authorization %s',

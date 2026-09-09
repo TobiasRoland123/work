@@ -1,21 +1,22 @@
 import { and, eq, lte, sql } from 'drizzle-orm';
 import { db } from '@/db';
 import { slackMessages, status, users } from '@/db/schema';
-import { normalizeSlackEvent } from './events';
+import { inspectSlackEvent } from './events';
 import { extractAttendance, statusRows } from './extraction';
 import { supabase } from '@/lib/supabaseClient';
 
 export async function enqueueSlackEvent(input: unknown) {
-  const event = normalizeSlackEvent(
+  const inspected = inspectSlackEvent(
     input,
     process.env.SLACK_TEAM_ID ?? '',
     process.env.SLACK_CHANNEL_ID ?? ''
   );
-  if (!event) return false;
-  await db.transaction(async (tx) => {
+  if (!inspected.event) return { outcome: 'ignored' as const, reason: inspected.reason };
+  const event = inspected.event;
+  const changed = await db.transaction(async (tx) => {
     const [changed] = await tx
       .insert(slackMessages)
-      .values(event)
+      .values({ ...event, receivedAt: new Date(), nextAttemptAt: new Date() })
       .onConflictDoUpdate({
         target: slackMessages.messageKey,
         set: {
@@ -40,19 +41,30 @@ export async function enqueueSlackEvent(input: unknown) {
           .where(eq(slackMessages.messageKey, event.messageKey));
       }
     }
+    return Boolean(changed);
   });
-  return true;
+  return {
+    outcome: !changed
+      ? ('duplicate_or_stale' as const)
+      : event.state === 'deleted'
+        ? ('deleted' as const)
+        : event.text && event.text.length > 12000
+          ? ('review' as const)
+          : ('queued' as const),
+    messageKey: event.messageKey,
+    revision: event.revision,
+  };
 }
 
-async function broadcast() {
+export async function broadcastSlackStatus() {
   if (supabase)
     await supabase
       .channel('status-sync')
       .send({ type: 'broadcast', event: 'status_updated', payload: {} });
 }
 
-export async function processSlackInbox(limit = 2) {
-  // Purge text on abandoned jobs even when the AI or identity service remains unavailable.
+export async function cleanupExpiredSlackMessages() {
+  // Also called by daily directory maintenance when there are no new messages.
   await db
     .update(slackMessages)
     .set({ text: null, state: 'review', outcome: { reason: 'processing_expired' } })
@@ -62,6 +74,10 @@ export async function processSlackInbox(limit = 2) {
         lte(slackMessages.receivedAt, new Date(Date.now() - 86400000))
       )
     );
+}
+
+export async function processSlackInbox(limit = 2, messageKey?: string, revision?: string) {
+  await cleanupExpiredSlackMessages();
   const counts = { applied: 0, review: 0, ignored: 0, retried: 0, superseded: 0 };
   for (let i = 0; i < limit; i++) {
     const job = await db.transaction(async (tx) => {
@@ -69,12 +85,26 @@ export async function processSlackInbox(limit = 2) {
         .select()
         .from(slackMessages)
         .where(
-          and(eq(slackMessages.state, 'pending'), lte(slackMessages.nextAttemptAt, new Date()))
+          and(
+            eq(slackMessages.state, 'pending'),
+            lte(slackMessages.nextAttemptAt, new Date()),
+            messageKey ? eq(slackMessages.messageKey, messageKey) : undefined,
+            revision ? eq(slackMessages.revision, revision) : undefined
+          )
         )
         .orderBy(slackMessages.nextAttemptAt)
         .limit(1)
         .for('update', { skipLocked: true });
       if (!candidate) return null;
+      if (candidate.attempts >= 5) {
+        // A killed process may never reach the catch block. Bound those attempts too.
+        await tx
+          .update(slackMessages)
+          .set({ state: 'review', text: null, outcome: { reason: 'processing_failed' } })
+          .where(eq(slackMessages.messageKey, candidate.messageKey));
+        counts.review++;
+        return null;
+      }
       await tx
         .update(slackMessages)
         .set({ nextAttemptAt: new Date(Date.now() + 120000), attempts: candidate.attempts + 1 })
@@ -82,6 +112,7 @@ export async function processSlackInbox(limit = 2) {
       return candidate;
     });
     if (!job) break;
+    let failureReason = 'identity_lookup_failed';
     try {
       const [user] = await db
         .select({ id: users.userId })
@@ -95,11 +126,18 @@ export async function processSlackInbox(limit = 2) {
         )
         .limit(1);
       // Directory sync can catch up before the next retry; never guess identity from names.
-      if (!user) throw new Error('Unmapped Slack user');
+      if (!user) {
+        failureReason = 'unmapped_user';
+        throw new Error('Unmapped Slack user');
+      }
+      failureReason = process.env.AI_GATEWAY_API_KEY?.trim()
+        ? 'extraction_failed'
+        : 'gateway_key_missing';
       const extraction = await extractAttendance(
         job.text ?? '',
         new Date(Number(job.messageTs) * 1000)
       );
+      failureReason = 'status_write_failed';
       const applied = await db.transaction(async (tx) => {
         const [current] = await tx
           .select()
@@ -115,8 +153,8 @@ export async function processSlackInbox(limit = 2) {
               ...row,
               userID: user.id,
               sourceMessageKey: job.messageKey,
-            createdAt: new Date(Number(job.revision) * 1000).toISOString(),
-            announcedAt: new Date(Number(job.revision) * 1000),
+              createdAt: new Date(Number(job.revision) * 1000).toISOString(),
+              announcedAt: new Date(Number(job.revision) * 1000),
             }))
           );
         }
@@ -139,6 +177,11 @@ export async function processSlackInbox(limit = 2) {
       else if (extraction.decision === 'apply') counts.applied++;
       else if (extraction.decision === 'review') counts.review++;
       else counts.ignored++;
+      console.info('slack_processing', {
+        messageKey: job.messageKey,
+        outcome: applied ? extraction.decision : 'superseded',
+        reason: extraction.reason,
+      });
     } catch {
       const exhausted = job.attempts >= 4;
       await db
@@ -157,15 +200,49 @@ export async function processSlackInbox(limit = 2) {
         );
       if (exhausted) counts.review++;
       else counts.retried++;
+      console.warn('slack_processing', {
+        messageKey: job.messageKey,
+        outcome: exhausted ? 'review' : 'retry',
+        reason: failureReason,
+        attempt: job.attempts + 1,
+      });
     }
   }
   if (counts.applied) {
     // A failed broadcast must not turn a successfully committed import into a retry.
     try {
-      await broadcast();
+      await broadcastSlackStatus();
     } catch {
       /* The dashboard also refreshes periodically. */
     }
   }
   return counts;
+}
+
+export class SlackMessagePendingError extends Error {
+  constructor(public readonly afterSeconds: number) {
+    super('Slack message is still pending');
+    this.name = 'SlackMessagePendingError';
+  }
+}
+
+export async function processQueuedSlackMessage(messageKey: string, revision: string) {
+  await processSlackInbox(1, messageKey, revision);
+  const [job] = await db
+    .select({
+      state: slackMessages.state,
+      revision: slackMessages.revision,
+      nextAttemptAt: slackMessages.nextAttemptAt,
+    })
+    .from(slackMessages)
+    .where(eq(slackMessages.messageKey, messageKey));
+  if (!job || job.revision !== revision) return;
+  if (job.state === 'pending') {
+    // A retry/backoff or another worker's lease is not successful completion.
+    // Throw so Vercel Queues retains the delivery until the database job is terminal.
+    throw new SlackMessagePendingError(
+      Math.max(1, Math.ceil((job.nextAttemptAt.getTime() - Date.now()) / 1000))
+    );
+  }
+  if (job.state === 'deleted') await broadcastSlackStatus();
 }

@@ -53,6 +53,9 @@ importers:
       '@supabase/supabase-js':
         specifier: ^2.50.0
         version: 2.50.0
+      '@vercel/queue':
+        specifier: 0.5.1
+        version: 0.5.1
       ai:
         specifier: ^7.0.93
         version: 7.0.93(zod@3.25.76)
@@ -3504,6 +3507,15 @@ packages:
     resolution: {integrity: sha512-UycprH3T6n3jH0k44NHMa7pnFHGu/N05MjojYr+Mc6I7obkoLIJujSWwin1pCvdy/eOxrI/l3uDLQsmcrOb4ug==}
     engines: {node: '>= 20'}
 
+  '@vercel/queue@0.5.1':
+    resolution: {integrity: sha512-7gO8hOtIh15UDzbjCg7oJDOwY1Hs3XC4xSK6HjMVo93Ge3oEhPZJ18ogamwZTXwcFRYwvgN1vp2w3+zgqfIpoA==}
+    engines: {node: '>=20.0.0'}
+    peerDependencies:
+      '@opentelemetry/api': ^1.0.0
+    peerDependenciesMeta:
+      '@opentelemetry/api':
+        optional: true
+
   '@vitest/browser@3.1.4':
     resolution: {integrity: sha512-2L4vR/tuUZBxKU72Qe+unIp1P8lZ0T5nlqPegkXxyZFR5gWqItV8VPPR261GOzl49Zw2AhzMABzMMHJagQ0a2g==}
     peerDependencies:
@@ -3909,6 +3921,10 @@ packages:
   balanced-match@1.0.2:
     resolution: {integrity: sha512-3oSeUO0TMV67hN1AmbXsK4yaqU7tjiHlbxRDZOpH0KW9+CeX4bRAaX0Anxt0tx2MrpRpWwQaPwIlISEJhYU5Pw==}
 
+  balanced-match@4.0.4:
+    resolution: {integrity: sha512-BLrgEcRTwX2o6gGxGOCNyMvGSp35YofuYzw9h1IMTRmKqttAZZVU67bdb9Pr2vUHA8+j3i2tJfjO6C6+4myGTA==}
+    engines: {node: 18 || 20 || >=22}
+
   base64-js@1.5.1:
     resolution: {integrity: sha512-AKpaYlHn8t4SVbOHCy+b5+KKgvR4vrsD8vbvrbiQJps7fKDTkjkDry6ji0rUJjC0kzbNePLwzxq8iypo41qeWA==}
 
@@ -3944,6 +3960,10 @@ packages:
 
   brace-expansion@2.0.1:
     resolution: {integrity: sha512-XnAIvQ8eM+kC6aULx6wuQiwVsnzsi9d3WxzV3FpWTGA19F621kwdbsAcFKXgKUHZWsy+mY6iL1sHTxWEFCytDA==}
+
+  brace-expansion@5.0.9:
+    resolution: {integrity: sha512-ScQ4IuvIEF1TMlP7Zt+vjJ//9zlPb2SDcxWxM3bk8s6t6GGdJ7KO1dCcTidOPJKePW30LE/2cT7wCyPho9/Wxg==}
+    engines: {node: 20 || >=22}
 
   braces@3.0.3:
     resolution: {integrity: sha512-yQbXgO/OSZVD2IsiLlro+7Hf6Q18EJrKSEsdoMzKePKXct3gvD8oLcOQdIzGupr5Fj+EDe8gO/lxc1BzfMpxvA==}
@@ -6043,6 +6063,10 @@ packages:
   minimalistic-crypto-utils@1.0.1:
     resolution: {integrity: sha512-JIYlbt6g8i5jKfJ3xz7rF0LXmv2TkDxBLUkiBeZ7bAx4GnnNMr8xFpGnOxn6GhTEHx3SjRrZEoU+j04prX1ktg==}
 
+  minimatch@10.2.6:
+    resolution: {integrity: sha512-vpLQEs+VLCr1nU0BXS07maYoFwlDAH0gngQuuttxIwutDFEMHq2blX+8vpgxDdK3J1PwjCJiep77OitTZ4Ll1A==}
+    engines: {node: 18 || 20 || >=22}
+
   minimatch@3.1.2:
     resolution: {integrity: sha512-J7p63hRiAjw1NDEww1W7i37+ByIrOWO5XQQAzZ3VOcL0PNybwpfmV/N05zFAzwQ9USyEcX6t3UO+K5aqBQOIHw==}
 
@@ -6072,6 +6096,10 @@ packages:
   minizlib@3.0.2:
     resolution: {integrity: sha512-oG62iEk+CYt5Xj2YqI5Xi9xWUeZhDI8jjQmC5oThVH5JGCTgIjr7ciJDzC7MBzYd//WvR1OTmP5Q38Q8ShQtVA==}
     engines: {node: '>= 18'}
+
+  mixpart@0.0.6:
+    resolution: {integrity: sha512-CRdXtgfQH2jARmtNmPR0Q7jL20fiESbaYk1b0KvLD0jCdUuemepREtsbd8nbiY6BHV9OGGddAZITNXklupUPUQ==}
+    engines: {node: '>=20.0.0'}
 
   mkdirp@1.0.4:
     resolution: {integrity: sha512-vVqVZQyf3WLx2Shd0qJ9xuvqgAyKPLAiqITEtqW0oIUjzo3PePDd6fW9iFz30ef7Ysp/oiWqbhszeGWW2T6Gzw==}
@@ -11707,6 +11735,13 @@ snapshots:
 
   '@vercel/oidc@3.2.0': {}
 
+  '@vercel/queue@0.5.1':
+    dependencies:
+      '@vercel/oidc': 3.2.0
+      minimatch: 10.2.6
+      mixpart: 0.0.6
+      picocolors: 1.1.1
+
   '@vitest/browser@3.1.4(playwright@1.52.0)(vite@6.3.5(@types/node@20.17.50)(jiti@2.4.2)(lightningcss@1.30.1)(terser@5.39.2)(tsx@4.19.4)(yaml@2.8.0))(vitest@3.1.4)':
     dependencies:
       '@testing-library/dom': 10.4.0
@@ -12241,6 +12276,8 @@ snapshots:
 
   balanced-match@1.0.2: {}
 
+  balanced-match@4.0.4: {}
+
   base64-js@1.5.1: {}
 
   bcrypt@5.1.1:
@@ -12275,6 +12312,10 @@ snapshots:
   brace-expansion@2.0.1:
     dependencies:
       balanced-match: 1.0.2
+
+  brace-expansion@5.0.9:
+    dependencies:
+      balanced-match: 4.0.4
 
   braces@3.0.3:
     dependencies:
@@ -14726,6 +14767,10 @@ snapshots:
 
   minimalistic-crypto-utils@1.0.1: {}
 
+  minimatch@10.2.6:
+    dependencies:
+      brace-expansion: 5.0.9
+
   minimatch@3.1.2:
     dependencies:
       brace-expansion: 1.1.11
@@ -14752,6 +14797,8 @@ snapshots:
   minizlib@3.0.2:
     dependencies:
       minipass: 7.1.2
+
+  mixpart@0.0.6: {}
 
   mkdirp@1.0.4: {}
 

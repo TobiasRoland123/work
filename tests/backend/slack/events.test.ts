@@ -1,7 +1,7 @@
 import { createHmac } from 'node:crypto';
 import { describe, expect, it } from 'vitest';
 import { verifySlackSignature } from '@/lib/slack/signature';
-import { normalizeSlackEvent } from '@/lib/slack/events';
+import { inspectSlackEvent, normalizeSlackEvent } from '@/lib/slack/events';
 const original = {
   type: 'event_callback',
   team_id: 'T123',
@@ -72,5 +72,18 @@ describe('Slack event security and normalization', () => {
       state: 'deleted',
       text: null,
     });
+  });
+});
+
+describe('Slack intake diagnostics', () => {
+  it.each([
+    ['wrong_workspace', { ...original, team_id: 'OTHER' }],
+    ['wrong_channel', { ...original, event: { ...original.event, channel: 'OTHER' } }],
+    ['bot_message', { ...original, event: { ...original.event, bot_id: 'B123' } }],
+    ['unsupported_subtype', { ...original, event: { ...original.event, subtype: 'channel_join' } }],
+    ['incomplete_message', { ...original, event: { ...original.event, text: undefined } }],
+    ['invalid_event', null],
+  ])('reports %s without returning the rejected payload', (reason, payload) => {
+    expect(inspectSlackEvent(payload, 'T123', 'C123')).toEqual({ reason });
   });
 });

@@ -1,6 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
+  AI_GATEWAY_BASE_URL,
+  DEFAULT_SLACK_EXTRACTION_MODEL,
   copenhagenDate,
+  extractAttendance,
   localInstant,
   statusRows,
   validateExtraction,
@@ -127,4 +130,58 @@ it('preserves approximate nominal arrival without turning it into definite offic
       sent
     )
   ).toThrow();
+});
+
+describe('AI Gateway transport', () => {
+  it('uses the Gateway URL, bearer key, provider-qualified default model, and disables storage', async () => {
+    vi.stubEnv('AI_GATEWAY_API_KEY', 'gateway-test-key');
+    vi.stubEnv('SLACK_EXTRACTION_MODEL', '');
+    const request = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          choices: [
+            {
+              index: 0,
+              finish_reason: 'stop',
+              message: {
+                role: 'assistant',
+                content: JSON.stringify({ decision: 'ignore', reason: 'not_attendance', intervals: [] }),
+              },
+            },
+          ],
+        }),
+        { headers: { 'content-type': 'application/json' } }
+      )
+    );
+    vi.stubGlobal('fetch', request);
+
+    try {
+      await expect(extractAttendance('hello', sent)).resolves.toEqual({
+        decision: 'ignore',
+        reason: 'not_attendance',
+        intervals: [],
+      });
+      expect(request).toHaveBeenCalledOnce();
+      const [input, init] = request.mock.calls[0] as [RequestInfo | URL, RequestInit];
+      expect(String(input)).toBe(`${AI_GATEWAY_BASE_URL}/chat/completions`);
+      expect(new Headers(init.headers).get('authorization')).toBe('Bearer gateway-test-key');
+      const body = JSON.parse(String(init.body));
+      expect(body.model).toBe(DEFAULT_SLACK_EXTRACTION_MODEL);
+      expect(body.store).toBe(false);
+    } finally {
+      vi.unstubAllGlobals();
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it('fails clearly when the Gateway key is missing', async () => {
+    vi.stubEnv('AI_GATEWAY_API_KEY', '');
+    try {
+      await expect(extractAttendance('hello', sent)).rejects.toThrow(
+        'AI Gateway configuration missing: AI_GATEWAY_API_KEY'
+      );
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
 });

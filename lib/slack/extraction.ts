@@ -3,6 +3,8 @@ import { generateText, NoObjectGeneratedError, Output } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 
 export const ATTENDANCE_TIME_ZONE = 'Europe/Copenhagen';
+export const AI_GATEWAY_BASE_URL = 'https://ai-gateway.vercel.sh/v1';
+export const DEFAULT_SLACK_EXTRACTION_MODEL = 'openai/gpt-5.6-luna';
 const statuses = [
   'IN_OFFICE',
   'FROM_HOME',
@@ -168,14 +170,14 @@ Statuses: FROM_HOME for WFH/hjemme/hjemmearbejde; IN_LATE for delayed office arr
 Intervals use inclusive fromDate/toDate YYYY-MM-DD and nullable startTime/endTime HH:mm. Never invent clock times for morning, after lunch, later or early. Preserve an explicitly stated approximate clock such as around 10, 10ish, circa ti, omkring 10 as its nominal HH:mm with startApproximate or endApproximate true. All other bounds use false. Do not invent an exact range around a nominal approximate clock. Approximate arrival/return produces only the exception (IN_LATE or AWAY with approximate end), never an IN_OFFICE transition; approximate departures use LEAVING_EARLY with approximate start. No IN_OFFICE interval may have approximate bounds. A day-long WFH statement has null times; this represents dates, not an assertion about working hours. 'In late' without a clock time can apply IN_LATE that day with null times. A future temporary absence with unknown bounds requires review. If exact departure/return times are given, create separate nonoverlapping intervals for AWAY and explicit IN_OFFICE return until the end of that day. For 'in at 10', create IN_LATE until 10:00 and IN_OFFICE from 10:00. For 'leave at 14' create LEAVING_EARLY from 14:00 until day end. Do not infer a return to office after WFH or client work unless stated. 'WFH until 10, then office' is FROM_HOME until 10:00 plus IN_OFFICE from 10:00. Multi-day statements can be date-only intervals. A timed interval must use the same fromDate/toDate; split separate days if needed. Never output overlapping intervals. If precise interpretation is unsupported or uncertain, return decision review, appropriate reason, intervals []. Ignore also has intervals []. Apply requires reason clear.`;
 
 export async function extractAttendance(text: string, messageInstant: Date): Promise<Extraction> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  const modelId = process.env.SLACK_EXTRACTION_MODEL?.trim();
-  if (!apiKey || !modelId) throw new Error('AI configuration missing');
+  const apiKey = process.env.AI_GATEWAY_API_KEY?.trim();
+  const modelId = process.env.SLACK_EXTRACTION_MODEL?.trim() || DEFAULT_SLACK_EXTRACTION_MODEL;
+  if (!apiKey) throw new Error('AI Gateway configuration missing: AI_GATEWAY_API_KEY');
   if (text.length > 12000) return { decision: 'review', reason: 'unsupported', intervals: [] };
   let result;
   try {
     result = await generateText({
-      model: createOpenAI({ apiKey }).chat(modelId),
+      model: createOpenAI({ apiKey, baseURL: AI_GATEWAY_BASE_URL }).chat(modelId),
       output: Output.object({ name: 'attendance', schema: extractionSchema }),
       system: EXTRACTION_INSTRUCTIONS,
       prompt: JSON.stringify({

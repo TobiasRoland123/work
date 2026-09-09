@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
 import { verifySlackSignature } from '@/lib/slack/signature';
 import { enqueueSlackEvent } from '@/lib/slack/inbox';
+import { publishSlackMessage } from '@/lib/slack/queue';
 
 export const runtime = 'nodejs';
+export const maxDuration = 60;
 export async function POST(request: Request) {
   if (
     !process.env.SLACK_SIGNING_SECRET ||
@@ -43,14 +45,26 @@ export async function POST(request: Request) {
   } catch {
     return new NextResponse(null, { status: 400 });
   }
-  if (payload.type === 'url_verification' && typeof payload.challenge === 'string') {
+  if (payload?.type === 'url_verification' && typeof payload.challenge === 'string') {
     return NextResponse.json({ challenge: payload.challenge });
   }
   try {
-    await enqueueSlackEvent(payload);
+    const intake = await enqueueSlackEvent(payload);
+    // Only fixed outcomes and normalized identifiers are logged, never message text or secrets.
+    console.info('slack_intake', intake);
+    if (
+      intake.outcome === 'queued' ||
+      intake.outcome === 'duplicate_or_stale' ||
+      intake.outcome === 'deleted'
+    ) {
+      // Do not acknowledge Slack until BOTH the inbox commit and durable publication succeed.
+      // A retried Slack delivery republishes the same revision with the same idempotency key.
+      await publishSlackMessage({ messageKey: intake.messageKey, revision: intake.revision });
+    }
     return NextResponse.json({ ok: true });
   } catch {
-    // Slack retries failed deliveries. Never acknowledge before the inbox commit.
+    console.error('slack_intake', { outcome: 'queue_failed' });
+    // Slack retries failed deliveries, including a failed publish after a successful inbox commit.
     return NextResponse.json({ error: 'Unable to queue event' }, { status: 503 });
   }
 }

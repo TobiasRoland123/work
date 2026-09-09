@@ -7,6 +7,7 @@ const { auth } = NextAuth(authConfig);
 const serviceRoutes = [
   '/api/check-users',
   '/api/slack/events',
+  '/api/queues/slack-status',
   '/api/slack/process',
   '/api/slack/install',
   '/api/slack/install/callback',
@@ -14,7 +15,8 @@ const serviceRoutes = [
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
-  // These endpoints perform their own signature/secret checks, without session redirects.
+  // Service endpoints validate signatures/secrets; the queue consumer is private on Vercel.
+  // None of these callbacks should be redirected to interactive login.
   if (
     serviceRoutes.includes(pathname) ||
     pathname === '/api/auth' ||

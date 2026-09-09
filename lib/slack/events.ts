@@ -28,42 +28,55 @@ const envelope = z.object({
   }),
 });
 
-export function normalizeSlackEvent(input: unknown, teamId: string, channelId: string) {
+export function inspectSlackEvent(input: unknown, teamId: string, channelId: string) {
   const parsed = envelope.safeParse(input);
-  if (!parsed.success) return null;
+  if (!parsed.success) return { reason: 'invalid_event' as const };
   const { event, team_id } = parsed.data;
-  if (!teamId || !channelId || team_id !== teamId || event.channel !== channelId) return null;
+  if (!teamId || !channelId) return { reason: 'missing_configuration' as const };
+  if (team_id !== teamId) return { reason: 'wrong_workspace' as const };
+  if (event.channel !== channelId) return { reason: 'wrong_channel' as const };
   const deleted = event.subtype === 'message_deleted';
   const edited = event.subtype === 'message_changed';
-  if (event.subtype && !deleted && !edited) return null;
+  if (event.subtype && !deleted && !edited) return { reason: 'unsupported_subtype' as const };
   if (deleted) {
     const messageTs = event.deleted_ts;
     const revision = event.event_ts ?? event.ts;
-    if (!messageTs || !revision) return null;
+    if (!messageTs || !revision) return { reason: 'incomplete_message' as const };
     return {
+      event: {
+        messageKey: `${teamId}:${channelId}:${messageTs}`,
+        teamId,
+        channelId,
+        messageTs,
+        revision,
+        slackUserId: event.previous_message?.user ?? null,
+        text: null,
+        state: 'deleted',
+      },
+    };
+  }
+  const item = edited ? event.message : event;
+  if (!item) return { reason: 'incomplete_message' as const };
+  if (item.bot_id) return { reason: 'bot_message' as const };
+  if (item.subtype) return { reason: 'unsupported_subtype' as const };
+  const messageTs = item.ts;
+  const revision = edited ? (event.message?.edited?.ts ?? event.event_ts) : item.ts;
+  if (!messageTs || !revision || !item.user || !item.text)
+    return { reason: 'incomplete_message' as const };
+  return {
+    event: {
       messageKey: `${teamId}:${channelId}:${messageTs}`,
       teamId,
       channelId,
       messageTs,
       revision,
-      slackUserId: event.previous_message?.user ?? null,
-      text: null,
-      state: 'deleted',
-    };
-  }
-  const item = edited ? event.message : event;
-  if (!item || item.bot_id || item.subtype) return null;
-  const messageTs = item.ts;
-  const revision = edited ? (event.message?.edited?.ts ?? event.event_ts) : item.ts;
-  if (!messageTs || !revision || !item.user || !item.text) return null;
-  return {
-    messageKey: `${teamId}:${channelId}:${messageTs}`,
-    teamId,
-    channelId,
-    messageTs,
-    revision,
-    slackUserId: item.user ?? null,
-    text: item.text,
-    state: 'pending',
+      slackUserId: item.user ?? null,
+      text: item.text,
+      state: 'pending',
+    },
   };
+}
+
+export function normalizeSlackEvent(input: unknown, teamId: string, channelId: string) {
+  return inspectSlackEvent(input, teamId, channelId).event ?? null;
 }

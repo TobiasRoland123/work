@@ -1,5 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { extractAttendance, statusRows } from '@/lib/slack/extraction';
+import {
+  DEFAULT_SLACK_EXTRACTION_MODEL,
+  extractAttendance,
+  statusRows,
+} from '@/lib/slack/extraction';
 
 const sent = new Date('2026-09-06T23:30:00Z');
 const interval = {
@@ -32,7 +36,7 @@ function reply(content: unknown = output, finish_reason = 'stop', refusal: strin
   );
 }
 beforeEach(() => {
-  vi.stubEnv('OPENAI_API_KEY', 'synthetic-test-key');
+  vi.stubEnv('AI_GATEWAY_API_KEY', 'synthetic-test-key');
   vi.stubEnv('SLACK_EXTRACTION_MODEL', 'mock-model');
 });
 afterEach(() => {
@@ -64,22 +68,20 @@ describe('attendance AI adapter with mocked structured replies', () => {
     ['Tandlægebesøg først, så jeg kommer senere', 'Tandlægebesøg først'],
     ['going to dentist so I will be in later', 'going to dentist'],
   ])('extracts status and sender comment from %s through the SDK', async (text, comment) => {
-    const request = vi
-      .fn()
-      .mockResolvedValue(
-        reply({
-          ...output,
-          intervals: [
-            {
-              ...interval,
-              status: 'IN_LATE',
-              fromDate: '2026-09-07',
-              toDate: '2026-09-07',
-              comment,
-            },
-          ],
-        })
-      );
+    const request = vi.fn().mockResolvedValue(
+      reply({
+        ...output,
+        intervals: [
+          {
+            ...interval,
+            status: 'IN_LATE',
+            fromDate: '2026-09-07',
+            toDate: '2026-09-07',
+            comment,
+          },
+        ],
+      })
+    );
     vi.stubGlobal('fetch', request);
     const result = await extractAttendance(text, sent);
     expect(statusRows(result)[0]).toMatchObject({
@@ -109,14 +111,18 @@ describe('attendance AI adapter with mocked structured replies', () => {
       });
     }
   );
-  it('does not select a fallback model when runtime configuration is missing', async () => {
+  it('uses the default model when the optional model configuration is missing', async () => {
     vi.stubEnv('SLACK_EXTRACTION_MODEL', '');
-    const request = vi.fn();
+    const request = vi
+      .fn()
+      .mockResolvedValue(reply({ decision: 'ignore', reason: 'not_attendance', intervals: [] }));
     vi.stubGlobal('fetch', request);
-    await expect(extractAttendance('in later, going to dentist', sent)).rejects.toThrow(
-      'AI configuration missing'
-    );
-    expect(request).not.toHaveBeenCalled();
+    await expect(extractAttendance('hello', sent)).resolves.toMatchObject({
+      decision: 'ignore',
+      intervals: [],
+    });
+    expect(request).toHaveBeenCalledOnce();
+    expect(JSON.parse(request.mock.calls[0][1].body).model).toBe(DEFAULT_SLACK_EXTRACTION_MODEL);
   });
   it('retains a nominal approximate time from valid structured output', async () => {
     vi.stubGlobal(

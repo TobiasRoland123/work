@@ -44,6 +44,7 @@
     "@radix-ui/react-switch": "^1.2.2",
     "@radix-ui/react-tooltip": "^1.2.3",
     "@supabase/supabase-js": "^2.50.0",
+    "@vercel/queue": "0.5.1",
     "ai": "^7.0.93",
     "bcrypt": "^5.1.1",
     "class-variance-authority": "^0.7.1",

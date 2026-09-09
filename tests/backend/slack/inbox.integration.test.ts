@@ -3,7 +3,13 @@ import { eq } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { db, pool } from '@/db';
 import { slackMessages, status, users } from '@/db/schema';
-import { enqueueSlackEvent, processSlackInbox } from '@/lib/slack/inbox';
+import {
+  cleanupExpiredSlackMessages,
+  enqueueSlackEvent,
+  processSlackInbox,
+  processQueuedSlackMessage,
+  SlackMessagePendingError,
+} from '@/lib/slack/inbox';
 import { extractAttendance } from '@/lib/slack/extraction';
 import { selectActiveStatus } from '@/lib/status/active';
 import { syncSlackUsers } from '@/scripts/seed';
@@ -97,11 +103,150 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
       expect(job.text).toBeNull();
       expect(job.state).toBe('applied');
     });
+    it('processes a newly received message immediately, ahead of unrelated backlog', async () => {
+      const newer = { ...original, event: { ...original.event, ts: '1788766300.000001' } };
+      const newerKey = `${team}:${channel}:${newer.event.ts}`;
+      try {
+        expect(await enqueueSlackEvent(original)).toMatchObject({
+          outcome: 'queued',
+          messageKey: key,
+        });
+        expect(await enqueueSlackEvent(original)).toMatchObject({ outcome: 'duplicate_or_stale' });
+        expect(await enqueueSlackEvent(newer)).toMatchObject({
+          outcome: 'queued',
+          messageKey: newerKey,
+        });
+        // No clock adjustment: the new insert must already be due for event-triggered work.
+        expect(await processSlackInbox(1, newerKey)).toMatchObject({ applied: 1 });
+        const [older] = await db
+          .select()
+          .from(slackMessages)
+          .where(eq(slackMessages.messageKey, key));
+        expect(older.state).toBe('pending');
+        expect(older.attempts).toBe(0);
+        expect(await processSlackInbox(1, newerKey)).toMatchObject({ applied: 0 });
+        expect(await processSlackInbox()).toMatchObject({ applied: 1 });
+      } finally {
+        await db.delete(slackMessages).where(eq(slackMessages.messageKey, newerKey));
+      }
+    });
+    it('claims an event-triggered message only once under concurrent workers', async () => {
+      await enqueueSlackEvent(original);
+      const results = await Promise.all([processSlackInbox(1, key), processSlackInbox(1, key)]);
+      expect(results.reduce((sum, result) => sum + result.applied, 0)).toBe(1);
+      expect(extractAttendance).toHaveBeenCalledOnce();
+      expect(await db.select().from(status).where(eq(status.userID, userID))).toHaveLength(1);
+    });
+    it('keeps a failed queue job pending through backoff and acknowledges only after success', async () => {
+      await enqueueSlackEvent(original);
+      vi.mocked(extractAttendance).mockRejectedValueOnce(new Error('temporary outage'));
+      await expect(processQueuedSlackMessage(key, messageTs)).rejects.toBeInstanceOf(
+        SlackMessagePendingError
+      );
+      await expect(processQueuedSlackMessage(key, messageTs)).rejects.toMatchObject({
+        afterSeconds: expect.any(Number),
+      });
+      expect(extractAttendance).toHaveBeenCalledTimes(1);
+      const [pending] = await db
+        .select()
+        .from(slackMessages)
+        .where(eq(slackMessages.messageKey, key));
+      expect(pending).toMatchObject({ state: 'pending', attempts: 1, text: original.event.text });
+      await makeQueuedMessageDue();
+      await expect(processQueuedSlackMessage(key, messageTs)).resolves.toBeUndefined();
+      await expect(processQueuedSlackMessage(key, messageTs)).resolves.toBeUndefined();
+      expect(extractAttendance).toHaveBeenCalledTimes(2);
+      expect(await db.select().from(status).where(eq(status.userID, userID))).toHaveLength(1);
+    });
+    it('does not acknowledge a delivery while another worker holds the database lease', async () => {
+      await enqueueSlackEvent(original);
+      let release!: () => void;
+      const held = new Promise<void>((resolve) => {
+        release = resolve;
+      });
+      vi.mocked(extractAttendance).mockImplementationOnce(async () => {
+        await held;
+        return extraction;
+      });
+      const first = processQueuedSlackMessage(key, messageTs);
+      try {
+        await vi.waitFor(() => expect(extractAttendance).toHaveBeenCalledOnce());
+        await expect(processQueuedSlackMessage(key, messageTs)).rejects.toBeInstanceOf(
+          SlackMessagePendingError
+        );
+      } finally {
+        release();
+      }
+      await expect(first).resolves.toBeUndefined();
+    });
+    it('acknowledges old revisions without processing a newer edit', async () => {
+      await enqueueSlackEvent(original);
+      const revision = '1788766700.000001';
+      await enqueueSlackEvent({
+        ...original,
+        event: {
+          type: 'message',
+          channel,
+          subtype: 'message_changed',
+          message: { ...original.event, text: 'WFH tomorrow', edited: { ts: revision } },
+        },
+      });
+      await expect(processQueuedSlackMessage(key, messageTs)).resolves.toBeUndefined();
+      expect(extractAttendance).not.toHaveBeenCalled();
+      await expect(processQueuedSlackMessage(key, revision)).resolves.toBeUndefined();
+      expect(extractAttendance).toHaveBeenCalledOnce();
+    });
+    it('bounds repeated killed workers without another AI call and clears the source text', async () => {
+      await enqueueSlackEvent(original);
+      await db
+        .update(slackMessages)
+        .set({ attempts: 5, nextAttemptAt: new Date(0) })
+        .where(eq(slackMessages.messageKey, key));
+      await expect(processQueuedSlackMessage(key, messageTs)).resolves.toBeUndefined();
+      expect(extractAttendance).not.toHaveBeenCalled();
+      const [job] = await db.select().from(slackMessages).where(eq(slackMessages.messageKey, key));
+      expect(job).toMatchObject({
+        state: 'review',
+        text: null,
+        outcome: { reason: 'processing_failed' },
+      });
+    });
+    it('stops queue retries after five failed extraction attempts', async () => {
+      await enqueueSlackEvent(original);
+      vi.mocked(extractAttendance).mockRejectedValue(new Error('provider down'));
+      for (let attempt = 1; attempt <= 5; attempt++) {
+        await makeQueuedMessageDue();
+        if (attempt < 5)
+          await expect(processQueuedSlackMessage(key, messageTs)).rejects.toBeInstanceOf(
+            SlackMessagePendingError
+          );
+        else await expect(processQueuedSlackMessage(key, messageTs)).resolves.toBeUndefined();
+      }
+      expect(extractAttendance).toHaveBeenCalledTimes(5);
+      const [job] = await db.select().from(slackMessages).where(eq(slackMessages.messageKey, key));
+      expect(job).toMatchObject({ state: 'review', text: null, attempts: 5 });
+    });
+    it('can purge expired text during daily maintenance without processing any job', async () => {
+      await enqueueSlackEvent(original);
+      await db
+        .update(slackMessages)
+        .set({ receivedAt: new Date(Date.now() - 86400001) })
+        .where(eq(slackMessages.messageKey, key));
+      await cleanupExpiredSlackMessages();
+      expect(extractAttendance).not.toHaveBeenCalled();
+      const [job] = await db.select().from(slackMessages).where(eq(slackMessages.messageKey, key));
+      expect(job).toMatchObject({
+        state: 'review',
+        text: null,
+        outcome: { reason: 'processing_expired' },
+      });
+      await expect(processQueuedSlackMessage(key, messageTs)).resolves.toBeUndefined();
+    });
     it('persists and updates AI-separated comments while preserving unclear edits and deletion behavior', async () => {
       const real =
         await vi.importActual<typeof import('@/lib/slack/extraction')>('@/lib/slack/extraction');
       vi.mocked(extractAttendance).mockImplementation(real.extractAttendance);
-      vi.stubEnv('OPENAI_API_KEY', 'synthetic-test-key');
+      vi.stubEnv('AI_GATEWAY_API_KEY', 'synthetic-test-key');
       vi.stubEnv('SLACK_EXTRACTION_MODEL', 'mock-model');
       const response = (comment: string | null, decision = 'apply') =>
         new Response(
