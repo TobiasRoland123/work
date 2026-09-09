@@ -1,3 +1,4 @@
+import { getSlackImageUrl } from '@/lib/slack/image';
 import Image from 'next/image';
 import { Status } from '../Status/Status';
 import { UserWithExtras } from '@/db/types';
@@ -46,6 +47,7 @@ function formatInterval(
 }
 
 export function ProfileListItem({ user, showStatus = false }: ProfileListItemProps) {
+  const profilePicture = getSlackImageUrl(user.profilePicture);
   const imported = Boolean(user.status?.sourceMessageKey);
   const actionBound = imported ? null : user.status?.time;
   const statusTime = actionBound ? new Date(actionBound) : null;
@@ -83,10 +85,10 @@ export function ProfileListItem({ user, showStatus = false }: ProfileListItemPro
   return (
     <div className="flex items-start gap-3 px-2 py-1 border-gray-400 max-w-[60ch] ">
       <div className="w-[60px] h-[60px] rounded-full overflow-hidden flex items-center justify-center bg-neutral-500 shrink-0">
-        {user.profilePicture ? (
+        {profilePicture ? (
           <Image
-            key={user.profilePicture}
-            src={`/api/image-proxy?url=${encodeURIComponent(user.profilePicture)}`}
+            key={profilePicture}
+            src={`/api/image-proxy?url=${encodeURIComponent(profilePicture)}`}
             alt={`Profile picture of ${user.firstName} ${user.lastName}`}
             width={60}
             height={60}

@@ -1,3 +1,4 @@
+import { getSlackImageUrl } from './image';
 import { randomUUID } from 'node:crypto';
 import { and, eq, sql } from 'drizzle-orm';
 import { db } from '@/db';
@@ -108,7 +109,7 @@ export async function resolveSlackIdentity(identity: TrustedSlackIdentity) {
     const profile = {
       ...(identity.firstName ? { firstName: identity.firstName } : {}),
       ...(identity.lastName ? { lastName: identity.lastName } : {}),
-      ...(identity.profilePicture ? { profilePicture: identity.profilePicture } : {}),
+      profilePicture: getSlackImageUrl(identity.profilePicture),
       slackUserId: identity.slackUserId,
       slackTeamId: identity.slackTeamId,
       email: identity.email,

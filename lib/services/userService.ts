@@ -12,23 +12,6 @@ import {
 import { inArray, eq } from 'drizzle-orm';
 import { statusService } from './statusService';
 import { selectActiveStatus } from '@/lib/status/active';
-import {
-  PutObjectCommand,
-  S3Client,
-  ListObjectsV2Command,
-  DeleteObjectsCommand,
-} from '@aws-sdk/client-s3';
-import sharp from 'sharp';
-
-const s3 = new S3Client({
-  region: 'eu-central',
-  endpoint: process.env.HETZNER_BUCKET_URL!,
-  credentials: {
-    accessKeyId: process.env.HETZNER_BUCKET_ACCESS_KEY!,
-    secretAccessKey: process.env.HETZNER_BUCKET_SECRET_KEY!,
-  },
-});
-
 const invalidateUserCache = (userId: string) => {
   // Kept as a compatibility hook for callers; reads are intentionally uncached
   // because timed statuses can become active or expire without a write event.
@@ -305,89 +288,6 @@ export const userService = {
     return { userId, deleted: true };
   },
 
-  async uploadAndProcessProfileImage(fileBuffer: Buffer, email: string) {
-    // Process image: resize and convert to webp
-    const processedBuffer = await sharp(fileBuffer)
-      .resize(256, 256, { fit: 'cover' })
-      .webp({ quality: 80 })
-      .toBuffer();
-
-    const key = `profile-images/${email}-updatedbyuser-${Date.now()}`;
-    let oldImageKey: string | null = null;
-    try {
-      // Find the current image key for this user
-      const listResult = await s3.send(
-        new ListObjectsV2Command({
-          Bucket: process.env.HETZNER_BUCKET_NAME!,
-          Prefix: 'profile-images/',
-        })
-      );
-      if (Array.isArray(listResult.Contents)) {
-        // Get the user from DB to find the current profilePicture URL
-        const user = await this.getUserByEmail(email);
-        if (user && user.profilePicture) {
-          // Extract the key from the URL
-          const urlParts = user.profilePicture.split('/');
-          const currentKey = urlParts.slice(-2).join('/'); // profile-images/filename
-          // Check if this key exists in S3 and is an updatedbyuser image
-
-          const found = listResult.Contents.find(
-            (obj: { Key?: string }) =>
-              obj.Key === currentKey &&
-              obj.Key?.includes(email) &&
-              obj.Key?.includes('updatedbyuser')
-          );
-
-          if (found && found.Key) {
-            oldImageKey = found.Key;
-          }
-        }
-      }
-
-      // Upload the new image
-      const result = await s3.send(
-        new PutObjectCommand({
-          Bucket: process.env.HETZNER_BUCKET_NAME!,
-          Key: key,
-          Body: processedBuffer,
-          ContentType: 'image/webp',
-          ACL: 'public-read',
-        })
-      );
-      if (result.$metadata.httpStatusCode !== 200) {
-        throw new Error('Failed to upload profile image to S3');
-      }
-
-      const url = `${process.env.HETZNER_BUCKET_URL!.replace(/\/$/, '')}/${process.env.HETZNER_BUCKET_NAME}/${key}`;
-      // Update the user's profileImage field in the database
-      const user = await db
-        .update(users)
-        .set({ profilePicture: url })
-        .where(eq(users.email, email))
-        .returning();
-
-      // Invalidate the cache for this user
-      invalidateUserCache(user[0].userId);
-
-      // Now fetch the updated user
-      const updatedUser = await userService.getUserById(user[0].userId);
-
-      // Delete the old image from S3 if it exists and is not the same as the new one
-      if (oldImageKey && oldImageKey !== key) {
-        await s3.send(
-          new DeleteObjectsCommand({
-            Bucket: process.env.HETZNER_BUCKET_NAME!,
-            Delete: { Objects: [{ Key: oldImageKey }] },
-          })
-        );
-      }
-
-      return updatedUser;
-    } catch (err) {
-      throw new Error('Failed to upload profile image to S3', { cause: err });
-    }
-  },
-
   /* * * * * * THIS METHDOD HAS BEEN COMMENTED OUT DUE TO NOT NEEDING TO CREATE LOGIN LOGIC CAUSE OF THE ENTRA IMPLEMENTATION * * * * * */
   // async loginUser(email: string, password: string) {
   //   const user = await this.getUserByEmail(email);
@@ -395,16 +295,6 @@ export const userService = {
   //     throw new Error('User not found');
   //   }
 
-  //   return user;
-  // },
-
-  // PUT METHODS
-  // Can be added when the profile picture feature is implemented
-  // async changeProfilePicture(userId: number, newProfilePicture: string) {
-  //   const user = await db
-  //     .update(users)
-  //     .set({ profilePicture: newProfilePicture })
-  //     .where(eq(users.id, userId));
   //   return user;
   // },
 };

@@ -1,3 +1,4 @@
+import { getSlackImageUrl } from '@/lib/slack/image';
 import React from 'react';
 
 import ProfileInfoField from './ProfileInfoField';
@@ -11,6 +12,7 @@ interface UserProps {
 }
 
 const ProfileInfo = ({ user }: UserProps) => {
+  const profilePicture = getSlackImageUrl(user.profilePicture);
   const name = `${user.firstName} ${user.lastName}`.trim();
   const heading = name ? name : 'Profile';
   const initials = name
@@ -29,9 +31,9 @@ const ProfileInfo = ({ user }: UserProps) => {
       <div className={'pt-9 flex flex-col lg:flex-row lg:gap-10 items-center'}>
         <div className="flex flex-col items-center gap-2">
           <div className="w-[120px] h-[120px] rounded-full overflow-hidden flex items-center justify-center bg-neutral-500">
-            {user.profilePicture ? (
+            {profilePicture ? (
               <Image
-                src={`/api/image-proxy?url=${encodeURIComponent(user.profilePicture)}`}
+                src={`/api/image-proxy?url=${encodeURIComponent(profilePicture)}`}
                 alt={`Profile picture of ${name || user.email}`}
                 width={120}
                 height={120}

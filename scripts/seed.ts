@@ -64,7 +64,6 @@ export async function syncSlackUsers(slackUsers: SlackUser[] = []) {
         slackTeamId: current.slackTeamId,
       };
       if (profile.phone) update.mobilePhone = profile.phone.replaceAll(' ', '');
-      if (profile.image_512) update.profilePicture = profile.image_512;
       if (organisationId && !current.organisationId) update.organisationId = organisationId;
       await db.update(users).set(update).where(eq(users.userId, current.userId));
       results.synced.push(current.userId);
