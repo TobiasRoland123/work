@@ -15,6 +15,11 @@ const serviceRoutes = [
 
 export async function middleware(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
+  // Next's dev server can expose its internal localhost origin behind a tunnel.
+  const redirectOrigin =
+    process.env.NODE_ENV === 'development' && process.env.AUTH_URL
+      ? process.env.AUTH_URL
+      : request.url;
   // Service endpoints validate signatures/secrets; the queue consumer is private on Vercel.
   // None of these callbacks should be redirected to interactive login.
   if (
@@ -34,12 +39,12 @@ export async function middleware(request: NextRequest) {
     Boolean(session.userId) &&
     (!session.expires || new Date(session.expires).getTime() > Date.now());
   if (pathname === '/')
-    return NextResponse.redirect(new URL(authenticated ? '/today' : '/login', request.url));
+    return NextResponse.redirect(new URL(authenticated ? '/today' : '/login', redirectOrigin));
   if (pathname === '/login') return NextResponse.next();
   if (!authenticated) {
     return pathname.startsWith('/api/')
       ? NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-      : NextResponse.redirect(new URL('/login', request.url));
+      : NextResponse.redirect(new URL('/login', redirectOrigin));
   }
   return NextResponse.next();
 }

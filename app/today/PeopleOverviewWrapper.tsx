@@ -4,7 +4,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { UserWithExtras } from '@/db/types';
 import { getAllUsersAction } from '../actions/userActions';
 import { supabase } from '@/lib/supabaseClient';
-import { useWebSocket } from '@/hooks/useWebSocket';
 
 export const PeopleOverviewWrapper = (props: {
   initialProfiles: UserWithExtras[];
@@ -38,29 +37,30 @@ export const PeopleOverviewWrapper = (props: {
   }, [refetchProfiles]);
 
   useEffect(() => {
-    // Timed statuses change applicability without a broadcast event.
-    const timer = window.setInterval(() => {
-      void refetchProfiles();
-    }, 60_000);
-    return () => window.clearInterval(timer);
-  }, [refetchProfiles]);
-
-  const handleMessage = useCallback(
-    (msg: string) => {
+    // Synchronize with server data and browser visibility. Local development has
+    // no broadcast service; production also polls for timed status transitions.
+    let pending = false;
+    const refresh = async () => {
+      if (document.visibilityState !== 'visible' || pending) return;
+      pending = true;
       try {
-        const data = JSON.parse(msg);
-        if (data.type === 'STATUS_UPDATE' || data.type === 'USER_UPDATE') {
-          refetchProfiles();
-        }
-      } catch (e) {
-        console.error(e);
+        await refetchProfiles();
+      } catch (error) {
+        console.error('Unable to refresh attendance', error);
+      } finally {
+        pending = false;
       }
-    },
-    [refetchProfiles]
-  );
-  const wsUrl = 'ws://localhost:3001';
-
-  useWebSocket(wsUrl, handleMessage);
+    };
+    const timer = window.setInterval(
+      refresh,
+      process.env.NODE_ENV === 'development' ? 3_000 : 60_000
+    );
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', refresh);
+    };
+  }, [refetchProfiles]);
 
   function getProfilesInAndOutOfOffice(profiles: Array<UserWithExtras>) {
     const profilesInOffice: UserWithExtras[] = [];

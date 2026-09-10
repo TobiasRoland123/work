@@ -6,6 +6,9 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 # Getting Started
 
+For the configured local Slack development environment, run `pnpm local:dev`.
+See [local development](docs/local-development.md) for startup, temporary tunnel URLs, and the development Slack app.
+
 First, run the development server:
 
 `pnpm dev`

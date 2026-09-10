@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
+    "local:dev": "node scripts/local-dev.mjs",
+    "local:credentials": "node scripts/local-credentials.mjs",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
