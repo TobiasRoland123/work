@@ -3,6 +3,7 @@ import {
   SlackApiError,
   SlackRateLimitError,
   listSlackUsers,
+  notifySlackStatusNotSet,
   validateSlackBotTeam,
 } from '@/lib/slack/client';
 import {
@@ -64,15 +65,37 @@ describe('Slack client', () => {
     process.env.SLACK_BOT_TOKEN = 'xoxb-test';
     vi.restoreAllMocks();
   });
+  it('tags the sender in the source channel and links the message that set no status', async () => {
+    const fetch = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          ok: true,
+          permalink: 'https://example.slack.com/archives/C1/p1788766200000001',
+        }),
+      })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ ok: true }) });
+    vi.stubGlobal('fetch', fetch);
+    await notifySlackStatusNotSet('C1', 'U1', '1788766200.000001');
+    expect(fetch.mock.calls[0][1].body.get('message_ts')).toBe('1788766200.000001');
+    expect(fetch.mock.calls[1][0]).toBe('https://slack.com/api/chat.postMessage');
+    const body = fetch.mock.calls[1][1].body as URLSearchParams;
+    expect(body.get('channel')).toBe('C1');
+    expect(body.get('text')).toContain('<@U1>');
+    expect(body.get('text')).toContain(
+      '<https://example.slack.com/archives/C1/p1788766200000001|message>'
+    );
+    expect(body.get('text')).toContain("didn't set a status");
+    expect(body.get('unfurl_links')).toBe('false');
+  });
   it('validates bot workspace and rejects mismatch', async () => {
     vi.stubGlobal(
       'fetch',
-      vi
-        .fn()
-        .mockResolvedValue({
-          ok: true,
-          json: async () => ({ ok: true, team_id: 'T-other', user_id: 'B1' }),
-        })
+      vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({ ok: true, team_id: 'T-other', user_id: 'B1' }),
+      })
     );
     await expect(validateSlackBotTeam()).rejects.toThrow('different workspace');
   });
@@ -102,27 +125,23 @@ describe('Slack client', () => {
   it('exposes typed rate limits', async () => {
     vi.stubGlobal(
       'fetch',
-      vi
-        .fn()
-        .mockResolvedValue({
-          status: 429,
-          headers: new Headers({ 'retry-after': '7' }),
-          json: async () => ({ ok: false }),
-        })
+      vi.fn().mockResolvedValue({
+        status: 429,
+        headers: new Headers({ 'retry-after': '7' }),
+        json: async () => ({ ok: false }),
+      })
     );
     await expect(listSlackUsers()).rejects.toBeInstanceOf(SlackRateLimitError);
   });
   it('rejects Slack error bodies even with HTTP 200', async () => {
     vi.stubGlobal(
       'fetch',
-      vi
-        .fn()
-        .mockResolvedValue({
-          ok: true,
-          status: 200,
-          statusText: 'OK',
-          json: async () => ({ ok: false, error: 'invalid_auth' }),
-        })
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        statusText: 'OK',
+        json: async () => ({ ok: false, error: 'invalid_auth' }),
+      })
     );
     await expect(listSlackUsers()).rejects.toBeInstanceOf(SlackApiError);
   });

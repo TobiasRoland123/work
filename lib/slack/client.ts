@@ -137,3 +137,13 @@ export async function getSlackPermalink(channel: string, ts: string) {
     throw new SlackApiError('Invalid Slack permalink');
   return url.toString();
 }
+
+export async function notifySlackStatusNotSet(channel: string, userId: string, messageTs: string) {
+  const permalink = await getSlackPermalink(channel, messageTs);
+  await slackRequest('chat.postMessage', {
+    channel,
+    text: `<@${userId}>, your <${permalink}|message> didn't set a status because I couldn't determine a clear attendance status. Please send a new message with your status and when it applies.`,
+    unfurl_links: 'false',
+    unfurl_media: 'false',
+  });
+}

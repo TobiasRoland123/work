@@ -16,7 +16,7 @@
       "https://work-ivory-six.vercel.app/api/slack/install/callback"
     ],
     "scopes": {
-      "bot": ["users:read", "users:read.email", "channels:history"]
+      "bot": ["users:read", "users:read.email", "channels:history", "chat:write"]
     }
   },
   "settings": {

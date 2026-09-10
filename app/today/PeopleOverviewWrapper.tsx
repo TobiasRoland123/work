@@ -37,29 +37,11 @@ export const PeopleOverviewWrapper = (props: {
   }, [refetchProfiles]);
 
   useEffect(() => {
-    // Synchronize with server data and browser visibility. Local development has
-    // no broadcast service; production also polls for timed status transitions.
-    let pending = false;
-    const refresh = async () => {
-      if (document.visibilityState !== 'visible' || pending) return;
-      pending = true;
-      try {
-        await refetchProfiles();
-      } catch (error) {
-        console.error('Unable to refresh attendance', error);
-      } finally {
-        pending = false;
-      }
-    };
-    const timer = window.setInterval(
-      refresh,
-      process.env.NODE_ENV === 'development' ? 3_000 : 60_000
-    );
-    document.addEventListener('visibilitychange', refresh);
-    return () => {
-      window.clearInterval(timer);
-      document.removeEventListener('visibilitychange', refresh);
-    };
+    // Timed statuses change applicability without a broadcast event.
+    const timer = window.setInterval(() => {
+      void refetchProfiles();
+    }, 60_000);
+    return () => window.clearInterval(timer);
   }, [refetchProfiles]);
 
   function getProfilesInAndOutOfOffice(profiles: Array<UserWithExtras>) {

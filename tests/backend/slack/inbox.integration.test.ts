@@ -15,6 +15,12 @@ import { selectActiveStatus } from '@/lib/status/active';
 import { syncSlackUsers } from '@/scripts/seed';
 import { userService } from '@/lib/services/userService';
 import { resolveSlackIdentity } from '@/lib/slack/identity';
+import { notifySlackStatusNotSet } from '@/lib/slack/client';
+
+vi.mock('@/lib/slack/client', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/slack/client')>()),
+  notifySlackStatusNotSet: vi.fn().mockResolvedValue(undefined),
+}));
 
 const broadcastSend = vi.hoisted(() => vi.fn().mockResolvedValue({ status: 'ok' }));
 const broadcastChannel = vi.hoisted(() => vi.fn(() => ({ send: broadcastSend })));
@@ -92,6 +98,7 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
       vi.mocked(extractAttendance).mockReset().mockResolvedValue(extraction);
       broadcastSend.mockClear();
       broadcastChannel.mockClear();
+      vi.mocked(notifySlackStatusNotSet).mockReset().mockResolvedValue(undefined);
     });
     afterAll(async () => {
       await db.delete(slackMessages).where(eq(slackMessages.messageKey, key));
@@ -110,6 +117,40 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
       const [job] = await db.select().from(slackMessages).where(eq(slackMessages.messageKey, key));
       expect(job.text).toBeNull();
       expect(job.state).toBe('applied');
+      expect(notifySlackStatusNotSet).not.toHaveBeenCalled();
+    });
+    it.each(['review', 'ignore'] as const)(
+      'notifies once for a %s decision, including description-only rows',
+      async (decision) => {
+        vi.mocked(extractAttendance).mockResolvedValue({
+          decision,
+          reason: 'not_attendance',
+          intervals: [],
+        });
+        await enqueueSlackEvent(original);
+        await makeQueuedMessageDue();
+        await processSlackInbox(1, key);
+        await enqueueSlackEvent(original);
+        await processSlackInbox(1, key);
+        expect(notifySlackStatusNotSet).toHaveBeenCalledExactlyOnceWith(
+          channel,
+          slackUser,
+          messageTs
+        );
+      }
+    );
+    it('keeps the committed outcome when a notification fails', async () => {
+      vi.mocked(extractAttendance).mockResolvedValue({
+        decision: 'review',
+        reason: 'uncertain_date',
+        intervals: [],
+      });
+      vi.mocked(notifySlackStatusNotSet).mockRejectedValueOnce(new Error('Slack unavailable'));
+      await enqueueSlackEvent(original);
+      await makeQueuedMessageDue();
+      expect(await processSlackInbox(1, key)).toMatchObject({ review: 1, retried: 0 });
+      const [job] = await db.select().from(slackMessages).where(eq(slackMessages.messageKey, key));
+      expect(job.state).toBe('review');
     });
     it('applies uncertain status as a source-linked description using the original message text and Copenhagen day', async () => {
       const uncertainMessageTs = '1788733800.000001';
@@ -232,6 +273,11 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
       const [job] = await db.select().from(slackMessages).where(eq(slackMessages.messageKey, key));
       expect(job).toMatchObject({ state: 'review', text: null, outcome: { reason } });
       expect(broadcastSend).not.toHaveBeenCalled();
+      expect(notifySlackStatusNotSet).toHaveBeenCalledExactlyOnceWith(
+        channel,
+        slackUser,
+        messageTs
+      );
     });
     it('processes a newly received message immediately, ahead of unrelated backlog', async () => {
       const newer = { ...original, event: { ...original.event, ts: '1788766300.000001' } };
@@ -550,10 +596,11 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
             previous_message: original.event,
           },
         });
-        return extraction;
+        return { decision: 'review', reason: 'uncertain_status', intervals: [] };
       });
       expect(await processSlackInbox()).toMatchObject({ superseded: 1 });
       expect(await db.select().from(status).where(eq(status.userID, userID))).toHaveLength(0);
+      expect(notifySlackStatusNotSet).not.toHaveBeenCalled();
     });
     it('backs off failures and clears abandoned text after 24 hours', async () => {
       await enqueueSlackEvent(original);

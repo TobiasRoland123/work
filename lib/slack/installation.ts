@@ -1,7 +1,12 @@
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 
 export const installationCookie = '__Host-slack-install';
-export const installationScopes = ['users:read', 'users:read.email', 'channels:history'];
+export const installationScopes = [
+  'users:read',
+  'users:read.email',
+  'channels:history',
+  'chat:write',
+];
 export const installationPath = '/api/slack/install';
 export const installationCallbackPath = '/api/slack/install/callback';
 

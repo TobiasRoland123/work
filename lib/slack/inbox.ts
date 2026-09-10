@@ -4,6 +4,7 @@ import { slackMessages, status, users } from '@/db/schema';
 import { inspectSlackEvent } from './events';
 import { descriptionRows, extractAttendance, statusRows } from './extraction';
 import { supabase } from '@/lib/supabaseClient';
+import { notifySlackStatusNotSet } from './client';
 
 export async function enqueueSlackEvent(input: unknown) {
   const inspected = inspectSlackEvent(
@@ -177,6 +178,19 @@ export async function processSlackInbox(limit = 2, messageKey?: string, revision
       else if (hasRows) counts.applied++;
       else if (extraction.decision === 'review') counts.review++;
       else counts.ignored++;
+      // Description-only rows do not set attendance. Notify only after this revision
+      // commits, so duplicate deliveries and superseded results do not send replies.
+      if (applied && !rows.some((row) => row.status !== null) && job.slackUserId) {
+        try {
+          await notifySlackStatusNotSet(job.channelId, job.slackUserId, job.messageTs);
+        } catch {
+          // A Slack outage must not restart extraction or undo a committed result.
+          console.warn('slack_notification_failed', {
+            messageKey: job.messageKey,
+            revision: job.revision,
+          });
+        }
+      }
       console.info('slack_processing', {
         messageKey: job.messageKey,
         outcome: applied ? (hasRows ? 'apply' : extraction.decision) : 'superseded',
