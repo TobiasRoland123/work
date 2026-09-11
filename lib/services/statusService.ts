@@ -3,7 +3,7 @@ import { status } from '@/db/schema';
 import { db } from '@/db';
 import { eq } from 'drizzle-orm';
 import { supabase } from '../supabaseClient';
-import { selectActiveStatus } from '@/lib/status/active';
+import { resolvePresenceStatus } from '@/lib/status/active';
 
 export const statusService = {
   // GET METHODS
@@ -20,7 +20,7 @@ export const statusService = {
   // This gets the latest active status by user
   async getActiveStatusByUserUserId(userID: string) {
     const userStatuses = await db.select().from(status).where(eq(status.userID, userID));
-    return selectActiveStatus(userStatuses);
+    return resolvePresenceStatus(userStatuses, userID);
   },
 
   // POST METHODS

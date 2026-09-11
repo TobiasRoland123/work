@@ -155,7 +155,7 @@ export function StatusForm({
         aria-label="Status Form Header"
       >
         <h3>
-          {currentStatus && currentStatus !== 'IN_OFFICE' && currentStep !== 1 ? (
+          {currentStatus && currentStep !== 1 ? (
             <Status status={currentStatus} asLabel={false} />
           ) : (
             'Where are you today?'

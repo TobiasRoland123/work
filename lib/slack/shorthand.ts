@@ -28,7 +28,7 @@ const simpleRules: {
 const lunchTime = '11:00';
 export const SHORTHAND_INSTRUCTIONS = `Known Wørk channel conventions, also used by the deterministic parser:
 ${simpleRules.map((rule) => `${rule.phrases.join(' / ')} means ${rule.meaning} (${rule.status}).`).join('\n')}
-Lunch means ${lunchTime} Copenhagen time. "In at lunch" means arrival around ${lunchTime}, with an approximate end on IN_LATE. "Before lunch" means before ${lunchTime}; "after lunch" means after ${lunchTime}. For those relative lunch bounds use the nominal ${lunchTime} with the corresponding approximation flag and preserve the original relative wording in a verbatim comment. Do not create IN_OFFICE at an approximate boundary. Starting at/from home means FROM_HOME initially; an office arrival ends that interval. Explicit clock times override the lunch default. WFH rest of (the) day starts at the ORIGINAL message's local time.
+Lunch means ${lunchTime} Copenhagen time. "In at lunch" means arrival around ${lunchTime}, with an approximate end on IN_LATE. "Before lunch" means before ${lunchTime}; "after lunch" means after ${lunchTime}. For those relative lunch bounds use the nominal ${lunchTime} with the corresponding approximation flag and preserve the original relative wording in a verbatim comment. Do not create IN_OFFICE at an approximate boundary. Starting at/from home means FROM_HOME initially; an office arrival ends that interval. Explicit clock times override the lunch default. An exact arrival at or before 09:00 is IN_OFFICE from that time, while a later exact arrival has an IN_LATE interval followed by IN_OFFICE. WFH rest of (the) day starts at the ORIGINAL message's local time.
 Apply these meanings inside longer messages too, preserving all explicit transitions and availability qualifications. WFH with child sick states home working and a sick child, not complete unavailability: use FROM_HOME and preserve the sick-child wording as a comment. Never output overlapping statuses. Bare clock-only messages have no confirmed office-arrival convention: return review with uncertain_status. Do not expand client names in comments: comments must still be verbatim sender excerpts.`;
 
 function normalize(text: string) {
@@ -75,6 +75,11 @@ export function extractShorthand(text: string, day: string, localTime: string): 
     if (hour > 23 || minute > 59) return null;
     const time = `${String(hour).padStart(2, '0')}:${String(minute).padStart(2, '0')}`;
     if (time === '00:00') return apply(interval('IN_OFFICE'));
+    // Arrivals before the normal 09:00 Copenhagen start are ordinary office
+    // arrivals rather than late arrivals.
+    if (hour < 9 || (hour === 9 && minute === 0)) {
+      return apply(interval('IN_OFFICE', { startTime: time }));
+    }
     return apply(
       interval('IN_LATE', { endTime: time }),
       interval('IN_OFFICE', { startTime: time })

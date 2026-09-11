@@ -6,12 +6,21 @@ import { Toaster } from '@/components/ui/sonner';
 import React from 'react';
 
 export default async function Home() {
-  await requirePageUserId();
+  const userId = await requirePageUserId();
   const users: UserWithExtras[] = await userService.getAllUsers();
 
   return (
     <div>
-      <PeopleOverviewWrapper initialProfiles={users} />
+      <PeopleOverviewWrapper
+        initialProfiles={users}
+        userId={userId}
+        dateLabel={new Intl.DateTimeFormat('en-GB', {
+          timeZone: 'Europe/Copenhagen',
+          weekday: 'short',
+          day: 'numeric',
+          month: 'short',
+        }).format(new Date())}
+      />
       <Toaster />
     </div>
   );
