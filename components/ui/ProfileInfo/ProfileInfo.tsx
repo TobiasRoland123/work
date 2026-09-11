@@ -3,9 +3,8 @@ import React from 'react';
 
 import ProfileInfoField from './ProfileInfoField';
 import { UserWithExtras } from '@/db/types';
-import { Logo } from '@/components/ui/Logo/Logo';
-import Link from 'next/link';
 import Image from 'next/image';
+import './profile-info.css';
 
 interface UserProps {
   user: UserWithExtras;
@@ -13,7 +12,7 @@ interface UserProps {
 
 const ProfileInfo = ({ user }: UserProps) => {
   const profilePicture = getSlackImageUrl(user.profilePicture);
-  const name = `${user.firstName} ${user.lastName}`.trim();
+  const name = [user.firstName, user.lastName].filter(Boolean).join(' ');
   const heading = name ? name : 'Profile';
   const initials = name
     ? name
@@ -24,13 +23,10 @@ const ProfileInfo = ({ user }: UserProps) => {
         .toUpperCase()
     : user.email.slice(0, 2).toUpperCase();
   return (
-    <section className="p-4  ">
-      <Link href={'/'}>
-        <Logo />
-      </Link>
-      <div className={'pt-9 flex flex-col lg:flex-row lg:gap-10 items-center'}>
-        <div className="flex flex-col items-center gap-2">
-          <div className="w-[120px] h-[120px] rounded-full overflow-hidden flex items-center justify-center bg-neutral-500">
+    <section className="profile-info">
+      <div className="profile-info__hero">
+        <div className="profile-info__avatar-wrap">
+          <div className="profile-info__avatar">
             {profilePicture ? (
               <Image
                 src={profilePicture}
@@ -38,30 +34,21 @@ const ProfileInfo = ({ user }: UserProps) => {
                 alt={`Profile picture of ${name || user.email}`}
                 width={120}
                 height={120}
-                className="object-cover w-full h-full"
+                className="profile-info__avatar-image"
               />
             ) : (
-              <span
-                className="text-white font-bold text-3xl"
-                aria-label={`Profile initials for ${name || user.email}`}
-              >
-                {initials}
-              </span>
+              <span aria-label={`Profile initials for ${name || user.email}`}>{initials}</span>
             )}
           </div>
-          <small className="text-center text-neutral-600">Profile photo is synced from Slack</small>
+          <small>Profile photo is synced from Slack</small>
         </div>
-        <div className="mt-6 lg:mt-0">
-          <span className="font-mono text-base text-center pt-4 md:text-start mx-auto block">
-            Your information
-          </span>
-          <h1 className="text-5xl font-mono leading-14 text-center md:text-start font-light pt-4 lg:pt-0">
-            {heading}
-          </h1>
+        <div className="profile-info__heading">
+          <span>Your information</span>
+          <h2>{heading}</h2>
         </div>
       </div>
 
-      <div className="flex flex-col gap-8 mt-16">
+      <div className="profile-info__fields">
         {name ? <ProfileInfoField label={'Name'} value={name} /> : null}
         {user?.organisation ? (
           <ProfileInfoField label={'Department'} value={String(user.organisation)} />
@@ -71,10 +58,16 @@ const ProfileInfo = ({ user }: UserProps) => {
         ) : null}
 
         {user?.mobilePhone ? (
-          <ProfileInfoField label={'Phone'} value={user.mobilePhone ?? ''} />
+          <ProfileInfoField
+            label={'Phone'}
+            value={user.mobilePhone ?? ''}
+            href={`tel:${user.mobilePhone}`}
+          />
         ) : null}
 
-        {user?.email ? <ProfileInfoField label={'Mail'} value={user.email} /> : null}
+        {user?.email ? (
+          <ProfileInfoField label={'Mail'} value={user.email} href={`mailto:${user.email}`} />
+        ) : null}
       </div>
     </section>
   );

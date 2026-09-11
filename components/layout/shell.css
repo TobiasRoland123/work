@@ -1,0 +1,244 @@
+.app-shell {
+  display: grid;
+  grid-template-columns: 84px minmax(0, 1fr);
+  min-height: 100dvh;
+  color: #0b1014;
+  background: #f6f6f0;
+}
+.app-shell-content {
+  min-width: 0;
+}
+.app-shell > .office-rail {
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+}
+.skip-navigation {
+  position: fixed;
+  top: 8px;
+  left: 96px;
+  transform: translateY(-200%);
+  z-index: 100;
+  padding: 12px;
+  background: white;
+}
+.skip-navigation:focus {
+  transform: translateY(0);
+}
+.content-page {
+  min-height: 100dvh;
+}
+.content-page > .office-header {
+  background: white;
+}
+.content-page-body {
+  padding: 32px;
+  max-width: 1440px;
+  margin: 0 auto;
+}
+.page-loading {
+  padding: 36px;
+  color: #737775;
+}
+.app-shell button,
+.app-shell a {
+  -webkit-tap-highlight-color: transparent;
+}
+.app-shell button {
+  cursor: pointer;
+}
+.app-shell button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.app-shell :is(button, a, input):focus-visible {
+  outline: 2px solid #2d6ea8;
+  outline-offset: 3px;
+}
+.office-rail {
+  background: #090b0c;
+  color: white;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  padding: 25px 8px 20px;
+  gap: 35px;
+}
+.office-wordmark {
+  font-size: 18px;
+  letter-spacing: 2px;
+  font-weight: 600;
+}
+.office-nav-links {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+}
+.office-nav-links a {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  padding: 15px 4px;
+  border-radius: 5px;
+  font-size: 13px;
+}
+.office-nav-links a[aria-current] {
+  background: #a5cdf0;
+  color: #0b1014;
+}
+.office-nav-links a:hover {
+  background: #263541;
+  color: white;
+}
+.office-me {
+  margin-top: auto;
+  display: grid;
+  justify-items: center;
+  gap: 8px;
+  max-width: 100%;
+}
+.office-me > span {
+  background: #d1d0bd;
+  color: #0b1014;
+  border-radius: 50%;
+  width: 34px;
+  height: 34px;
+  display: grid;
+  place-items: center;
+}
+.office-me small {
+  max-width: 70px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.office-header {
+  padding: 22px 28px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  border-bottom: 1px solid #e6e6e2;
+}
+.office-header h1 {
+  font-size: 42px;
+  letter-spacing: -1.7px;
+  line-height: 1.05;
+  font-weight: 600;
+}
+.office-header p {
+  color: #737775;
+  margin-top: 5px;
+  font-size: 17px;
+}
+.office-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+.office-header time {
+  color: #737775;
+  font-size: 14px;
+  white-space: nowrap;
+}
+.set-status-button {
+  padding: 12px 17px;
+  background: #0b1014;
+  color: white;
+  border-radius: 5px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+.office-dialog-overlay {
+  position: fixed;
+  inset: 0;
+  background: #0007;
+  z-index: 40;
+}
+.office-status-dialog {
+  position: fixed;
+  right: 0;
+  top: 0;
+  height: 100dvh;
+  width: min(430px, 100%);
+  padding: 28px 24px;
+  z-index: 41;
+  background: #0b1014;
+  color: white;
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  overflow-y: auto;
+}
+.office-status-dialog > div {
+  min-height: 0;
+}
+
+@media (max-width: 1100px) {
+  .app-shell {
+    grid-template-columns: 72px minmax(0, 1fr);
+  }
+  .office-header {
+    padding: 20px;
+  }
+  .office-header time {
+    display: none;
+  }
+}
+@media (max-width: 760px) {
+  .app-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .app-shell > .office-rail {
+    position: static;
+    height: auto;
+    flex-direction: row;
+    justify-content: space-between;
+    padding: 10px 16px;
+    gap: 20px;
+  }
+  .office-nav-links {
+    flex-direction: row;
+    width: auto;
+    gap: 8px;
+  }
+  .office-nav-links a {
+    flex-direction: row;
+    padding: 9px 10px;
+    gap: 7px;
+    font-size: 12px;
+  }
+  .office-nav-links svg {
+    width: 15px;
+  }
+  .office-me {
+    display: none;
+  }
+  .office-wordmark {
+    font-size: 15px;
+  }
+  .office-header {
+    padding: 18px;
+  }
+  .office-header h1 {
+    font-size: 32px;
+  }
+  .office-header p {
+    font-size: 14px;
+  }
+  .content-page {
+    min-height: calc(100dvh - 54px);
+  }
+  .content-page-body {
+    padding: 20px 16px;
+  }
+}
+@media (max-width: 390px) {
+  .office-nav-links a {
+    padding: 8px;
+  }
+  .office-nav-links svg {
+    display: none;
+  }
+}

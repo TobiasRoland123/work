@@ -1,12 +1,5 @@
-import { linkProps } from '@/types/link';
 import { UserStatus } from '@/db/types';
 import { StatusType } from '@/components/ui/Status/Status';
-
-export const menuLinks: Array<linkProps> = [
-  { href: '/today', label: 'Today' },
-  { href: '/contact', label: 'Contact' },
-  { href: '/profile', label: 'Profile' },
-];
 
 // Define the option type
 export type Option = {

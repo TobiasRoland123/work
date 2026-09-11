@@ -76,8 +76,7 @@ type StatusFormProps = {
   userId?: string;
   currentStep: number;
   setCurrentStep: (currentStep: number) => void;
-  setOpenSidebar?: (open: 'navigation' | 'status') => void;
-  setOpenDrawer?: (open: boolean) => void;
+  onSaved?: () => void;
 };
 
 export function StatusForm({
@@ -85,12 +84,8 @@ export function StatusForm({
   userId,
   currentStep,
   setCurrentStep,
-  setOpenSidebar,
-  setOpenDrawer,
+  onSaved,
 }: StatusFormProps) {
-  // const session = await();
-
-  // 2. Add "status" to defaultValues
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
     defaultValues: { detailsString: '' },
@@ -98,8 +93,6 @@ export function StatusForm({
 
   const [isLoading, setIsLoading] = useState(false);
 
-  // if (!userId) return <div>Could not update Status.</div>;
-  // 3. Update handler to show status toos
   async function onSubmit(values: z.infer<typeof formSchema>) {
     if (!userId) return;
 
@@ -123,25 +116,15 @@ export function StatusForm({
       }
 
       if (newStatus && newStatus.status) {
-        if (setOpenSidebar) {
-          setOpenSidebar('navigation');
-          setTimeout(() => {
-            setCurrentStep(1);
-          }, 500);
-        }
-        if (setOpenDrawer) {
-          setOpenDrawer(false);
-          setTimeout(() => {
-            setCurrentStep(1);
-          }, 500);
-        }
         form.reset();
         setIsLoading(false);
         toast('Status has been updated✨');
+        onSaved?.();
       } else toast('Something went wrong, status not updated 🚫');
     } catch (error) {
-      // Handle error (e.g., show a notification)
       console.error(error);
+      toast('Something went wrong, status not updated 🚫');
+    } finally {
       setIsLoading(false);
     }
   }
