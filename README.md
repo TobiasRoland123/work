@@ -6,8 +6,8 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 # Getting Started
 
-For the configured local Slack development environment, run `pnpm local:dev`.
-See [local development](docs/local-development.md) for startup, temporary tunnel URLs, and the development Slack app.
+For a repeatable Docker-backed local Slack environment, run `pnpm local:dev:docker`.
+Use `pnpm local:dev` only when an existing PostgreSQL database is already running. See [local development](docs/local-development.md) for first-time setup, database reset, temporary tunnel URLs, and the development Slack app.
 
 First, run the development server:
 

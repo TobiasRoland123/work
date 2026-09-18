@@ -1,17 +1,32 @@
 # Local development
 
-`pnpm local:dev` starts the app against the existing Homebrew PostgreSQL 18 instance at `127.0.0.1:5432`, database `work_dev`. It does not start Docker, run migrations, seed Slack users, or change a production database.
+The recommended cross-platform command is:
+
+```bash
+pnpm local:dev:docker
+```
+
+It reads `.env.local`, refreshes the linked Vercel development credentials, starts the repository's PostgreSQL container, waits for it to become healthy, creates the local `service_role`, synchronizes the development schema with `drizzle-kit push`, and then starts the tunnel and Next.js. It never drops an existing database.
 
 Before the first run:
 
-This Mac is already configured. The following steps are for recreating the setup; do not overwrite the existing `.env.local`.
+1. Run `pnpm install`.
+2. Copy `.env.example` to `.env.local` and fill in the local Slack and Auth values. The checked-in PostgreSQL values are disposable Docker development defaults.
+3. Link this checkout to the `work` Vercel project with `pnpm dlx vercel@59.15.1 link`. The machine-local `.vercel` directory is intentionally ignored by Git.
+4. Install Docker and `cloudflared`. Make sure the current user can run `docker compose` without `sudo` and port 3000 is free.
+5. Run `pnpm local:dev:docker`.
 
-1. Copy `.env.example` to `.env.local` and keep the local database values pointed at `127.0.0.1:5432/work_dev`.
-2. Fill in the local Slack and Auth values. Keep `SLACK_BOT_TOKEN` empty until an administrator installs the development bot, if it is still pending.
-3. If queue testing needs Vercel development credentials, run `pnpm local:credentials`. It pulls into `.env.vercel-development` and merges only a valid development `VERCEL_OIDC_TOKEN` into `.env.local`, preserving the existing PG, Slack, Auth, and AI values. Both files are chmod 600. Do not pull directly into `.env.local`.
-4. Make sure PostgreSQL is running and port 3000 is free.
+On Linux, Docker group changes only reach new login sessions. If `getent group docker` lists your username but `id -nG` does not list `docker`, run `newgrp docker` in the current terminal or sign out and back in. Confirm the fix with `docker info`, then rerun the project command. Membership in the Docker group grants root-level access to the machine.
 
-The command checks the local settings and database, refreshes the Vercel development OIDC token when it is missing or expires within 30 minutes, starts a temporary `trycloudflare.com` tunnel, writes only its new value to `AUTH_URL` in `.env.local`, and starts Next.js on `http://127.0.0.1:3000`. It prints these URLs each time:
+For the existing Mac/Homebrew PostgreSQL setup, use `pnpm local:dev`. That command does not start Docker or change the schema, but it now rejects an incomplete database before Slack login. `pnpm local:db` can explicitly start/synchronize the Docker database without starting the app.
+
+The Docker commands always start Compose before connecting to PostgreSQL. If another PostgreSQL server already owns the configured port, Compose stops with a port-binding error instead of changing that database. `drizzle-kit push` checks the disposable database on every startup and applies schema changes when needed; it asks for confirmation before statements that may lose data.
+
+To deliberately discard the disposable Docker database and rebuild it from the current schema, run `pnpm local:db:reset`. This removes the project-scoped `postgres_data` volume and all data in it. It refuses non-local database hosts. Never use that command for shared or production data.
+
+Do not use `pnpm db:migrate` to initialize a blank database. The historical migration chain starts from an introspected existing schema. Fresh development databases use `drizzle-kit push` through `pnpm local:db`.
+
+The development command checks the local settings and database, refreshes the Vercel development OIDC token when it is missing or expires within 30 minutes, starts a temporary `trycloudflare.com` tunnel, writes only its new value to `AUTH_URL` in `.env.local`, and starts Next.js on `http://127.0.0.1:3000`. It prints these URLs each time:
 
 - `https://<tunnel>/api/auth/callback/slack`
 - `https://<tunnel>/api/slack/install/callback`
