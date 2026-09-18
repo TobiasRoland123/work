@@ -3,7 +3,12 @@ import { Pool } from 'pg';
 import * as schema from './schema';
 import * as dotenv from 'dotenv';
 
-dotenv.config();
+dotenv.config({
+  path:
+    process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'test'
+      ? '.env'
+      : '.env.local',
+});
 
 // Create a PostgreSQL connection pool
 const pool = new Pool(

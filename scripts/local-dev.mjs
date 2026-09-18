@@ -5,6 +5,7 @@ import { spawn } from 'node:child_process';
 import dotenv from 'dotenv';
 import pg from 'pg';
 import { refreshCredentials, usableDevelopmentToken } from './local-credentials.mjs';
+import { bootstrapDatabase, missingDatabaseSchema } from './local-database.mjs';
 
 const root = process.cwd();
 const envPath = path.join(root, '.env.local');
@@ -15,7 +16,7 @@ let env = dotenv.parse(envText);
 if ([env.VERCEL_ENV, env.VERCEL_TARGET_ENV].includes('production'))
   throw new Error('Remove production Vercel environment markers from .env.local.');
 if (!usableDevelopmentToken(env.VERCEL_OIDC_TOKEN)) {
-  console.log('Refreshing Vercel development credentials...');
+  console.info('Refreshing Vercel development credentials...');
   await refreshCredentials();
   envText = await fs.readFile(envPath, 'utf8');
   env = dotenv.parse(envText);
@@ -28,25 +29,36 @@ const required = [
   'SLACK_TEAM_ID',
   'SLACK_CHANNEL_ID',
   'SLACK_SIGNING_SECRET',
+  'PGHOST',
+  'PGPORT',
   'PGUSER',
+  'PGPASSWORD',
+  'PGDATABASE',
 ];
 const missing = required.filter((name) => !env[name]?.trim());
 if (missing.length) throw new Error(`Missing required local settings: ${missing.join(', ')}`);
 if (!env.SLACK_BOT_TOKEN?.trim())
-  console.warn('SLACK_BOT_TOKEN is empty. Slack login and directory sync need the development app installed first.');
+  console.warn(
+    'SLACK_BOT_TOKEN is empty. Slack login and directory sync need the development app installed first.'
+  );
 
 const expectedDb = { PGHOST: '127.0.0.1', PGPORT: '5432', PGDATABASE: 'work_dev' };
 for (const [name, value] of Object.entries(expectedDb)) {
   if (env[name] !== value) throw new Error(`${name} must be ${value} for local development.`);
 }
+if (process.argv.includes('--docker')) await bootstrapDatabase({ cwd: root, env });
 
 const isPortOpen = (port) =>
   new Promise((resolve) => {
     const socket = net.createConnection({ host: '127.0.0.1', port });
-    socket.once('connect', () => { socket.destroy(); resolve(true); });
+    socket.once('connect', () => {
+      socket.destroy();
+      resolve(true);
+    });
     socket.once('error', () => resolve(false));
   });
-if (await isPortOpen(3000)) throw new Error('Port 3000 is already in use. Stop that process first.');
+if (await isPortOpen(3000))
+  throw new Error('Port 3000 is already in use. Stop that process first.');
 
 const pool = new pg.Pool({
   host: env.PGHOST,
@@ -58,6 +70,11 @@ const pool = new pg.Pool({
 });
 try {
   await pool.query('SELECT 1');
+  const missingSchema = await missingDatabaseSchema(pool);
+  if (missingSchema.length)
+    throw new Error(
+      `Local database schema is incomplete (${missingSchema.join(', ')}). Run pnpm local:db first.`
+    );
 } finally {
   await pool.end();
 }
@@ -67,7 +84,11 @@ let next;
 let stopping = false;
 const killChild = (child) => {
   if (!child?.pid) return;
-  try { process.kill(-child.pid, 'SIGTERM'); } catch { child.kill('SIGTERM'); }
+  try {
+    process.kill(-child.pid, 'SIGTERM');
+  } catch {
+    child.kill('SIGTERM');
+  }
 };
 const stop = (code = 0) => {
   if (stopping) return;
@@ -97,7 +118,12 @@ const tunnelUrl = await new Promise((resolve, reject) => {
   };
   tunnel.stdout.on('data', onData);
   tunnel.stderr.on('data', onData);
-  tunnel.once('error', (error) => { if (!settled) { settled = true; reject(error); } });
+  tunnel.once('error', (error) => {
+    if (!settled) {
+      settled = true;
+      reject(error);
+    }
+  });
   tunnel.once('exit', (code) => {
     if (!settled) {
       settled = true;
@@ -121,13 +147,17 @@ try {
   throw error;
 }
 
-console.log(`Local database ${env.PGHOST}:${env.PGPORT}/${env.PGDATABASE} is reachable.`);
-console.log(`Tunnel: ${authUrl}`);
-console.log(`Open this URL to sign in: ${authUrl}/login (use the tunnel address, not localhost, so login cookies match the callback).`);
-console.log(`Slack callback URL: ${authUrl}/api/auth/callback/slack`);
-console.log(`Slack installation callback URL: ${authUrl}/api/slack/install/callback`);
-console.log(`Slack events URL: ${authUrl}/api/slack/events`);
-console.log('Register both callback URLs and the events URL in the development Slack app when this temporary tunnel changes.');
+console.info(`Local database ${env.PGHOST}:${env.PGPORT}/${env.PGDATABASE} is reachable.`);
+console.info(`Tunnel: ${authUrl}`);
+console.info(
+  `Open this URL to sign in: ${authUrl}/login (use the tunnel address, not localhost, so login cookies match the callback).`
+);
+console.info(`Slack callback URL: ${authUrl}/api/auth/callback/slack`);
+console.info(`Slack installation callback URL: ${authUrl}/api/slack/install/callback`);
+console.info(`Slack events URL: ${authUrl}/api/slack/events`);
+console.info(
+  'Register both callback URLs and the events URL in the development Slack app when this temporary tunnel changes.'
+);
 
 next = spawn('pnpm', ['exec', 'next', 'dev', '--hostname', '127.0.0.1', '--port', '3000'], {
   cwd: root,
@@ -143,5 +173,8 @@ next = spawn('pnpm', ['exec', 'next', 'dev', '--hostname', '127.0.0.1', '--port'
     VERCEL_TARGET_ENV: 'development',
   },
 });
-next.once('error', (error) => { console.error(`Next.js failed to start: ${error.message}`); stop(1); });
-next.once('exit', (code, signal) => stop(signal ? 1 : code ?? 1));
+next.once('error', (error) => {
+  console.error(`Next.js failed to start: ${error.message}`);
+  stop(1);
+});
+next.once('exit', (code, signal) => stop(signal ? 1 : (code ?? 1)));
