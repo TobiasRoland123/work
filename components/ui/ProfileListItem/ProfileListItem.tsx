@@ -2,22 +2,14 @@ import { getSlackImageUrl } from '@/lib/slack/image';
 import Image from 'next/image';
 import { Status } from '../Status/Status';
 import { UserWithExtras } from '@/db/types';
+import { formatDateRange } from '@/utils/FormatDate';
+
+export { formatDateRange } from '@/utils/FormatDate';
 
 export type ProfileListItemProps = {
   user: UserWithExtras;
   showStatus?: boolean;
 };
-
-function formatDate(value: string): string {
-  const [year, month, day] = value.split('-').map(Number);
-  if (!year || !month || !day) return value;
-  return new Intl.DateTimeFormat('da-DK', {
-    timeZone: 'Europe/Copenhagen',
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-  }).format(new Date(Date.UTC(year, month - 1, day, 12)));
-}
 
 function formatInterval(
   startsAt: Date | string | null | undefined,
@@ -63,10 +55,7 @@ export function ProfileListItem({ user, showStatus = false }: ProfileListItemPro
   const fromDate = user.status?.fromDate ?? null;
   const toDate = user.status?.toDate ?? null;
 
-  const formattedDates =
-    fromDate && toDate && fromDate !== toDate
-      ? `${formatDate(fromDate)}-${formatDate(toDate)}`
-      : null;
+  const formattedDates = formatDateRange(fromDate, toDate);
   const formattedInterval = imported
     ? formatInterval(
         user.status?.startsAt,

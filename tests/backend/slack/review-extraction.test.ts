@@ -185,4 +185,57 @@ describe('attendance AI adapter with mocked structured replies', () => {
       (await extractAttendance('Working offsite Tuesday through Thursday', sent)).intervals[0]
     ).toMatchObject({ status: 'AWAY', fromDate: '2026-09-08', toDate: '2026-09-10' });
   });
+
+  it('includes conference and multi-day date instructions in the prompt sent to the AI', async () => {
+    const request = vi.fn().mockResolvedValue(reply());
+    vi.stubGlobal('fetch', request);
+
+    await extractAttendance('speaking at a conference today and tomorow, reach out on mobile', sent);
+    expect(request).toHaveBeenCalledOnce();
+    const payload = JSON.parse(request.mock.calls[0][1].body);
+    const systemPrompt = payload.messages[0].content;
+    expect(systemPrompt).toContain('conferences');
+    expect(systemPrompt).toContain('today and tomorrow');
+    expect(systemPrompt).toContain('tomorow');
+    expect(systemPrompt).toContain('AWAY');
+  });
+
+  it('accepts multi-day conference extraction with verbatim excerpt from the model', async () => {
+    const message = 'I will be at conference today and tomorow, please ping if needed';
+    vi.stubGlobal(
+      'fetch',
+      vi.fn().mockResolvedValue(
+        reply({
+          decision: 'apply',
+          reason: 'clear',
+          intervals: [
+            {
+              status: 'AWAY',
+              fromDate: '2026-09-08',
+              toDate: '2026-09-09',
+              startTime: null,
+              endTime: null,
+              startApproximate: false,
+              endApproximate: false,
+              comment: 'at conference',
+            },
+          ],
+        })
+      )
+    );
+    const result = await extractAttendance(message, sent);
+    expect(result.decision).toBe('apply');
+    expect(result.intervals).toEqual([
+      {
+        status: 'AWAY',
+        fromDate: '2026-09-08',
+        toDate: '2026-09-09',
+        startTime: null,
+        endTime: null,
+        startApproximate: false,
+        endApproximate: false,
+        comment: 'at conference',
+      },
+    ]);
+  });
 });

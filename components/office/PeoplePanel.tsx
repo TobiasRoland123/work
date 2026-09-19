@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { Search, X } from 'lucide-react';
 import type { UserWithExtras } from '@/db/types';
 import { Status } from '@/components/ui/Status/Status';
-import { ProfileListItem } from '@/components/ui/ProfileListItem/ProfileListItem';
+import { ProfileListItem, formatDateRange } from '@/components/ui/ProfileListItem/ProfileListItem';
 import { getSlackImageUrl } from '@/lib/slack/image';
 
 export const personName = (person: UserWithExtras) =>
@@ -81,6 +81,10 @@ export function PeoplePanel({
                 <ul>
                   {group.people.map((person) => {
                     const picture = getSlackImageUrl(person.profilePicture);
+                    const formattedDates = formatDateRange(
+                      person.status?.fromDate,
+                      person.status?.toDate
+                    );
                     return (
                       <li key={person.userId}>
                         <button
@@ -107,7 +111,12 @@ export function PeoplePanel({
                             {person.status?.details && <small>{person.status.details}</small>}
                           </span>
                           {person.status?.status ? (
-                            <Status status={person.status.status} />
+                            <span className="flex items-center gap-1.5 shrink-0">
+                              {formattedDates && (
+                                <Status status={person.status.status}>{formattedDates}</Status>
+                              )}
+                              <Status status={person.status.status} />
+                            </span>
                           ) : (
                             <span className="pending-status">No status yet</span>
                           )}

@@ -156,4 +156,37 @@ describe('unclassified attendance descriptions', () => {
     expect(html).not.toContain('role="status"');
     expect(html).toContain('View Slack message');
   });
+
+  it('renders multi-day status date range without year when start and end share the same year', () => {
+    const html = renderToStaticMarkup(
+      React.createElement(ProfileListItem, {
+        showStatus: true,
+        user: {
+          userId: 'local-user',
+          email: 'synthetic@example.com',
+          firstName: 'Anna',
+          lastName: 'Attendee',
+          status: {
+            id: 1,
+            userID: 'local-user',
+            status: 'AWAY',
+            details: 'at conference',
+            time: null,
+            fromDate: '2026-09-19',
+            toDate: '2026-09-20',
+            startsAt: new Date('2026-09-18T22:00:00Z'),
+            endsAt: new Date('2026-09-20T22:00:00Z'),
+            startsAtApproximate: false,
+            endsAtApproximate: false,
+            createdAt: '2026-09-19T07:00:00Z',
+            announcedAt: new Date('2026-09-19T07:00:00Z'),
+            sourceMessageKey: 'T:C:1788810600.000001',
+          },
+        },
+      })
+    );
+    expect(html).toContain('Temporarily away');
+    expect(html).toContain('19.09-20.09');
+    expect(html).not.toContain('19.09.2026');
+  });
 });
