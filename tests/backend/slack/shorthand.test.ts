@@ -55,7 +55,80 @@ describe('common Slack shorthand', () => {
     ['still sick', interval({ status: 'SICK' })],
     ['child sick', interval({ status: 'CHILD_SICK' })],
     ['KMD Ballerup', interval({ status: 'AT_CLIENT', comment: 'KMD Ballerup' })],
+    ['at conference', interval({ status: 'AWAY', comment: 'at conference' })],
+    ['på konference', interval({ status: 'AWAY', comment: 'på konference' })],
+    ['til konference', interval({ status: 'AWAY', comment: 'til konference' })],
+    ['offsite', interval({ status: 'AWAY', comment: 'offsite' })],
   ])('resolves %s without an AI configuration', async (text, expected) => {
+    const request = vi.fn();
+    vi.stubGlobal('fetch', request);
+
+    await expect(extractAttendance(text, sent)).resolves.toEqual({
+      decision: 'apply',
+      reason: 'clear',
+      intervals: [expected],
+    });
+    expect(request).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [
+      'at conference today and tomorrow',
+      interval({ status: 'AWAY', toDate: '2026-09-08', comment: 'at conference' }),
+    ],
+    [
+      'at conference today and tomorow',
+      interval({ status: 'AWAY', toDate: '2026-09-08', comment: 'at conference' }),
+    ],
+    [
+      'At conference today and tomorow',
+      interval({ status: 'AWAY', toDate: '2026-09-08', comment: 'At conference' }),
+    ],
+    [
+      '  :stadium:  at conference today and tomorow  ',
+      interval({ status: 'AWAY', toDate: '2026-09-08', comment: 'at conference' }),
+    ],
+    [
+      'på konference i dag og i morgen',
+      interval({ status: 'AWAY', toDate: '2026-09-08', comment: 'på konference' }),
+    ],
+    [
+      'til konference i dag og i morgen',
+      interval({ status: 'AWAY', toDate: '2026-09-08', comment: 'til konference' }),
+    ],
+    [
+      'today and tomorrow at conference',
+      interval({ status: 'AWAY', toDate: '2026-09-08', comment: 'at conference' }),
+    ],
+    [
+      'at conference tomorrow',
+      interval({
+        status: 'AWAY',
+        fromDate: '2026-09-08',
+        toDate: '2026-09-08',
+        comment: 'at conference',
+      }),
+    ],
+    [
+      'at conference tomorow',
+      interval({
+        status: 'AWAY',
+        fromDate: '2026-09-08',
+        toDate: '2026-09-08',
+        comment: 'at conference',
+      }),
+    ],
+    [
+      'til konference i morgen',
+      interval({
+        status: 'AWAY',
+        fromDate: '2026-09-08',
+        toDate: '2026-09-08',
+        comment: 'til konference',
+      }),
+    ],
+    ['at conference today', interval({ status: 'AWAY', comment: 'at conference' })],
+  ])('resolves conference pattern "%s" without an AI configuration', async (text, expected) => {
     const request = vi.fn();
     vi.stubGlobal('fetch', request);
 

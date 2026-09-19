@@ -8,6 +8,7 @@ import {
   statusRows,
   validateExtraction,
 } from '@/lib/slack/extraction';
+import { isStatusApplicable } from '@/lib/status/active';
 
 const sent = new Date('2026-09-07T07:30:00Z');
 const interval: {
@@ -130,6 +131,68 @@ it('preserves approximate nominal arrival without turning it into definite offic
       sent
     )
   ).toThrow();
+});
+
+describe('multi-day out-of-office status extraction', () => {
+  it('maps multi-day date intervals with statusRows covering today through tomorrow inclusive', () => {
+    const awayInterval = {
+      ...interval,
+      status: 'AWAY',
+      fromDate: '2026-09-07',
+      toDate: '2026-09-08',
+      comment: 'at conference',
+    };
+    const parsed = validateExtraction(
+      extract([awayInterval]),
+      sent,
+      'at conference today and tomorrow'
+    );
+    const [row] = statusRows(parsed);
+    expect(row.status).toBe('AWAY');
+    expect(row.fromDate).toBe('2026-09-07');
+    expect(row.toDate).toBe('2026-09-08');
+    expect(row.details).toBe('at conference');
+    expect(row.startsAt.toISOString()).toBe('2026-09-06T22:00:00.000Z');
+    expect(row.endsAt.toISOString()).toBe('2026-09-08T22:00:00.000Z');
+
+    // Both today and tomorrow reflect the active status in the application
+    const status = {
+      ...row,
+      createdAt: '2026-09-07T07:00:00Z',
+      announcedAt: new Date('2026-09-07T07:00:00Z'),
+    };
+    expect(isStatusApplicable(status, new Date('2026-09-07T12:00:00Z'))).toBe(true);
+    expect(isStatusApplicable(status, new Date('2026-09-08T12:00:00Z'))).toBe(true);
+    expect(isStatusApplicable(status, new Date('2026-09-09T12:00:00Z'))).toBe(false);
+  });
+
+  it.each([
+    ['at conference today and tomorow', 'at conference'],
+    ['at conference today and tomorrow', 'at conference'],
+    ['At conference today and tomorow', 'At conference'],
+    ['på konference i dag og i morgen', 'på konference'],
+    ['til konference i dag og i morgen', 'til konference'],
+    ['today and tomorrow at conference', 'at conference'],
+  ])(
+    'extracts multi-day AWAY status with typo tolerance and verbatim comment for "%s"',
+    async (text, expectedComment) => {
+      const result = await extractAttendance(text, sent);
+      expect(result.decision).toBe('apply');
+      expect(result.reason).toBe('clear');
+      expect(result.intervals).toEqual([
+        {
+          status: 'AWAY',
+          fromDate: '2026-09-07',
+          toDate: '2026-09-08',
+          startTime: null,
+          endTime: null,
+          startApproximate: false,
+          endApproximate: false,
+          comment: expectedComment,
+        },
+      ]);
+    }
+  );
 });
 
 describe('AI Gateway transport', () => {

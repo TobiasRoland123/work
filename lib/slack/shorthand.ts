@@ -2,6 +2,10 @@ import type { Extraction } from './extraction';
 
 type Interval = Extraction['intervals'][number];
 
+export function nextDate(value: string): string {
+  return new Date(new Date(`${value}T12:00:00Z`).getTime() + 86400000).toISOString().slice(0, 10);
+}
+
 // These workplace conventions feed both deterministic extraction and the AI prompt.
 const simpleRules: {
   phrases: string[];
@@ -24,10 +28,25 @@ const simpleRules: {
     meaning: 'working at KMD Ballerup',
     preserveText: true,
   },
+  {
+    phrases: [
+      'at conference',
+      'conference',
+      'på konference',
+      'til konference',
+      'konference',
+      'offsite',
+      'at offsite',
+    ],
+    status: 'AWAY',
+    meaning: 'at conference or offsite event',
+    preserveText: true,
+  },
 ];
 const lunchTime = '11:00';
 export const SHORTHAND_INSTRUCTIONS = `Known Wørk channel conventions, also used by the deterministic parser:
 ${simpleRules.map((rule) => `${rule.phrases.join(' / ')} means ${rule.meaning} (${rule.status}).`).join('\n')}
+"At conference" / "på konference" / "til konference" (and "offsite") means attendance exception AWAY with the phrase preserved in comment. Phrases like "at conference today and tomorrow" (including common typos such as "tomorow") or "til konference i dag og i morgen" resolve to an AWAY interval spanning today through tomorrow, with the conference phrase preserved as comment.
 Lunch means ${lunchTime} Copenhagen time. "In at lunch" means arrival around ${lunchTime}, with an approximate end on IN_LATE. "Before lunch" means before ${lunchTime}; "after lunch" means after ${lunchTime}. For those relative lunch bounds use the nominal ${lunchTime} with the corresponding approximation flag and preserve the original relative wording in a verbatim comment. Do not create IN_OFFICE at an approximate boundary. Starting at/from home means FROM_HOME initially; an office arrival ends that interval. Explicit clock times override the lunch default. An exact arrival at or before 09:00 is IN_OFFICE from that time, while a later exact arrival has an IN_LATE interval followed by IN_OFFICE. WFH rest of (the) day starts at the ORIGINAL message's local time.
 Apply these meanings inside longer messages too, preserving all explicit transitions and availability qualifications. WFH with child sick states home working and a sick child, not complete unavailability: use FROM_HOME and preserve the sick-child wording as a comment. Never output overlapping statuses. Bare clock-only messages have no confirmed office-arrival convention: return review with uncertain_status. Do not expand client names in comments: comments must still be verbatim sender excerpts.`;
 
@@ -65,6 +84,43 @@ export function extractShorthand(text: string, day: string, localTime: string): 
   const simple = simpleRules.find((rule) => rule.phrases.includes(normalized));
   if (simple)
     return apply(interval(simple.status, { comment: simple.preserveText ? text.trim() : null }));
+
+  const eventPhrases =
+    '(?:at (?:a )?conference|conference|p[åa] konference|til konference|konference|at (?:an )?offsite|offsite|p[åa] kursus|til kursus|kursus)';
+  const datePhrases =
+    '(?:today (?:and|&|\\+) tomm?orr?ow|i dag (?:og|&) i morg[eo]n|tomm?orr?ow|i morg[eo]n|today|i dag)';
+
+  const conferenceRegex = new RegExp(
+    `^(?:(${eventPhrases})\\s*[,:\\-]?\\s+(${datePhrases})|(${datePhrases})\\s*[,:\\-]?\\s+(${eventPhrases}))$`,
+    'i'
+  );
+  const conferenceMatch = normalized.match(conferenceRegex);
+  if (conferenceMatch) {
+    const matchedEvent = conferenceMatch[1] ?? conferenceMatch[4];
+    const matchedDate = conferenceMatch[2] ?? conferenceMatch[3];
+
+    const isMultiDay = /(?:today (?:and|&|\+) tomm?orr?ow|i dag (?:og|&) i morg[eo]n)/i.test(
+      matchedDate
+    );
+    const isTomorrow = /(?:tomm?orr?ow|i morg[eo]n)/i.test(matchedDate);
+
+    const fromDate = isTomorrow && !isMultiDay ? nextDate(day) : day;
+    const toDate = isMultiDay || isTomorrow ? nextDate(day) : day;
+
+    const excerptMatch = text.match(
+      new RegExp(`(?:^|[^\\p{L}\\p{N}])(${eventPhrases})(?=[^\\p{L}\\p{N}]|$)`, 'iu')
+    );
+    const comment = excerptMatch ? excerptMatch[1].trim() : matchedEvent;
+
+    return apply(
+      interval('AWAY', {
+        fromDate,
+        toDate,
+        comment,
+      })
+    );
+  }
+
   if (/^wfh rest of (?:the )?day$/.test(normalized)) {
     return apply(interval('FROM_HOME', { startTime: localTime }));
   }
