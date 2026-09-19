@@ -1,6 +1,7 @@
 import NextAuth from 'next-auth';
 import { NextResponse, type NextRequest } from 'next/server';
 import { authConfig } from './auth.config';
+import { isSandbox } from './lib/sandbox/enabled';
 
 // This configuration has no database imports and can run at the Edge.
 const { auth } = NextAuth(authConfig);
@@ -28,6 +29,8 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith('/api/auth/')
   )
     return NextResponse.next();
+  // The Local Sandbox is reachable without a session, but only outside production builds.
+  if (isSandbox() && pathname.startsWith('/sandbox')) return NextResponse.next();
   let session;
   try {
     session = await auth();

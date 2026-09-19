@@ -10,6 +10,6 @@ export async function requirePageUserId() {
   try {
     return await requireUserId();
   } catch {
-    redirect('/login');
+    return redirect('/login');
   }
 }

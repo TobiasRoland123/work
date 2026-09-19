@@ -3,18 +3,17 @@ import React from 'react';
 interface ProfileInfoFieldProps {
   label: string;
   value: string;
+  href?: string;
 }
 
-const ProfileInfoField = ({ label, value }: ProfileInfoFieldProps) => {
+const ProfileInfoField = ({ label, value, href }: ProfileInfoFieldProps) => {
   return (
-    <div className="flex gap-10 justify-between">
-      <div className="mt-5">
-        <p className="font-mono w-24 text-base">{label}</p>
+    <div className="profile-info__field">
+      <div className="profile-info__field-label">
+        <p>{label}</p>
       </div>
-      <div className="flex flex-col justify-end w-full">
-        <p className="w-full lg:min-w-64 border-b border-black break-all font-light text-2xl">
-          {value ? value : ''}
-        </p>
+      <div className="profile-info__field-value">
+        {href ? <a href={href}>{value}</a> : <p>{value}</p>}
       </div>
     </div>
   );

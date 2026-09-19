@@ -33,17 +33,16 @@ export function SetStatusStep({ setCurrentStep, form }: SetStatusStepProps) {
           <FormControl>
             <div className="flex flex-col gap-3.5 text-black">
               {presentOptions.map((option, index) => {
-                if (option.value !== 'IN_OFFICE')
-                  return (
-                    <Button
-                      key={`${index}-${option.label}-${option.value}`}
-                      ariaLabel={`set-status-to-${option.value}`}
-                      handleClick={() => handleSetStatus(option.value as UserStatus)}
-                      variant={'large'}
-                    >
-                      {option.label}
-                    </Button>
-                  );
+                return (
+                  <Button
+                    key={`${index}-${option.label}-${option.value}`}
+                    ariaLabel={`set-status-to-${option.value}`}
+                    handleClick={() => handleSetStatus(option.value as UserStatus)}
+                    variant={'large'}
+                  >
+                    {option.label}
+                  </Button>
+                );
               })}
               <Button
                 ariaLabel="status-button"

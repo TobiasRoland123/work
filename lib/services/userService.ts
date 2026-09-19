@@ -11,7 +11,7 @@ import {
 } from '@/db/schema';
 import { inArray, eq } from 'drizzle-orm';
 import { statusService } from './statusService';
-import { selectActiveStatus } from '@/lib/status/active';
+import { resolvePresenceStatus } from '@/lib/status/active';
 const invalidateUserCache = (userId: string) => {
   // Kept as a compatibility hook for callers; reads are intentionally uncached
   // because timed statuses can become active or expire without a write event.
@@ -201,7 +201,7 @@ export const userService = {
     // 7. Assemble the final result
     const usersWithExtras = usersList.map((user) => ({
       ...user,
-      status: selectActiveStatus(statusMap.get(user.userId) ?? []),
+      status: resolvePresenceStatus(statusMap.get(user.userId) ?? [], user.userId),
       organisationRoles: rolesMap.get(user.userId) ?? [],
       businessPhoneNumber: phoneMap.get(user.userId) ?? null,
       organisation: user.organisationId ? (orgMap.get(user.organisationId) ?? null) : null,

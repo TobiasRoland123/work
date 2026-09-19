@@ -68,18 +68,23 @@ describe('common Slack shorthand', () => {
   });
 
   it.each([
+    ['In at 7', '07:00'],
+    ['In at 9', '09:00'],
     ['In at 10', '10:00'],
     ['In 9.45', '09:45'],
     ['in the office at 10.30', '10:30'],
   ])('turns %s into a late arrival and office start', async (text, time) => {
-    await expect(extractAttendance(text, sent)).resolves.toEqual({
-      decision: 'apply',
-      reason: 'clear',
-      intervals: [
+    const result = await extractAttendance(text, sent);
+    if (time <= '09:00') {
+      expect(result.intervals).toEqual([interval({ status: 'IN_OFFICE', startTime: time })]);
+    } else {
+      expect(result.intervals).toEqual([
         interval({ status: 'IN_LATE', endTime: time }),
         interval({ status: 'IN_OFFICE', startTime: time }),
-      ],
-    });
+      ]);
+    }
+    expect(result.decision).toBe('apply');
+    expect(result.reason).toBe('clear');
   });
 
   it.each(['Wfh, In at 10:00', 'Starting from home, in at 10'])(
