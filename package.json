@@ -8,7 +8,7 @@
     "local:dev:docker": "node scripts/local-dev.mjs --docker",
     "local:db": "node scripts/local-database.mjs",
     "local:db:reset": "node scripts/local-database.mjs --reset",
-    "local:credentials": "node scripts/local-credentials.mjs",
+    "sandbox:seed": "tsx db/seed-sandbox.ts",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -113,7 +113,7 @@
     "storybook": "^8.6.12",
     "tailwindcss": "^4",
     "ts-node": "^10.9.2",
-    "tsx": "^4.19.4",
+    "tsx": "^4.23.13",
     "typescript": "^5",
     "vitest": "^3.1.4"
   },

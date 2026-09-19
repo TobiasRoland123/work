@@ -1,5 +1,6 @@
 import NextAuth from 'next-auth';
 import { authConfig } from './auth.config';
+import { applySandboxSignIn, sandboxProviders } from './lib/sandbox/auth';
 
 export const {
   auth,
@@ -8,8 +9,10 @@ export const {
   signOut,
 } = NextAuth({
   ...authConfig,
+  // The Local Sandbox provider list is empty in production builds.
+  providers: [...authConfig.providers, ...sandboxProviders()],
   callbacks: {
-    async jwt({ token, account, profile }) {
+    async jwt({ token, account, profile, user }) {
       if (account) {
         token.provider = account.provider;
         if (account.provider === 'slack') {
@@ -28,6 +31,7 @@ export const {
           token.sub = user.userId;
           token.userId = user.userId;
         }
+        applySandboxSignIn(token, account, user);
       }
       if (token.provider === 'slack' && token.userId) {
         const { db } = await import('@/db');
@@ -50,7 +54,13 @@ export const {
     },
     async session({ session, token }) {
       return token.provider === 'slack'
-        ? { ...session, userId: token.userId ?? token.sub, provider: 'slack' }
+        ? {
+            ...session,
+            userId: token.userId ?? token.sub,
+            provider: 'slack',
+            // Display only. No authorization decision may read this.
+            sandbox: token.sandbox === true || undefined,
+          }
         : { ...session, userId: undefined, provider: undefined };
     },
   },
