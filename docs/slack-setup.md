@@ -76,22 +76,13 @@ Remove the old `AUTH_MICROSOFT_ENTRA_ID_*` values at cutover. Old Entra sessions
 
 The authenticated `/api/slack/process` endpoint remains available as a manual diagnostic and backlog path. It does not automatically backfill rows that were created before queue publication was introduced. Queue processing handles one message reference at a time, while the database inbox remains the source of truth for retries and terminal state.
 
-## Local Slack login
+## Local development and preview verification
 
-Local login must start and finish on the same origin. A production `AUTH_URL` in `.env.local` sends the callback to production without the local login cookie and can cause `InvalidCheck: nonce value could not be parsed`.
+Local development does not use Slack at all. The Local Sandbox page at `/sandbox` replaces the workspace; see [local development](local-development.md). `.env.local` therefore carries no `AUTH_SLACK_*`, `SLACK_BOT_TOKEN` or `SLACK_SIGNING_SECRET`, and uses the sandbox ids `SLACK_TEAM_ID=T_LOCAL` and `SLACK_CHANNEL_ID=C_LOCAL`.
 
-1. Start `pnpm dev` on port 3000.
-2. In another terminal, run `cloudflared tunnel --url http://localhost:3000 --no-autoupdate`. Install it with `brew install cloudflared` on macOS if needed.
-3. Set `AUTH_URL` in `.env.local` to the HTTPS origin printed by the tunnel. Add that origin followed by `/api/auth/callback/slack` to the existing Slack app's OAuth redirect URLs and save. Keep the production redirect URLs.
-4. Supply `AUTH_SLACK_ID`, `AUTH_SLACK_SECRET`, `AUTH_SECRET`, `SLACK_TEAM_ID` and `SLACK_BOT_TOKEN` locally. The bot token is required for login membership checks as well as attendance import. Vercel cannot export variables marked sensitive; `[SENSITIVE]` is a placeholder, not a usable credential.
-5. Configure `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD` and `PGDATABASE` for a separate local database with the current schema. The development database connection uses these values, not the production database URL.
-6. Restart the development server, then open `/login` through the HTTPS tunnel URL and begin a fresh sign-in.
+Everything the sandbox skips is verified on the preview deployment instead: signature verification, the Vercel Queue round trip, Slack OAuth sign-in, directory sync and Slack's real wire text. Changes to `lib/slack/{events,signature,client,identity}.ts`, `auth.config.ts` or the queue configuration must be exercised there before merging. The preview environment needs its own database and its own Slack app credentials; a preview deployment has a stable URL, so its Slack app configuration does not rotate.
 
-Shell-exported `PG*` variables take precedence over `.env.local`. If your shell config points at another database, start with `env -u PGHOST -u PGPORT -u PGUSER -u PGPASSWORD -u PGDATABASE pnpm dev` so Next.js uses this project's local settings.
-
-Keep the tunnel running throughout the session. Quick tunnels receive a new hostname when restarted; update both `AUTH_URL` and the Slack redirect registration when that happens, and remove obsolete development redirects.
-
-The test channel is `C0BVD3W8N3H`. Changing `SLACK_CHANNEL_ID` only changes which received events the app accepts. Slack still delivers events to its configured Event Subscriptions Request URL; a local login tunnel alone does not redirect attendance events or start the inbox processor.
+Shell-exported `PG*` variables take precedence over `.env.local`. If your shell config points at another database, start with `env -u PGHOST -u PGPORT -u PGUSER -u PGPASSWORD -u PGDATABASE pnpm local:dev` so Next.js uses this project's local settings.
 
 ## Database cutover
 

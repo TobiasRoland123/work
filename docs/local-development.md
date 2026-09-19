@@ -1,47 +1,111 @@
 # Local development
 
+Local development runs against the **Local Sandbox** instead of Slack. The sandbox is an
+in-app page at `/sandbox`, reachable without signing in, where you compose messages on
+behalf of seeded Sandbox Profiles and watch them flow through the real intake
+(`enqueueSlackEvent` → `processQueuedSlackMessage`) in process. Nothing contacts Slack, no
+tunnel is needed, and no Vercel project link is needed. The decision is recorded in
+[ADR 0001](adr/0001-local-sandbox-replaces-slack.md); the vocabulary (Author, Signed-in
+Profile, Sandbox Profile, Sandbox Message) is in [CONTEXT.md](../CONTEXT.md).
+
 The recommended cross-platform command is:
 
 ```bash
 pnpm local:dev:docker
 ```
 
-It reads `.env.local`, refreshes the linked Vercel development credentials, starts the repository's PostgreSQL container, waits for it to become healthy, creates the local `service_role`, synchronizes the development schema with `drizzle-kit push`, and then starts the tunnel and Next.js. It never drops an existing database.
+It reads `.env.local`, starts the repository's PostgreSQL container, waits for it to become
+healthy, creates the local `service_role`, synchronizes the schema with `drizzle-kit push`,
+seeds the checked-in Sandbox Profiles, and starts Next.js on `http://127.0.0.1:3000`. It
+never drops an existing database.
 
-Before the first run:
+## First run
 
 1. Run `pnpm install`.
-2. Copy `.env.example` to `.env.local` and fill in the local Slack and Auth values. The checked-in PostgreSQL values are disposable Docker development defaults.
-3. Link this checkout to the `work` Vercel project with `pnpm dlx vercel@59.15.1 link`. The machine-local `.vercel` directory is intentionally ignored by Git.
-4. Install Docker and `cloudflared`. Make sure the current user can run `docker compose` without `sudo` and port 3000 is free.
-5. Run `pnpm local:dev:docker`.
+2. Copy `.env.example` to `.env.local`. Set `AUTH_SECRET` (any long random string) and
+   `AI_GATEWAY_API_KEY`. Keep `SLACK_TEAM_ID=T_LOCAL` and `SLACK_CHANNEL_ID=C_LOCAL`: the
+   sandbox only accepts those ids, and the start script refuses a real workspace id. The
+   checked-in PostgreSQL values are disposable Docker development defaults.
+3. Install Docker. Make sure the current user can run `docker compose` without `sudo` and
+   port 3000 is free.
+4. Run `pnpm local:dev:docker` and open `http://127.0.0.1:3000/sandbox`.
 
-On Linux, Docker group changes only reach new login sessions. If `getent group docker` lists your username but `id -nG` does not list `docker`, run `newgrp docker` in the current terminal or sign out and back in. Confirm the fix with `docker info`, then rerun the project command. Membership in the Docker group grants root-level access to the machine.
+For an existing Mac/Homebrew PostgreSQL setup, use `pnpm local:dev`. It does not start
+Docker or change the schema, but rejects an incomplete database. `pnpm local:db` starts and
+synchronizes the Docker database without starting the app; `pnpm local:db:reset` discards
+the disposable Docker volume and rebuilds it. `pnpm sandbox:seed` re-seeds the fixture
+profiles on its own.
 
-For the existing Mac/Homebrew PostgreSQL setup, use `pnpm local:dev`. That command does not start Docker or change the schema, but it now rejects an incomplete database before Slack login. `pnpm local:db` can explicitly start/synchronize the Docker database without starting the app.
+On Linux, Docker group changes only reach new login sessions. If `getent group docker`
+lists your username but `id -nG` does not list `docker`, run `newgrp docker` in the current
+terminal or sign out and back in, then rerun the project command.
 
-The Docker commands always start Compose before connecting to PostgreSQL. If another PostgreSQL server already owns the configured port, Compose stops with a port-binding error instead of changing that database. `drizzle-kit push` checks the disposable database on every startup and applies schema changes when needed; it asks for confirmation before statements that may lose data.
+Do not use `pnpm db:migrate` to initialize a blank database. The historical migration
+chain starts from an introspected existing schema; fresh development databases use
+`drizzle-kit push` through `pnpm local:db`.
 
-To deliberately discard the disposable Docker database and rebuild it from the current schema, run `pnpm local:db:reset`. This removes the project-scoped `postgres_data` volume and all data in it. It refuses non-local database hosts. Never use that command for shared or production data.
+## Gating
 
-Do not use `pnpm db:migrate` to initialize a blank database. The historical migration chain starts from an introspected existing schema. Fresh development databases use `drizzle-kit push` through `pnpm local:db`.
+`NODE_ENV !== 'production'` is the only switch (`lib/sandbox/enabled.ts`). There is no
+`LOCAL_SANDBOX` flag, so a plain `pnpm dev` also exposes the sandbox. The database host
+guard in `scripts/local-dev.mjs` and the `T_LOCAL` scoping described below are what keep
+that safe. A production build never registers the sandbox sign-in provider, never lets
+`/sandbox` through middleware without a session, and answers `/sandbox` with 404;
+`tests/backend/sandbox/` asserts each of those under `NODE_ENV=production`.
 
-The development command checks the local settings and database, refreshes the Vercel development OIDC token when it is missing or expires within 30 minutes, starts a temporary `trycloudflare.com` tunnel, writes only its new value to `AUTH_URL` in `.env.local`, and starts Next.js on `http://127.0.0.1:3000`. It prints these URLs each time:
+## Using the sandbox
 
-- `https://<tunnel>/api/auth/callback/slack`
-- `https://<tunnel>/api/slack/install/callback`
-- `https://<tunnel>/api/slack/events`
+**Author vs Signed-in Profile.** Every Sandbox Message is attributed to an Author chosen in
+the compose form. Signing in as a profile is separate and only changes whose `/profile`
+and manual status form the browser shows. You can stage Declarations for the whole office
+without signing in as anyone.
 
-In the development Slack app `A0C0YCQHW1J` (`WORK Local Dev`), put the two callback URLs under OAuth & Permissions → Redirect URLs. Put the events URL under Event Subscriptions → Request URL, verify it, and save. A quick tunnel gets a new hostname after restart, so update the app URLs then. Keep the tunnel running while testing Slack login.
+**Fixture profiles** (`lib/sandbox/profiles.ts`, seeded under team `T_LOCAL` with no
+avatars):
 
-Open `https://<tunnel>/login` to sign in and use the app through that address. Starting sign-in on localhost can leave the login cookie on a different host from the Slack callback and cause `InvalidCheck: nonce value could not be parsed`. If this happens, start a fresh sign-in from the tunnel's `/login` page instead of reloading the failed callback.
+- Anna Attendee: plain attendee, English.
+- Mads Madsen: writes in Danish.
+- Freja Hjemme: seeded with a `FROM_HOME` Declaration for today.
+- Dag Deaktiveret: `slackDeactivated`, so his messages end in `unmapped_user` and signing
+  in as him is refused.
+- "Unmapped Slack user": an Author with no profile at all, for the `unmapped_user` retry
+  branch.
 
-Slack requires an administrator to approve and install this development app. After installation, save its Bot User OAuth Token as `SLACK_BOT_TOKEN` in `.env.local`, invite the development app to `#wørkbot-test` (`C0BVD3W8N3H`), and restart `pnpm local:dev`. Login and real message delivery still need verification after this step. Do not reuse the production bot token.
+Ad-hoc profiles can be added on the page. Sample messages, including one in Slack wire
+format (`&amp;`, `<@U…>`, `<url|label>`, which nothing unescapes), are one click away.
 
-There are two Slack apps because each app has one Events Request URL. `WORK 2.0` keeps its production URL on Vercel. `WORK Local Dev` uses the temporary URL on this Mac and separate credentials. Restarting a tunnel or testing development settings therefore does not redirect production events to this computer.
+**Result panel.** After sending you see the intake outcome (`queued`,
+`duplicate_or_stale`, …), the processing outcome (terminal state and reason, or "retry
+scheduled in N s" with the likely reason, which is a normal inbox outcome rather than a
+crash), whether the deterministic shorthand parser or the model handled the text, and the
+committed interpretation: decision, reason and every interval with both approximation
+flags. The interpretation is reconstructed from the committed `status` rows because the
+inbox does not persist raw model output. A missing `AI_GATEWAY_API_KEY` is reported up
+front instead of through five retries into `review`.
 
-Stop the app with Ctrl+C. The helper stops the tunnel and Next.js child process together. Run `pnpm local:dev` again after changing `.env.local`.
+**Announcement instant.** The optional "Announced at" field is a Europe/Copenhagen wall
+clock and sets the Slack `ts`. Backdating a message also backdates the Declaration's
+`announcedAt`, so today's Resolved Status ignores it for today; look at the announced day.
+The resolver's own clock is not adjustable; live transitions can be watched for real
+because the dashboard polls every 15 seconds. Without Supabase there is no broadcast, so
+expect up to 15 seconds of lag.
 
-Verified during setup: the local database connection, local login page, signed tunnel challenge, rejection of unsigned events, a synthetic event through the development queue and local consumer, AI Gateway response, credential refresh preserving other settings, and startup/cleanup behavior. The local database was backed up before applying missing 0036/0037 schema changes. Backups and local setup files are in the ignored `.local` directory.
+**Channel view.** Messages you typed are kept per Author in the browser's `localStorage`
+only, because the inbox nulls message text on every terminal outcome. Edit and Delete send
+real `message_changed` and `message_deleted` envelopes; a stale edit surfaces as
+`duplicate_or_stale`. "Clear list" forgets the browser list without touching data.
 
-Production deployment, production database, and the `WORK 2.0` Slack configuration were not changed. The production login page responded with HTTP 200 during setup. This was an availability check, not a full production login test.
+**Reset.** Deletes `status` rows of `T_LOCAL` profiles and `slack_messages` rows of team
+`T_LOCAL`, then clears the browser list. Profiles are kept. Both deletes are scoped and
+`tests/backend/sandbox/reset.test.ts` asserts the generated SQL.
+
+## What the sandbox does not exercise
+
+HMAC signature verification, the Vercel Queue round trip, Slack OAuth sign-in,
+`listSlackUsers` directory sync, and Slack's real wire text. Changes to
+`lib/slack/{events,signature,client,identity}.ts`, `auth.config.ts`, or the queue
+configuration must be verified on the preview deployment before merging. The preview
+environment has its own database and its own Slack app credentials; see
+[Slack setup](slack-setup.md).
+
+Stop the app with Ctrl+C. Run `pnpm local:dev` again after changing `.env.local`.
