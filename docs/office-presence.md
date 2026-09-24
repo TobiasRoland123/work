@@ -1,8 +1,18 @@
 # Office presence
 
-The Today page combines the Copenhagen office model from the WØRK CT Office project with the existing employee directory and status form. It loads the Three.js scene separately from the people list. Characters are keyed by employee ID and exist only while the resolved status is `IN_OFFICE`. Character movement is illustrative, not physical location tracking.
+The Week page (`/today`) shows where every colleague is from Monday to Friday. Each row is a person and each column a weekday; one announcement covering several days is drawn as a single bar, with a note when it starts before or ends after the visible week. Days where nobody announced anything show the Workday Default with a dashed outline, so assumed office days are distinguishable from announced ones. Saturdays and Sundays open the coming week, and `?week=YYYY-MM-DD` selects another week.
 
-The people panel supports search, attendance filters, selection, contact information, status details, and source Slack links. Selecting an in-office colleague highlights their character. Small screens stack the map above the list. Reduced-motion settings and hidden browser tabs stop the animation; WebGL failures leave the list available.
+Each column header shows how many people are in the office that day and selects the day for the side panel, which groups colleagues into in office, working elsewhere, out, and no status. Search and the in-office filter apply to the selected day. Selecting a person opens a sheet with contact information, their current status, the week day by day, and source Slack links. The signed-in person is pinned to the top. Small screens stack each person's name above their week and move the day panel below the board.
+
+Days other than today are resolved at 09:00 Copenhagen time, the start of the workday, so a planned late arrival shows as `IN_LATE` and an early departure shows as in office with its leaving note. Today is resolved live once the workday has started. `lib/status/week.ts` builds the week on top of the resolver described below.
+
+## Planning ahead
+
+People announce days ahead from the same status form, in Slack, or straight from the board. On the board, the signed-in person's own cells from today onward are buttons: clicking one opens the form with that day selected, and clicking a multi-day bar selects its remaining days. The form's "When" section offers the weekdays of the viewed week and the week after as toggles, so non-adjacent days (home on Monday and Thursday) take one save. "Longer period" switches to from/to dates and is the default for vacation and leave. In late and leaving early always use individual days, and the chosen time applies to each of them.
+
+`planStatusAction` validates the plan on the server (`lib/status/plan.ts`): no past days, at most a year ahead, and a time that has not already passed when today is included. Picked days become one Declaration per run of consecutive days, where a gap of only Saturday and Sunday keeps the run going, so a Friday-to-Tuesday plan stays one bar. Timed statuses become one Declaration per day, with the time stored as that date's Copenhagen wall clock.
+
+Planning a day again adds a newer Declaration, which wins. The signed-in person's sheet lists "Your upcoming announcements" across all weeks. App-made ones can be removed, which restores whatever the day showed before; Slack-made ones link to their message, since the Slack message is their source.
 
 ## Attendance rules
 
@@ -22,6 +32,6 @@ Defaults and timed transitions are resolved when reading attendance, not inserte
 
 ## Dependencies and verification
 
-The Next.js 15 App Router renderer requires the React 19-compatible Fiber 9 integration. React and React DOM are aligned to the 19.2 release line with corresponding types. The existing date picker has an older React peer range; its calendar opening and date selection were checked in the browser.
+React and React DOM are aligned to the 19.2 release line with corresponding types. The existing date picker has an older React peer range; its calendar opening and date selection were checked in the browser.
 
 Focused tests cover clock boundaries, winter and summer offsets, explicit overrides, manual timing, weekends, date rollover, and Slack shorthand. UI checks use temporary sample profiles without writing attendance or bypassing the production authentication rules. The temporary fixture route is removed after verification.

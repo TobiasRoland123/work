@@ -11,15 +11,18 @@ type SetStatusStepProps = {
   // handleSetStatus: (status: UserStatus) => void;
   setCurrentStep: (step: number) => void;
   form: UseFormReturn<z.infer<typeof formSchema>>;
+  /** Called after a status is chosen, before moving on to the details. */
+  onChoose?: (status: UserStatus) => void;
 };
 
-export function SetStatusStep({ setCurrentStep, form }: SetStatusStepProps) {
+export function SetStatusStep({ setCurrentStep, form, onChoose }: SetStatusStepProps) {
   const [showOther, setShowOther] = useState(false);
   const presentOptions = showOther ? statusOptions.otherOptions : statusOptions.mainOptions;
 
   // 4. Button handler to set status
   function handleSetStatus(status: UserStatus) {
     form.setValue('status', status);
+    onChoose?.(status);
     setCurrentStep(2);
   }
 

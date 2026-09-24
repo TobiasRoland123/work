@@ -3,7 +3,6 @@ import { Input } from '@/components/ui/Input/input';
 import { z } from 'zod';
 import { formSchema } from '@/components/StatusForm/StatusForm';
 import { UseFormReturn } from 'react-hook-form';
-import { useEffect } from 'react';
 
 type ActionTimeProps = {
   form: UseFormReturn<z.infer<typeof formSchema>>;
@@ -11,13 +10,6 @@ type ActionTimeProps = {
 
 export function ActionTime({ form }: ActionTimeProps) {
   const chosenStatus = form.watch('status');
-
-  useEffect(() => {
-    if (chosenStatus === 'IN_LATE' || chosenStatus === 'LEAVING_EARLY') {
-      form.setValue('dateRange', undefined);
-      form.setValue('dateRange', undefined);
-    }
-  }, [chosenStatus, form]);
 
   if (chosenStatus === 'IN_LATE' || chosenStatus === 'LEAVING_EARLY') {
     return (
@@ -27,7 +19,9 @@ export function ActionTime({ form }: ActionTimeProps) {
         render={({ field }) => (
           <FormItem>
             <div className={'flex gap-11 justify-between items-end'}>
-              <FormLabel className={'min-w-[80px]'}>Time</FormLabel>
+              <FormLabel className={'min-w-[80px]'}>
+                {chosenStatus === 'IN_LATE' ? 'Arriving' : 'Leaving'}
+              </FormLabel>
 
               <FormControl className={'w-full'}>
                 <div className="flex flex-col gap-2">

@@ -4,6 +4,7 @@ import { db } from '@/db';
 import { eq } from 'drizzle-orm';
 import { supabase } from '../supabaseClient';
 import { resolvePresenceStatus } from '@/lib/status/active';
+import { upcomingStatuses } from '@/lib/status/plan';
 
 export const statusService = {
   // GET METHODS
@@ -21,6 +22,11 @@ export const statusService = {
   async getActiveStatusByUserUserId(userID: string) {
     const userStatuses = await db.select().from(status).where(eq(status.userID, userID));
     return resolvePresenceStatus(userStatuses, userID);
+  },
+
+  // Declarations that still cover today or a later day
+  async getUpcomingStatusesByUserUserId(userID: string) {
+    return upcomingStatuses(await this.getStatusByUserUserId(userID));
   },
 
   // POST METHODS

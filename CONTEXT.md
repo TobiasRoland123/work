@@ -2,7 +2,7 @@
 
 Wørk tells Charlie Tango who is in the Copenhagen office today. Colleagues announce
 their own exceptions in a Slack channel in ordinary language; the app interprets those
-announcements and shows the resulting presence on a shared map and directory.
+announcements and shows the resulting presence on a shared week overview and directory.
 
 ## Language
 
@@ -55,7 +55,7 @@ say **Author** or **Signed-in Profile**.
 
 ## Example dialogue
 
-**Dev**: I typed "hjemmefra i morgen" into the sandbox and nothing showed up on the map.
+**Dev**: I typed "hjemmefra i morgen" into the sandbox and today's column didn't change.
 
 **Domain expert**: Nothing should. That Declaration is for tomorrow, so today's
 Resolved Status for that person still comes from the Workday Default — in the office

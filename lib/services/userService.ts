@@ -12,6 +12,7 @@ import {
 import { inArray, eq } from 'drizzle-orm';
 import { statusService } from './statusService';
 import { resolvePresenceStatus } from '@/lib/status/active';
+import { resolveWorkWeek } from '@/lib/status/week';
 const invalidateUserCache = (userId: string) => {
   // Kept as a compatibility hook for callers; reads are intentionally uncached
   // because timed statuses can become active or expire without a write event.
@@ -127,7 +128,7 @@ export const userService = {
     return result;
   },
 
-  async getAllUsers(sortByStatus: boolean = true) {
+  async getAllUsers(sortByStatus: boolean = true, weekDays?: readonly string[]) {
     // 1. Fetch all users
     const usersList = await db
       .select()
@@ -199,9 +200,13 @@ export const userService = {
     }
 
     // 7. Assemble the final result
+    const now = new Date();
     const usersWithExtras = usersList.map((user) => ({
       ...user,
-      status: resolvePresenceStatus(statusMap.get(user.userId) ?? [], user.userId),
+      status: resolvePresenceStatus(statusMap.get(user.userId) ?? [], user.userId, now),
+      ...(weekDays && {
+        week: resolveWorkWeek(statusMap.get(user.userId) ?? [], user.userId, weekDays, now),
+      }),
       organisationRoles: rolesMap.get(user.userId) ?? [],
       businessPhoneNumber: phoneMap.get(user.userId) ?? null,
       organisation: user.organisationId ? (orgMap.get(user.organisationId) ?? null) : null,

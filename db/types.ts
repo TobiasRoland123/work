@@ -10,10 +10,14 @@ export type User = InferSelectModel<typeof users>;
 // Extended user type for frontend
 export type UserWithExtras = NewUser & {
   status?: Status | null;
+  /** Resolved attendance per weekday, when a work week was requested. */
+  week?: DayPresence[];
   organisation?: string | null;
   organisationRoles?: string[] | null;
   businessPhoneNumber?: string | null;
 };
+
+export type DayPresence = { date: string; status: Status | null };
 
 // Type for inserting new users (INSERT operations)
 export type NewUser = InferInsertModel<typeof users>;

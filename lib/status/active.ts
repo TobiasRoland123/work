@@ -68,8 +68,8 @@ function localParts(value: Date) {
     }, {});
 }
 
-/** Convert a Copenhagen wall clock into an instant for the current date. */
-function copenhagenWallClock(day: string, hour: number, minute: number): Date {
+/** Convert a Copenhagen wall clock on `day` (YYYY-MM-DD) into an instant. */
+export function copenhagenWallClock(day: string, hour: number, minute: number): Date {
   const guess = Date.UTC(
     Number(day.slice(0, 4)),
     Number(day.slice(5, 7)) - 1,

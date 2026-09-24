@@ -216,7 +216,7 @@ export function SandboxConsole({
           </p>
         </div>
         <nav aria-label="App pages">
-          <Link href="/today">Today</Link>
+          <Link href="/today">Week</Link>
           <Link href="/contact">Contact</Link>
           <Link href="/profile">Profile</Link>
         </nav>

@@ -1,22 +1,34 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { UserWithExtras } from '@/db/types';
-import { getAllUsersAction } from '../actions/userActions';
+import { getWeekOverviewAction } from '../actions/userActions';
+import { getMyUpcomingStatusesAction } from '../actions/statusActions';
 import { supabase } from '@/lib/supabaseClient';
-import { OfficeDashboard } from '@/components/office/OfficeDashboard';
-import { isInOffice, personName } from '@/components/office/PeoplePanel';
+import { copenhagenDate } from '@/lib/status/active';
+import type { UpcomingStatus } from '@/lib/status/plan';
+import { WeekOverview } from '@/components/week/WeekOverview';
+import { isInOffice, personName } from '@/components/week/presence';
 
-export const PeopleOverviewWrapper = ({
+export const WeekOverviewWrapper = ({
   initialProfiles,
   userId,
-  dateLabel,
+  weekStart,
+  currentWeekStart,
+  days,
+  today: initialToday,
+  initialPlans,
 }: {
   initialProfiles: UserWithExtras[];
   userId: string;
-  dateLabel: string;
+  weekStart: string;
+  currentWeekStart: string;
+  days: string[];
+  today: string;
+  initialPlans: UpcomingStatus[];
 }) => {
   const [profiles, setProfiles] = useState(initialProfiles);
-  const [currentDateLabel, setCurrentDateLabel] = useState(dateLabel);
+  const [plans, setPlans] = useState(initialPlans);
+  const [today, setToday] = useState(initialToday);
   const [arrival, setArrival] = useState<string | null>(null);
   const [syncError, setSyncError] = useState(false);
   const previous = useRef(initialProfiles);
@@ -27,7 +39,10 @@ export const PeopleOverviewWrapper = ({
     if (pending.current) return;
     pending.current = true;
     try {
-      const users = await getAllUsersAction();
+      const [users, upcoming] = await Promise.all([
+        getWeekOverviewAction(weekStart),
+        getMyUpcomingStatusesAction(),
+      ]);
       if (!mounted.current || !users) return;
       const before = new Set(previous.current.filter(isInOffice).map((person) => person.userId));
       const arrivals = users.filter((person) => isInOffice(person) && !before.has(person.userId));
@@ -42,21 +57,15 @@ export const PeopleOverviewWrapper = ({
       }
       previous.current = users;
       setProfiles(users);
-      setCurrentDateLabel(
-        new Intl.DateTimeFormat('en-GB', {
-          timeZone: 'Europe/Copenhagen',
-          weekday: 'short',
-          day: 'numeric',
-          month: 'short',
-        }).format(new Date())
-      );
+      setPlans(upcoming);
+      setToday(copenhagenDate());
       setSyncError(false);
     } catch {
       if (mounted.current) setSyncError(true);
     } finally {
       pending.current = false;
     }
-  }, []);
+  }, [weekStart]);
 
   // Synchronize server attendance with broadcasts, the clock, and browser visibility.
   useEffect(() => {
@@ -79,12 +88,16 @@ export const PeopleOverviewWrapper = ({
     };
   }, [refetchProfiles]);
   return (
-    <OfficeDashboard
+    <WeekOverview
       profiles={profiles}
       userId={userId}
-      dateLabel={currentDateLabel}
+      days={days}
+      today={today}
+      weekStart={weekStart}
+      currentWeekStart={currentWeekStart}
       arrival={arrival}
       syncError={syncError}
+      plans={plans}
       onStatusSaved={() => void refetchProfiles()}
     />
   );

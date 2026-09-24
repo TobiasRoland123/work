@@ -1,0 +1,94 @@
+.when-field {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.when-field-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+}
+.when-field-label {
+  font-size: 14px;
+}
+.when-field-switch {
+  font-size: 13px;
+  color: #a5cdf0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.when-weeks {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.when-week legend {
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: #ffffffa6;
+}
+.when-days {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 6px;
+}
+.when-days button {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1px;
+  padding: 8px 2px;
+  border: 1px solid #ffffff40;
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.2;
+}
+.when-days button small {
+  font-size: 11px;
+  opacity: 0.75;
+}
+.when-days button:hover:not(:disabled) {
+  border-color: #a5cdf0;
+}
+.when-days button[aria-pressed='true'] {
+  border-color: #a5cdf0;
+  background: #a5cdf0;
+  color: #0b1014;
+}
+.when-days button:disabled {
+  opacity: 0.3;
+}
+.when-range {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.when-range label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 12px;
+  color: #ffffffa6;
+}
+.when-range input {
+  padding: 6px 0;
+  border-bottom: 1px solid white;
+  background: transparent;
+  color: white;
+  font-size: 16px;
+  color-scheme: dark;
+  outline: none;
+}
+.status-form-summary {
+  color: white;
+  font-size: 14px;
+}
+.status-form-summary p {
+  display: inline;
+}
+.status-form-preset {
+  display: block;
+  margin-top: 4px;
+  font-size: 13px;
+  color: #ffffffa6;
+}

@@ -2,13 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FlaskConical, Home, Users, UserRound } from 'lucide-react';
+import { CalendarDays, FlaskConical, Users, UserRound } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { isSandbox } from '@/lib/sandbox/enabled';
 import './shell.css';
 
 const links = [
-  { href: '/today', label: 'Today', Icon: Home },
+  { href: '/today', label: 'Week', Icon: CalendarDays },
   { href: '/contact', label: 'Contact', Icon: Users },
   { href: '/profile', label: 'Profile', Icon: UserRound },
   // Local development only; production builds never render this entry.
