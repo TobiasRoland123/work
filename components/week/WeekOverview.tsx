@@ -19,13 +19,13 @@ import {
   dayNote,
   initials,
   isAssumed,
-  legend,
   personName,
   presenceOf,
   segmentNote,
   segmentWeek,
   type Segment,
 } from './presence';
+import { WeekLegend } from './WeekLegend';
 import './week.css';
 
 type Filter = 'all' | 'office' | 'elsewhere';
@@ -489,18 +489,7 @@ export function WeekOverview({
               </p>
             )}
           </div>
-          <ul className="week-legend" aria-label="Legend">
-            {legend.map(({ tone, label }) => (
-              <li key={tone}>
-                <i className="tone" data-tone={tone} />
-                {label}
-              </li>
-            ))}
-            <li>
-              <i className="tone" data-tone="office" data-assumed />
-              Assumed in office (nothing announced)
-            </li>
-          </ul>
+          <WeekLegend />
         </main>
         <aside
           className="day-panel"

@@ -33,7 +33,6 @@ html.dark {
   background: var(--office-surface);
   color: var(--office-ink);
 }
-.dark .page-loading,
 .dark .office-header p,
 .dark .office-header time {
   color: var(--office-muted);

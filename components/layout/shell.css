@@ -36,10 +36,6 @@
   max-width: 1440px;
   margin: 0 auto;
 }
-.page-loading {
-  padding: 36px;
-  color: #737775;
-}
 .app-shell button,
 .app-shell a {
   -webkit-tap-highlight-color: transparent;
