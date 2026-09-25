@@ -11,29 +11,33 @@ type ActionTimeProps = {
 export function ActionTime({ form }: ActionTimeProps) {
   const chosenStatus = form.watch('status');
 
-  if (chosenStatus === 'IN_LATE' || chosenStatus === 'LEAVING_EARLY') {
+  if (
+    chosenStatus === 'IN_OFFICE' ||
+    chosenStatus === 'IN_LATE' ||
+    chosenStatus === 'LEAVING_EARLY'
+  ) {
     return (
       <FormField
         name={'actionTime'}
         control={form?.control}
         render={({ field }) => (
           <FormItem>
-            <div className={'flex gap-11 justify-between items-end'}>
-              <FormLabel className={'min-w-[80px]'}>
-                {chosenStatus === 'IN_LATE' ? 'Arriving' : 'Leaving'}
+            <div className="status-details-field">
+              <FormLabel>
+                {chosenStatus === 'LEAVING_EARLY'
+                  ? 'Leaving'
+                  : chosenStatus === 'IN_OFFICE'
+                    ? 'Arriving (optional)'
+                    : 'Arriving'}
               </FormLabel>
 
-              <FormControl className={'w-full'}>
-                <div className="flex flex-col gap-2">
-                  <Input
-                    {...field}
-                    type="time"
-                    id="action-time"
-                    name="Action Time"
-                    required
-                    value={field.value ?? ''}
-                  />
-                </div>
+              <FormControl>
+                <Input
+                  {...field}
+                  type="time"
+                  required={chosenStatus !== 'IN_OFFICE'}
+                  value={field.value ?? ''}
+                />
               </FormControl>
             </div>
             <FormMessage />

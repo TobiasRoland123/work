@@ -1,8 +1,29 @@
-/* This styling is applied to change the color of the Clock icon inside the Time picker*/
-input[type='time']::-webkit-calendar-picker-indicator {
-  filter: invert(1) brightness(2);
+.status-details-field {
+  display: grid;
+  gap: 8px;
 }
 
-input[type='date']::-webkit-calendar-picker-indicator {
-  filter: invert(1) brightness(2);
+.office-status-dialog .status-details-field [data-slot='form-label'] {
+  color: #6a7063;
+  font:
+    11px/1.2 var(--font-ibx-mono),
+    monospace;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+
+.office-status-dialog .status-details-field input {
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid #deded8;
+  border-radius: 6px;
+  background: white;
+  color: #0b1014;
+  font-size: 14px;
+  box-shadow: none;
+  color-scheme: light;
+}
+
+.office-status-dialog .status-details-field input::placeholder {
+  color: #8b908e;
 }

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Status } from '@/db/types';
 import { resolvePresenceStatus } from '@/lib/status/active';
+import { dayNote } from '@/components/week/presence';
 
 const day = '2026-09-10';
 const row = (values: Partial<Status> = {}): Status => ({
@@ -39,6 +40,17 @@ describe('office presence convention', () => {
     const arrival = row({ startsAt: at('05:00') });
     expect(resolve([arrival], '04:59')).toBeNull();
     expect(resolve([arrival], '05:00')?.status).toBe('IN_OFFICE');
+  });
+  it('shows a scheduled office arrival as late until the clock time, then in office', () => {
+    const arrival = row({ time: at('08:00') });
+    expect(resolve([arrival], '07:30')?.status).toBe('IN_LATE');
+    expect(dayNote(resolve([arrival], '07:30'))).toBe('from 10:00');
+    expect(resolve([arrival], '08:00')?.status).toBe('IN_OFFICE');
+    expect(dayNote(resolve([arrival], '08:00'))).toBe('from 10:00');
+
+    const early = row({ time: at('06:00') });
+    expect(resolve([early], '05:59')).toBeNull();
+    expect(resolve([early], '06:00')?.status).toBe('IN_OFFICE');
   });
   it.each(['FROM_HOME', 'SICK', 'VACATION', 'AT_CLIENT'] as const)(
     'preserves an explicit %s declaration after 9',

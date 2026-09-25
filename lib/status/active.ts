@@ -183,6 +183,27 @@ export function resolvePresenceStatus(
   const today = copenhagenDate(now);
   const candidates = statuses.flatMap((candidate): Status[] => {
     if (
+      candidate.status === 'IN_OFFICE' &&
+      candidate.time &&
+      !candidate.startsAt &&
+      !candidate.endsAt &&
+      declaresToday(candidate, now)
+    ) {
+      const arrival = instant(candidate.time);
+      if (arrival !== null && copenhagenDate(new Date(arrival)) === today) {
+        const clock = new Date(arrival);
+        const office: Status = { ...candidate, startsAt: clock };
+        if (arrival <= copenhagenWallClock(today, 9, 0).getTime()) return [office];
+        const late: Status = {
+          ...candidate,
+          status: 'IN_LATE',
+          startsAt: copenhagenWallClock(today, 0, 0),
+          endsAt: clock,
+        };
+        return [late, office];
+      }
+    }
+    if (
       !declaresToday(candidate, now) ||
       candidate.startsAtApproximate ||
       candidate.endsAtApproximate ||

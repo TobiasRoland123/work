@@ -54,14 +54,15 @@ export function dayRuns(days: readonly string[]): [string, string][] {
 }
 
 /**
- * Turn a plan into Declarations: one per run of days, or one per day for timed statuses so
- * each day carries its own Copenhagen arrival or departure time.
+ * Turn a plan into Declarations: one per run of days, or one per day when a clock time
+ * needs its own Copenhagen date.
  */
 export function planStatuses(input: unknown, now: Date = new Date()): PlannedStatus[] {
   const plan = planSchema.parse(input);
   const today = copenhagenDate(now);
   const latest = addDays(today, 366);
   const timed = timedStatuses.includes(plan.status);
+  const officeArrival = plan.status === 'IN_OFFICE' && Boolean(plan.time);
   const details = plan.status === 'SICK' ? null : plan.details || null;
 
   if (timed && !plan.time) throw new PlanError('Choose a time.');
@@ -75,21 +76,30 @@ export function planStatuses(input: unknown, now: Date = new Date()): PlannedSta
     if (from > to) throw new PlanError('The end date must be on or after the start date.');
     if (to < today) throw new PlanError('The period must end today or later.');
     if (to > latest) throw new PlanError('You can plan up to a year ahead.');
-    return [{ status: plan.status, details, fromDate: from, toDate: to, time: null }];
+    if (!officeArrival)
+      return [{ status: plan.status, details, fromDate: from, toDate: to, time: null }];
   }
 
-  const days = [...new Set(plan.when.days)].sort();
+  let days: string[];
+  if (plan.when.kind === 'range') {
+    days = [];
+    for (let day = plan.when.from; day <= plan.when.to; day = addDays(day, 1)) {
+      if (days.length === 62)
+        throw new PlanError('Pick a period of up to 62 days when setting an arrival time.');
+      days.push(day);
+    }
+  } else days = [...new Set(plan.when.days)].sort();
   for (const day of days) {
     assertRealDay(day);
-    if (day < today) throw new PlanError('Pick today or a later day.');
+    if (day < today && plan.when.kind === 'days') throw new PlanError('Pick today or a later day.');
     if (day > latest) throw new PlanError('You can plan up to a year ahead.');
   }
 
-  if (timed) {
+  if (timed || officeArrival) {
     const [hours, minutes] = plan.time!.split(':').map(Number);
     return days.map((day) => {
       const time = copenhagenWallClock(day, hours, minutes);
-      if (time <= now) throw new PlanError('That time has already passed today.');
+      if (timed && time <= now) throw new PlanError('That time has already passed today.');
       return { status: plan.status, details, fromDate: day, toDate: day, time };
     });
   }

@@ -135,7 +135,29 @@
 .office-header-actions {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 12px;
+}
+.theme-toggle {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid #deded8;
+  border-radius: 5px;
+  color: #0b1014;
+}
+.theme-toggle:hover {
+  background: #f2f5f6;
+}
+.theme-toggle-sun {
+  display: none;
+}
+.dark .theme-toggle-moon {
+  display: none;
+}
+.dark .theme-toggle-sun {
+  display: block;
 }
 .office-header time {
   color: #737775;
@@ -161,18 +183,157 @@
   right: 0;
   top: 0;
   height: 100dvh;
-  width: min(430px, 100%);
-  padding: 28px 24px;
+  width: min(440px, 100%);
+  padding: 28px 24px 24px;
   z-index: 41;
-  background: #0b1014;
-  color: white;
+  background: white;
+  color: #0b1014;
   display: flex;
   flex-direction: column;
   gap: 28px;
   overflow-y: auto;
+  box-shadow: -12px 0 40px #0000001a;
 }
 .office-status-dialog > div {
-  min-height: 0;
+  flex: 1;
+}
+.status-form-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding-right: 30px;
+}
+.status-form-eyebrow {
+  display: block;
+  margin-bottom: 9px;
+  color: #6a7063;
+  font:
+    11px/1.2 var(--font-ibx-mono),
+    monospace;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+}
+.status-form-heading {
+  font-size: 29px;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+  line-height: 1.15;
+}
+.status-form-heading [role='status'] {
+  font: inherit;
+}
+.status-form-close {
+  position: absolute;
+  top: 20px;
+  right: 18px;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 5px;
+}
+.status-form-close:hover {
+  background: #f2f5f6;
+}
+.status-form-body,
+.status-form {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+.status-form {
+  gap: 28px;
+}
+.status-options {
+  border: 1px solid #deded8;
+  border-radius: 7px;
+}
+.office-status-dialog .status-option {
+  justify-content: space-between;
+  width: 100%;
+  height: 58px;
+  padding: 0 17px;
+  border-radius: 0;
+  border-bottom: 1px solid #e7e8e4;
+  background: white;
+  color: #0b1014;
+  font-family: var(--font-monument-grotesk), sans-serif;
+  font-size: 16px;
+  font-weight: 400;
+  text-align: left;
+  transition:
+    background-color 150ms ease,
+    color 150ms ease;
+}
+.office-status-dialog .status-option:first-child {
+  border-radius: 6px 6px 0 0;
+}
+.office-status-dialog .status-option:last-child {
+  border-bottom: 0;
+  border-radius: 0 0 6px 6px;
+}
+.office-status-dialog .status-option:hover {
+  background: #f2f5f6;
+}
+.office-status-dialog .status-option:active {
+  background: #e4eff9;
+}
+.status-option svg {
+  color: #747972;
+}
+.office-status-dialog .status-option-more {
+  background: #f6f6f0;
+  color: #2d6ea8;
+}
+.status-details {
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+.status-form-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: auto;
+  padding-top: 24px;
+  border-top: 1px solid #e7e8e4;
+}
+.office-status-dialog .status-form-actions > button {
+  width: 100%;
+  height: 46px;
+  border-radius: 6px;
+  font-family: var(--font-monument-grotesk), sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+}
+.office-status-dialog .status-form-save {
+  background: #0b1014;
+  color: white;
+}
+.office-status-dialog .status-form-save:hover {
+  background: #263541;
+}
+.office-status-dialog .status-form-save:active {
+  background: #3d5261;
+}
+.office-status-dialog .status-form-save svg {
+  color: white;
+}
+.office-status-dialog .status-form-back {
+  border: 1px solid #deded8;
+  background: white;
+  color: #0b1014;
+}
+.office-status-dialog .status-form-back:hover {
+  background: #f2f5f6;
+}
+.office-status-dialog .status-form-back:active {
+  background: #e4eff9;
+}
+.office-status-dialog :is(button, input):focus-visible {
+  outline: 2px solid #2d6ea8;
+  outline-offset: 2px;
 }
 
 @media (max-width: 1100px) {

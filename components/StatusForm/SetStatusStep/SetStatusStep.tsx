@@ -6,6 +6,7 @@ import { useState } from 'react';
 import { UseFormReturn } from 'react-hook-form';
 import { z } from 'zod';
 import { formSchema } from '@/components/StatusForm/StatusForm';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 type SetStatusStepProps = {
   // handleSetStatus: (status: UserStatus) => void;
@@ -31,10 +32,10 @@ export function SetStatusStep({ setCurrentStep, form, onChoose }: SetStatusStepP
       name={'status'}
       control={form?.control}
       render={() => (
-        <FormItem className={'flex h-full justify-end flex-col pb-8'}>
+        <FormItem>
           <FormLabel className={'hidden'}>Set your status</FormLabel>
           <FormControl>
-            <div className="flex flex-col gap-3.5 text-black">
+            <div className="status-options">
               {presentOptions.map((option, index) => {
                 return (
                   <Button
@@ -42,8 +43,10 @@ export function SetStatusStep({ setCurrentStep, form, onChoose }: SetStatusStepP
                     ariaLabel={`set-status-to-${option.value}`}
                     handleClick={() => handleSetStatus(option.value as UserStatus)}
                     variant={'large'}
+                    className="status-option"
                   >
-                    {option.label}
+                    <span>{option.label}</span>
+                    <ChevronRight size={18} aria-hidden="true" />
                   </Button>
                 );
               })}
@@ -51,8 +54,14 @@ export function SetStatusStep({ setCurrentStep, form, onChoose }: SetStatusStepP
                 ariaLabel="status-button"
                 handleClick={() => setShowOther(!showOther)}
                 variant={'large'}
+                className="status-option status-option-more"
               >
-                {showOther ? 'Back' : 'Other'}
+                <span>{showOther ? 'Back' : 'Other'}</span>
+                {showOther ? (
+                  <ChevronLeft size={18} aria-hidden="true" />
+                ) : (
+                  <ChevronRight size={18} aria-hidden="true" />
+                )}
               </Button>
             </div>
           </FormControl>

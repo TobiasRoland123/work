@@ -9,11 +9,16 @@
   justify-content: space-between;
 }
 .when-field-label {
-  font-size: 14px;
+  color: #6a7063;
+  font:
+    11px/1.2 var(--font-ibx-mono),
+    monospace;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
 }
 .when-field-switch {
   font-size: 13px;
-  color: #a5cdf0;
+  color: #2d6ea8;
   text-decoration: underline;
   text-underline-offset: 3px;
 }
@@ -23,9 +28,9 @@
   gap: 14px;
 }
 .when-week legend {
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   font-size: 12px;
-  color: #ffffffa6;
+  color: #747972;
 }
 .when-days {
   display: grid;
@@ -37,9 +42,11 @@
   flex-direction: column;
   align-items: center;
   gap: 1px;
+  min-height: 55px;
   padding: 8px 2px;
-  border: 1px solid #ffffff40;
-  border-radius: 8px;
+  border: 1px solid #deded8;
+  border-radius: 6px;
+  background: white;
   font-size: 14px;
   line-height: 1.2;
 }
@@ -48,15 +55,16 @@
   opacity: 0.75;
 }
 .when-days button:hover:not(:disabled) {
-  border-color: #a5cdf0;
+  border-color: #2d6ea8;
+  background: #f2f5f6;
 }
 .when-days button[aria-pressed='true'] {
   border-color: #a5cdf0;
-  background: #a5cdf0;
+  background: #e4eff9;
   color: #0b1014;
 }
 .when-days button:disabled {
-  opacity: 0.3;
+  opacity: 0.45;
 }
 .when-range {
   display: grid;
@@ -68,20 +76,22 @@
   flex-direction: column;
   gap: 6px;
   font-size: 12px;
-  color: #ffffffa6;
+  color: #747972;
 }
 .when-range input {
-  padding: 6px 0;
-  border-bottom: 1px solid white;
-  background: transparent;
-  color: white;
-  font-size: 16px;
-  color-scheme: dark;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid #deded8;
+  border-radius: 6px;
+  background: white;
+  color: #0b1014;
+  font-size: 14px;
+  color-scheme: light;
   outline: none;
 }
 .status-form-summary {
-  color: white;
-  font-size: 14px;
+  color: #5e635f;
+  font-size: 13px;
 }
 .status-form-summary p {
   display: inline;
@@ -90,5 +100,5 @@
   display: block;
   margin-top: 4px;
   font-size: 13px;
-  color: #ffffffa6;
+  color: #747972;
 }

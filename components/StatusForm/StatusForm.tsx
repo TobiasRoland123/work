@@ -22,7 +22,7 @@ export const formSchema = z
   .object({
     status: z.enum(userStatus.enumValues),
     detailsString: z.string().optional(),
-    actionTime: z.string().time().optional(),
+    actionTime: z.union([z.string().time(), z.literal('')]).optional(),
     whenKind: z.enum(['days', 'range']),
     days: z.array(isoDay),
     dateRange: z.object({ from: z.string(), to: z.string() }).optional(),
@@ -149,7 +149,10 @@ export function StatusForm({
       const result = await planStatusAction({
         status: values.status,
         details: values.status === 'SICK' ? undefined : values.detailsString,
-        time: timedStatuses.includes(values.status) ? values.actionTime : undefined,
+        time:
+          timedStatuses.includes(values.status) || values.status === 'IN_OFFICE'
+            ? values.actionTime || undefined
+            : undefined,
         when:
           values.whenKind === 'range'
             ? { kind: 'range', from: values.dateRange?.from, to: values.dateRange?.to }
@@ -171,6 +174,7 @@ export function StatusForm({
   }
 
   const currentStatus = form.watch('status');
+  const actionTime = form.watch('actionTime');
   const when = describeWhen({
     whenKind: form.watch('whenKind'),
     days: form.watch('days'),
@@ -179,25 +183,25 @@ export function StatusForm({
 
   return (
     <>
-      <header
-        className={'flex justify-between items-center relative'}
-        aria-label="Status Form Header"
-      >
-        <h3>
-          {currentStatus && currentStep !== 1 ? (
-            <Status status={currentStatus} asLabel={false} />
-          ) : (
-            'Where will you be?'
-          )}
-          {currentStep === 1 && presetDays && (
-            <small className="status-form-preset">
-              {describeWhen({ whenKind: 'days', days: presetDays })}
-            </small>
-          )}
-        </h3>
+      <header className="status-form-header" aria-label="Status Form Header">
+        <div>
+          <span className="status-form-eyebrow">Set my status</span>
+          <h3 className="status-form-heading">
+            {currentStatus && currentStep !== 1 ? (
+              <Status status={currentStatus} asLabel={false} />
+            ) : (
+              'Where will you be?'
+            )}
+            {currentStep === 1 && presetDays && (
+              <small className="status-form-preset">
+                {describeWhen({ whenKind: 'days', days: presetDays })}
+              </small>
+            )}
+          </h3>
+        </div>
         {closeButton ? closeButton : null}
       </header>
-      <div className={'h-full pb-8 md:pb-0'}>
+      <div className="status-form-body">
         <Form {...form}>
           <FormMessage className={'bg-green-500 z-50 text-white'} />
           <form
@@ -205,7 +209,7 @@ export function StatusForm({
               e.preventDefault();
               form.handleSubmit(onSubmit)(e);
             }}
-            className="h-full flex flex-col justify-between gap-8 "
+            className="status-form"
           >
             {currentStep === 1 && (
               <SetStatusStep setCurrentStep={setCurrentStep} form={form} onChoose={chooseStatus} />
@@ -219,16 +223,20 @@ export function StatusForm({
               />
             )}
             {currentStep === 2 ? (
-              <div className="flex flex-col gap-3.5 text-black pb-8 mt-auto">
+              <div className="status-form-actions">
                 {when && (
                   <div className="status-form-summary">
                     <Status status={currentStatus} asLabel={false} /> · {when}
+                    {actionTime &&
+                      (currentStatus === 'IN_OFFICE' || timedStatuses.includes(currentStatus)) &&
+                      ` · ${currentStatus === 'LEAVING_EARLY' ? 'until' : 'from'} ${actionTime}`}
                   </div>
                 )}
                 <Button
                   ariaLabel={'Register Status'}
                   type="submit"
                   variant={'large'}
+                  className="status-form-save"
                   isLoading={isLoading}
                 >
                   Save
@@ -237,6 +245,7 @@ export function StatusForm({
                   ariaLabel={'Go back'}
                   type="button"
                   variant={'large'}
+                  className="status-form-back"
                   handleClick={() => {
                     form.reset();
                     setCurrentStep(currentStep - 1);

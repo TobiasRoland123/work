@@ -38,7 +38,10 @@ export function Status({ status, asLabel = true, children }: StatusProps) {
   return (
     <>
       {asLabel ? (
-        <div className={`w-fit px-1.5 py-0.5 h-fit text-nowrap ${color} rounded-md`} role="status">
+        <div
+          className={`w-fit px-1.5 py-0.5 h-fit text-nowrap text-[#0b1014] ${color} rounded-md`}
+          role="status"
+        >
           <p className="text-sm font-mono">{children ? children : message}</p>
         </div>
       ) : (
