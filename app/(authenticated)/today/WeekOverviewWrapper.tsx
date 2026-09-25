@@ -1,8 +1,8 @@
 'use client';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { UserWithExtras } from '@/db/types';
-import { getWeekOverviewAction } from '../actions/userActions';
-import { getMyUpcomingStatusesAction } from '../actions/statusActions';
+import { getWeekOverviewAction } from '@/app/actions/userActions';
+import { getMyUpcomingStatusesAction } from '@/app/actions/statusActions';
 import { supabase } from '@/lib/supabaseClient';
 import { copenhagenDate } from '@/lib/status/active';
 import type { UpcomingStatus } from '@/lib/status/plan';

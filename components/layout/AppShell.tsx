@@ -8,11 +8,13 @@ import { isSandbox } from '@/lib/sandbox/enabled';
 import './shell.css';
 
 const links = [
-  { href: '/today', label: 'Week', Icon: CalendarDays },
-  { href: '/contact', label: 'Contact', Icon: Users },
-  { href: '/profile', label: 'Profile', Icon: UserRound },
+  { href: '/today', label: 'Week', Icon: CalendarDays, prefetch: null },
+  { href: '/contact', label: 'Contact', Icon: Users, prefetch: true },
+  { href: '/profile', label: 'Profile', Icon: UserRound, prefetch: true },
   // Local development only; production builds never render this entry.
-  ...(isSandbox() ? [{ href: '/sandbox', label: 'Sandbox', Icon: FlaskConical }] : []),
+  ...(isSandbox()
+    ? [{ href: '/sandbox', label: 'Sandbox', Icon: FlaskConical, prefetch: null }]
+    : []),
 ];
 
 export function AppShell({
@@ -33,14 +35,19 @@ export function AppShell({
           WØRK
         </Link>
         <div className="office-nav-links">
-          {links.map(({ href, label, Icon }) => (
-            <Link key={href} href={href} aria-current={pathname === href ? 'page' : undefined}>
+          {links.map(({ href, label, Icon, prefetch }) => (
+            <Link
+              key={href}
+              href={href}
+              prefetch={prefetch}
+              aria-current={pathname === href ? 'page' : undefined}
+            >
               <Icon size={21} aria-hidden="true" />
               {label}
             </Link>
           ))}
         </div>
-        <Link href="/profile" className="office-me">
+        <Link href="/profile" prefetch={true} className="office-me">
           <span>{firstName?.[0] || 'W'}</span>
           <small>{firstName || 'My profile'}</small>
         </Link>

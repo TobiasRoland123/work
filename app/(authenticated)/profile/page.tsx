@@ -3,6 +3,7 @@ import ProfileInfo from '@/components/ui/ProfileInfo/ProfileInfo';
 import { requirePageUserId } from '@/lib/auth/require-user';
 import { userService } from '@/lib/services/userService';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { Suspense } from 'react';
 
 export default async function ProfilePage() {
   const userId = await requirePageUserId();
@@ -12,7 +13,9 @@ export default async function ProfilePage() {
       <PageHeader title="Profile" subtitle="Your information and attendance" userId={userId} />
       <div className="content-page-body">
         {user ? <ProfileInfo user={user} /> : <p>Your profile could not be found.</p>}
-        <SlackImportNotice userId={userId} />
+        <Suspense fallback={null}>
+          <SlackImportNotice userId={userId} />
+        </Suspense>
       </div>
     </main>
   );

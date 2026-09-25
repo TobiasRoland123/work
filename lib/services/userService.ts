@@ -80,38 +80,33 @@ export const userService = {
     const user = userArr[0];
     if (!user) return null;
 
-    // Fetch organisation roles for this user
-    let organisation = null;
-    if (user.organisationId !== null && user.organisationId !== undefined) {
-      [organisation] = await db
-        .select({ id: organisations.id, organisationName: organisations.organisationName })
-        .from(organisations)
-        .where(eq(organisations.id, user.organisationId))
-        .limit(1);
-    }
-
-    // Fetch latest status row for this user
-    const latestStatus = await statusService.getActiveStatusByUserUserId(user.userId);
-
-    // Fetch all organisation roles for this user
-    const roles = await db
-      .select({ role: organisation_roles.role_name })
-      .from(users_organisation_roles)
-      .leftJoin(
-        organisation_roles,
-        eq(users_organisation_roles.organisationRoleId, organisation_roles.id)
-      )
-      .where(eq(users_organisation_roles.userId, user.userId));
-
-    // Fetch business phone numbers for this user
-    const businessPhones = await db
-      .select({ businessPhoneNumber: business_phone_numbers.businessPhoneNumber })
-      .from(users_business_phone_numbers)
-      .leftJoin(
-        business_phone_numbers,
-        eq(users_business_phone_numbers.businessPhoneNumberId, business_phone_numbers.id)
-      )
-      .where(eq(users_business_phone_numbers.userId, user.userId));
+    const [organisationRows, latestStatus, roles, businessPhones] = await Promise.all([
+      user.organisationId !== null && user.organisationId !== undefined
+        ? db
+            .select({ id: organisations.id, organisationName: organisations.organisationName })
+            .from(organisations)
+            .where(eq(organisations.id, user.organisationId))
+            .limit(1)
+        : Promise.resolve([]),
+      statusService.getActiveStatusByUserUserId(user.userId),
+      db
+        .select({ role: organisation_roles.role_name })
+        .from(users_organisation_roles)
+        .leftJoin(
+          organisation_roles,
+          eq(users_organisation_roles.organisationRoleId, organisation_roles.id)
+        )
+        .where(eq(users_organisation_roles.userId, user.userId)),
+      db
+        .select({ businessPhoneNumber: business_phone_numbers.businessPhoneNumber })
+        .from(users_business_phone_numbers)
+        .leftJoin(
+          business_phone_numbers,
+          eq(users_business_phone_numbers.businessPhoneNumberId, business_phone_numbers.id)
+        )
+        .where(eq(users_business_phone_numbers.userId, user.userId)),
+    ]);
+    const organisation = organisationRows[0];
 
     const businessPhoneNumber = businessPhones[0]?.businessPhoneNumber ?? null;
 
@@ -144,45 +139,45 @@ export const userService = {
       .map((u) => u.organisationId)
       .filter((id): id is number => typeof id === 'number');
 
-    // 3. Fetch all organisations in one query
-    const organisationsList = organisationIds.length
-      ? await db
-          .select({ id: organisations.id, organisationName: organisations.organisationName })
-          .from(organisations)
-          .where(inArray(organisations.id, organisationIds))
-      : [];
+    const [organisationsList, rolesList, phonesList, statusesList] = await Promise.all([
+      organisationIds.length
+        ? db
+            .select({ id: organisations.id, organisationName: organisations.organisationName })
+            .from(organisations)
+            .where(inArray(organisations.id, organisationIds))
+        : Promise.resolve([]),
+      db
+        .select({
+          userId: users_organisation_roles.userId,
+          role: organisation_roles.role_name,
+        })
+        .from(users_organisation_roles)
+        .leftJoin(
+          organisation_roles,
+          eq(users_organisation_roles.organisationRoleId, organisation_roles.id)
+        )
+        .where(inArray(users_organisation_roles.userId, userIds)),
+      db
+        .select({
+          userId: users_business_phone_numbers.userId,
+          businessPhoneNumber: business_phone_numbers.businessPhoneNumber,
+        })
+        .from(users_business_phone_numbers)
+        .leftJoin(
+          business_phone_numbers,
+          eq(users_business_phone_numbers.businessPhoneNumberId, business_phone_numbers.id)
+        )
+        .where(inArray(users_business_phone_numbers.userId, userIds)),
+      db.select().from(status).where(inArray(status.userID, userIds)),
+    ]);
     const orgMap = new Map(organisationsList.map((o) => [o.id, o.organisationName]));
 
-    // 4. Fetch all roles for all users in one query
-    const rolesList = await db
-      .select({
-        userId: users_organisation_roles.userId,
-        role: organisation_roles.role_name,
-      })
-      .from(users_organisation_roles)
-      .leftJoin(
-        organisation_roles,
-        eq(users_organisation_roles.organisationRoleId, organisation_roles.id)
-      )
-      .where(inArray(users_organisation_roles.userId, userIds));
     const rolesMap = new Map<string, string[]>();
     for (const { userId, role } of rolesList) {
       if (!rolesMap.has(userId)) rolesMap.set(userId, []);
       if (role) rolesMap.get(userId)!.push(role);
     }
 
-    // 5. Fetch all business phone numbers for all users in one query
-    const phonesList = await db
-      .select({
-        userId: users_business_phone_numbers.userId,
-        businessPhoneNumber: business_phone_numbers.businessPhoneNumber,
-      })
-      .from(users_business_phone_numbers)
-      .leftJoin(
-        business_phone_numbers,
-        eq(users_business_phone_numbers.businessPhoneNumberId, business_phone_numbers.id)
-      )
-      .where(inArray(users_business_phone_numbers.userId, userIds));
     const phoneMap = new Map<string, string>();
     for (const { userId, businessPhoneNumber } of phonesList) {
       if (businessPhoneNumber && !phoneMap.has(userId)) {
@@ -190,8 +185,6 @@ export const userService = {
       }
     }
 
-    // 6. Fetch all statuses for all users in one query
-    const statusesList = await db.select().from(status).where(inArray(status.userID, userIds));
     const statusMap = new Map<string, Status[]>();
     for (const s of statusesList) {
       const userStatuses = statusMap.get(s.userID) ?? [];
