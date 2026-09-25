@@ -46,6 +46,58 @@ describe('planning ahead', () => {
     );
   });
 
+  it('keeps office time optional and stores a specified arrival on each day', () => {
+    expect(
+      plan({ status: 'IN_OFFICE', when: { kind: 'days', days: ['2026-09-24', '2026-09-25'] } })
+    ).toEqual([
+      {
+        status: 'IN_OFFICE',
+        details: null,
+        fromDate: '2026-09-24',
+        toDate: '2026-09-25',
+        time: null,
+      },
+    ]);
+
+    const rows = plan({
+      status: 'IN_OFFICE',
+      time: '10:30',
+      when: { kind: 'days', days: ['2026-09-24', '2026-10-26'] },
+    });
+    expect(rows.map((row) => [row.fromDate, (row.time as Date).toISOString()])).toEqual([
+      ['2026-09-24', '2026-09-24T08:30:00.000Z'],
+      ['2026-10-26', '2026-10-26T09:30:00.000Z'],
+    ]);
+  });
+
+  it('expands a timed office period and accepts a past arrival today', () => {
+    const rows = plan({
+      status: 'IN_OFFICE',
+      time: '08:30',
+      when: { kind: 'range', from: '2026-09-23', to: '2026-09-24' },
+    });
+    expect(rows.map((row) => [row.fromDate, row.toDate, (row.time as Date).toISOString()])).toEqual(
+      [
+        ['2026-09-23', '2026-09-23', '2026-09-23T06:30:00.000Z'],
+        ['2026-09-24', '2026-09-24', '2026-09-24T06:30:00.000Z'],
+      ]
+    );
+    expect(
+      plan({
+        status: 'IN_OFFICE',
+        time: '08:30',
+        when: { kind: 'range', from: '2026-09-22', to: '2026-09-23' },
+      }).map((row) => row.fromDate)
+    ).toEqual(['2026-09-22', '2026-09-23']);
+    expect(() =>
+      plan({
+        status: 'IN_OFFICE',
+        time: '09:00',
+        when: { kind: 'range', from: '2026-09-23', to: '2026-12-01' },
+      })
+    ).toThrow('up to 62 days');
+  });
+
   it('rejects past days, passed times and inverted periods with readable messages', () => {
     expect(() =>
       plan({ status: 'FROM_HOME', when: { kind: 'days', days: ['2026-09-22'] } })

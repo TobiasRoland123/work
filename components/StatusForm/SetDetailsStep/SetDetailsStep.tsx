@@ -16,7 +16,7 @@ type SetDetailsStepProps = {
 
 export function SetDetailsStep({ form, weekStart }: SetDetailsStepProps) {
   return (
-    <div className={'md:pt-8 flex flex-col gap-8'}>
+    <div className="status-details">
       <WhenField form={form} weekStart={weekStart} />
       <ActionTime form={form} />
       <DetailsField form={form} />

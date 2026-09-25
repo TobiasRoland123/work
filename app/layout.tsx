@@ -2,7 +2,9 @@ import type { Metadata } from 'next';
 
 import localFont from 'next/font/local';
 import './globals.css';
+import './dark.css';
 import type * as React from 'react';
+import { Providers } from './providers';
 const monumentGrotesk = localFont({
   src: [
     {
@@ -55,11 +57,14 @@ export default async function RootLayout({
     <html
       lang="en"
       className={`${monumentGrotesk.variable} ${ibxMono.variable} font-sans antialiased`}
+      suppressHydrationWarning
     >
       <head>
         <link rel="icon" href="./icon.svg" sizes="any" />
       </head>
-      <body>{children}</body>
+      <body>
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }

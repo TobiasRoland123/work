@@ -56,8 +56,8 @@ export function StatusDialog({
               router.refresh();
             }}
             closeButton={
-              <Dialog.Close aria-label="Close status form">
-                <X size={22} />
+              <Dialog.Close className="status-form-close" aria-label="Close status form">
+                <X size={20} />
               </Dialog.Close>
             }
           />

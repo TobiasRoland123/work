@@ -19,8 +19,8 @@ export function DetailsField({ form }: DetailsFieldProps) {
         control={form?.control}
         render={({ field }) => (
           <FormItem>
-            <div className={'flex gap-11 justify-between items-end'}>
-              <FormLabel className={'min-w-[80px]'}>Details</FormLabel>
+            <div className="status-details-field">
+              <FormLabel>Details</FormLabel>
               <FormControl className={'w-full'}>
                 <div className="flex flex-col gap-2">
                   <Input placeholder={getDetailsPlaceholder(form.watch('status'))} {...field} />

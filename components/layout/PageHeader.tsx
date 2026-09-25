@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { StatusButton } from './StatusButton';
+import { ThemeToggle } from './ThemeToggle';
 
 export function PageHeader({
   title,
@@ -28,6 +29,7 @@ export function PageHeader({
       <div className="office-header-actions">
         {actions}
         {dateLabel && <time>{dateLabel}</time>}
+        <ThemeToggle />
         {userId && (
           <StatusButton userId={userId} onSaved={onStatusSaved} weekStart={statusWeekStart} />
         )}

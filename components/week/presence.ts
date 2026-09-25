@@ -72,6 +72,10 @@ export const shortDate = (day: string) => `${day.slice(8, 10)}.${day.slice(5, 7)
 
 /** Arrival or departure time for timed statuses, e.g. "from 10:00". */
 export function timeNote(status: Status | null): string | null {
+  if (status?.status === 'IN_OFFICE' && status.time) {
+    const time = clock(status.time);
+    return time && `from ${time}`;
+  }
   if (status?.status === 'IN_LATE') {
     const time = clock(status.time ?? status.endsAt, status.endsAtApproximate);
     return time && `from ${time}`;

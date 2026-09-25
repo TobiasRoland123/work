@@ -1,0 +1,436 @@
+/* Dark surfaces for the current WØRK interface. The light styles remain the default. */
+html.dark {
+  --office-canvas: #111a20;
+  --office-page: #152027;
+  --office-surface: #1d2930;
+  --office-raised: #26353e;
+  --office-ink: #edf3f6;
+  --office-muted: #b4c2c9;
+  --office-subtle: #91a3ad;
+  --office-border: #43535c;
+  --office-border-soft: #35454e;
+  --office-hover: #2b3a43;
+  --office-hover-blue: #27465b;
+  --office-link: #9acbf1;
+  --office-primary: #a5cdf0;
+  --office-primary-ink: #0b1014;
+  --office-selected: #213d51;
+  --office-chip: #2a414c;
+  --office-avatar: #3a4d56;
+  --link-blue: var(--office-link);
+  --white-blue: var(--office-chip);
+  color-scheme: dark;
+}
+
+.dark .app-shell,
+.dark .sandbox-page {
+  background: var(--office-canvas);
+  color: var(--office-ink);
+}
+.dark .skip-navigation,
+.dark .content-page > .office-header,
+.dark .week-page > .office-header {
+  background: var(--office-surface);
+  color: var(--office-ink);
+}
+.dark .page-loading,
+.dark .office-header p,
+.dark .office-header time {
+  color: var(--office-muted);
+}
+.dark .office-header {
+  border-color: var(--office-border-soft);
+}
+.dark .theme-toggle {
+  border-color: var(--office-border);
+  color: var(--office-ink);
+}
+.dark .theme-toggle:hover {
+  background: var(--office-hover);
+}
+.dark .app-shell :is(button, a, input):focus-visible,
+.dark .office-status-dialog :is(button, input):focus-visible,
+.dark .person-sheet :is(button, a):focus-visible {
+  outline-color: var(--office-link);
+}
+.dark .set-status-button,
+.dark .office-status-dialog .status-form-save,
+.dark .person-sheet-plan-button {
+  background: var(--office-primary);
+  color: var(--office-primary-ink);
+}
+.dark .set-status-button:hover,
+.dark .office-status-dialog .status-form-save:hover,
+.dark .person-sheet-plan-button:hover {
+  background: #c4dff5;
+}
+.dark .office-status-dialog .status-form-save:active {
+  background: #82b5e0;
+}
+.dark .office-status-dialog .status-form-save svg {
+  color: var(--office-primary-ink);
+}
+
+/* Status planner */
+.dark .office-status-dialog,
+.dark .person-sheet {
+  background: var(--office-surface);
+  color: var(--office-ink);
+  box-shadow: -12px 0 40px #0007;
+}
+.dark .status-form-eyebrow,
+.dark .office-status-dialog .status-details-field [data-slot='form-label'],
+.dark .when-field-label,
+.dark .person-sheet-heading {
+  color: var(--office-subtle);
+}
+.dark .status-form-close:hover,
+.dark .person-sheet-close:hover {
+  background: var(--office-hover);
+}
+.dark .status-options,
+.dark .office-status-dialog .status-form-back,
+.dark .when-days button,
+.dark .when-range input,
+.dark .office-status-dialog .status-details-field input {
+  border-color: var(--office-border);
+}
+.dark .office-status-dialog .status-option {
+  background: var(--office-surface);
+  border-bottom-color: var(--office-border-soft);
+  color: var(--office-ink);
+}
+.dark .office-status-dialog .status-option:hover,
+.dark .office-status-dialog .status-form-back:hover,
+.dark .when-days button:hover:not(:disabled) {
+  background: var(--office-hover);
+}
+.dark .office-status-dialog .status-option:active,
+.dark .office-status-dialog .status-form-back:active {
+  background: var(--office-hover-blue);
+}
+.dark .office-status-dialog .status-option-more {
+  background: var(--office-raised);
+  color: var(--office-link);
+}
+.dark .status-option svg,
+.dark .when-week legend,
+.dark .when-range label,
+.dark .status-form-preset,
+.dark .office-status-dialog .status-details-field input::placeholder {
+  color: var(--office-subtle);
+}
+.dark .status-form-actions {
+  border-color: var(--office-border-soft);
+}
+.dark .office-status-dialog .status-form-back,
+.dark .when-days button,
+.dark .when-range input,
+.dark .office-status-dialog .status-details-field input {
+  background: var(--office-surface);
+  color: var(--office-ink);
+}
+.dark .when-range input,
+.dark .office-status-dialog .status-details-field input {
+  color-scheme: dark;
+}
+.dark .when-field-switch,
+.dark .person-sheet-status a,
+.dark .person-sheet-plan-action {
+  color: var(--office-link);
+}
+.dark .when-days button[aria-pressed='true'],
+.dark .when-days button[aria-pressed='true']:hover {
+  border-color: var(--office-link);
+  background: var(--office-selected);
+  color: var(--office-ink);
+}
+.dark .status-form-summary,
+.dark .person-sheet-status small,
+.dark .person-sheet-empty,
+.dark .person-sheet-hint {
+  color: var(--office-muted);
+}
+.dark .person-sheet-week,
+.dark .person-sheet-week li,
+.dark .person-sheet-plans,
+.dark .person-sheet-plans li {
+  border-color: var(--office-border-soft);
+}
+.dark .person-sheet-day small {
+  color: var(--office-muted);
+}
+
+/* Week board and day panel */
+.dark .tone {
+  --tone-bg: var(--office-raised);
+  --tone-border: var(--office-border);
+  --tone-ink: var(--office-muted);
+}
+.dark .tone[data-tone='office'] {
+  --tone-bg: #203c2a;
+  --tone-border: #4c8156;
+  --tone-ink: #c4e9c6;
+}
+.dark .tone[data-tone='partial'] {
+  --tone-bg: #333c26;
+  --tone-border: #839454;
+  --tone-ink: #e1edb8;
+}
+.dark .tone[data-tone='remote'] {
+  --tone-bg: #213b4f;
+  --tone-border: #5a92b8;
+  --tone-ink: #c2e2f9;
+}
+.dark .tone[data-tone='sick'] {
+  --tone-bg: #442b33;
+  --tone-border: #af6878;
+  --tone-ink: #ffd3d7;
+}
+.dark .tone[data-tone='off'] {
+  --tone-bg: #403720;
+  --tone-border: #a38a4d;
+  --tone-ink: #f5e0ad;
+}
+.dark .tone[data-tone='away'] {
+  --tone-bg: #38392d;
+  --tone-border: #84856a;
+  --tone-ink: #e1dfc5;
+}
+.dark .tone[data-tone='none'] {
+  --tone-bg: transparent;
+  --tone-border: transparent;
+  --tone-ink: var(--office-subtle);
+}
+.dark .tone[data-assumed] {
+  --tone-bg: var(--office-surface);
+}
+.dark .week-nav,
+.dark .week-nav .week-nav-current,
+.dark .week-search,
+.dark .week-board,
+.dark .day-panel {
+  border-color: var(--office-border);
+}
+.dark .week-nav a:hover,
+.dark .week-day:hover,
+.dark .day-panel-group button:hover,
+.dark .week-person-row:hover .week-person-cell {
+  background: var(--office-hover);
+}
+.dark .week-nav .week-nav-current[aria-current],
+.dark .week-filters span,
+.dark .week-person-head span,
+.dark .week-day[data-past],
+.dark .day-panel-group h3 span {
+  color: var(--office-subtle);
+}
+.dark .week-search,
+.dark .week-board,
+.dark .week-head,
+.dark .day-panel {
+  background: var(--office-surface);
+}
+.dark .week-search {
+  color: var(--office-subtle);
+}
+.dark .week-search:focus-within {
+  outline: 2px solid var(--office-link);
+  outline-offset: 2px;
+}
+.dark .week-search input,
+.dark .week-day-count strong,
+.dark .day-panel-total strong {
+  color: var(--office-ink);
+}
+.dark .week-filters,
+.dark .week-day-meter {
+  background: var(--office-raised);
+}
+.dark .week-filters button,
+.dark .week-day-count,
+.dark .day-panel-total {
+  color: var(--office-muted);
+}
+.dark .week-filters button[aria-pressed='true'] {
+  background: var(--office-surface);
+  color: var(--office-ink);
+  box-shadow: 0 1px 2px #0005;
+}
+.dark .week-strip {
+  background: linear-gradient(
+    90deg,
+    transparent var(--from),
+    var(--office-selected) var(--from),
+    var(--office-selected) var(--to),
+    transparent var(--to)
+  );
+}
+.dark .week-head,
+.dark .week-person-row + .week-person-row,
+.dark .day-panel-header {
+  border-color: var(--office-border-soft);
+}
+.dark .week-day[aria-pressed='true'] {
+  border-bottom-color: var(--office-link);
+}
+.dark .week-day-date,
+.dark .week-person-name small,
+.dark .week-empty,
+.dark .week-legend,
+.dark .day-panel-person small {
+  color: var(--office-muted);
+}
+.dark .week-day-name em,
+.dark .week-person-name em {
+  background: var(--office-primary);
+  color: var(--office-primary-ink);
+}
+.dark .week-avatar {
+  background: var(--office-avatar);
+}
+.dark .day-panel-eyebrow {
+  color: var(--office-subtle);
+}
+.dark .day-panel-arrival {
+  border-color: #4c8156;
+  background: #203c2a;
+  color: #c4e9c6;
+}
+
+/* Contact and profile pages */
+.dark .contact-directory,
+.dark .profile-info {
+  background: var(--office-page);
+  color: var(--office-ink);
+}
+.dark .contact-directory__eyebrow,
+.dark .contact-directory__search-icon,
+.dark .contact-card__roles li,
+.dark .profile-info__heading span {
+  color: var(--office-muted);
+}
+.dark .contact-directory__intro,
+.dark .contact-directory__count,
+.dark .contact-card__identity p,
+.dark .contact-directory__empty,
+.dark .profile-info__avatar-wrap small {
+  color: var(--office-muted);
+}
+.dark .contact-directory__search,
+.dark .contact-card {
+  border-color: var(--office-border);
+  background: var(--office-surface);
+}
+.dark .contact-directory__search:focus-within {
+  border-color: var(--office-link);
+  outline-color: var(--office-link);
+}
+.dark .contact-directory__search input,
+.dark .contact-card__avatar,
+.dark .profile-info__avatar,
+.dark .profile-info__field-value p,
+.dark .profile-info__field-value a {
+  color: var(--office-ink);
+}
+.dark .contact-card__avatar,
+.dark .profile-info__avatar {
+  background: var(--office-avatar);
+}
+.dark .contact-card__roles li {
+  background: var(--office-chip);
+}
+.dark .contact-card__links,
+.dark .profile-info__hero,
+.dark .profile-info__field {
+  border-color: var(--office-border-soft);
+}
+.dark .contact-card__links a,
+.dark .profile-info__field-value a:hover {
+  color: var(--office-link);
+}
+.dark .contact-card__links a:hover {
+  color: var(--office-ink);
+}
+.dark .profile-info__heading span {
+  color: var(--office-subtle);
+}
+
+/* The local sandbox and login share the saved preference. */
+.dark .login-form-panel,
+.dark .sandbox-card,
+.dark .sandbox-page select,
+.dark .sandbox-page textarea,
+.dark .sandbox-page input:not([type='checkbox']) {
+  background: var(--office-surface);
+  color: var(--office-ink);
+  border-color: var(--office-border);
+}
+.dark .sandbox-header,
+.dark .sandbox-card,
+.dark .sandbox-table th,
+.dark .sandbox-table td,
+.dark .sandbox-message,
+.dark .sandbox-profiles li {
+  border-color: var(--office-border-soft);
+}
+.dark .sandbox-header p,
+.dark .sandbox-card > p,
+.dark .sandbox-field small,
+.dark .sandbox-hint,
+.dark .sandbox-outcome dt,
+.dark .sandbox-table th,
+.dark .sandbox-message header,
+.dark .sandbox-profiles li span:last-child {
+  color: var(--office-muted);
+}
+.dark .sandbox-header nav a,
+.dark .sandbox-message .sandbox-row button,
+.dark .sandbox-inline {
+  color: var(--office-link);
+}
+.dark .sandbox-page code,
+.dark .sandbox-chips button,
+.dark .sandbox-badge {
+  background: var(--office-raised);
+  color: var(--office-ink);
+}
+.dark .sandbox-chips button {
+  border-color: var(--office-border);
+}
+.dark .sandbox-chips button:hover {
+  background: var(--office-hover);
+}
+.dark .sandbox-button {
+  border-color: var(--office-primary);
+  background: var(--office-primary);
+  color: var(--office-primary-ink);
+}
+.dark .sandbox-button.secondary {
+  border-color: var(--office-border);
+  background: var(--office-surface);
+  color: var(--office-ink);
+}
+.dark .sandbox-button.danger,
+.dark .sandbox-error {
+  border-color: #af6878;
+  background: #442b33;
+  color: #ffd3d7;
+}
+.dark .sandbox-ok {
+  color: #c4e9c6;
+}
+.dark .sandbox-bad {
+  color: #ffd3d7;
+}
+.dark .sandbox-badge.applied {
+  background: #203c2a;
+}
+.dark .sandbox-badge.review,
+.dark .sandbox-badge.pending {
+  background: #403720;
+}
+.dark .sandbox-badge.deleted,
+.dark .sandbox-badge.ignored {
+  background: var(--office-hover);
+}
