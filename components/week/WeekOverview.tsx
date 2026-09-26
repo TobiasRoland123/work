@@ -85,9 +85,9 @@ function WeekCell({
     : [];
   const content = (
     <>
-      <strong>{tone === 'none' ? '–' : label}</strong>
+      <strong>{label}</strong>
       {note && <small>{note}</small>}
-      <span className="sr-only">{tone === 'none' ? label : assumed ? ' (assumed)' : ''}</span>
+      {assumed && <span className="sr-only"> (assumed)</span>}
     </>
   );
   return (
@@ -528,10 +528,7 @@ export function WeekOverview({
                       const status = person.week?.[dayIndex]?.status ?? null;
                       const { label: statusLabel, tone } = presenceOf(status);
                       const note = dayNote(status);
-                      const detail =
-                        id === 'office' && tone === 'office'
-                          ? note
-                          : [statusLabel, note].filter(Boolean).join(' · ');
+                      const detail = [statusLabel, note].filter(Boolean).join(' · ');
                       return (
                         <li key={person.userId}>
                           <button onClick={() => setOpenId(person.userId)}>

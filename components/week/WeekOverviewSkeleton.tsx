@@ -19,10 +19,9 @@ const rows = [
   { name: 'w-24', role: 'w-24', segments: [1, 4] },
 ];
 
-// People in the office usually have no detail line; the other groups show where they are.
 const panelGroups = [
-  { heading: 'w-20', people: ['w-28', 'w-36', 'w-24', 'w-32'], detail: false },
-  { heading: 'w-24', people: ['w-32', 'w-20'], detail: true },
+  { heading: 'w-20', people: ['w-28', 'w-36', 'w-24', 'w-32'] },
+  { heading: 'w-24', people: ['w-32', 'w-20'] },
 ];
 
 /** Placeholder for WeekOverview while the week's attendance loads. */
@@ -144,11 +143,9 @@ export function WeekOverviewSkeleton() {
                       <Skeleton className="size-7 shrink-0 rounded-full" />
                       <span className="day-panel-person">
                         <SkeletonText className={name} />
-                        {group.detail && (
-                          <small>
-                            <SkeletonText className="w-16" />
-                          </small>
-                        )}
+                        <small>
+                          <SkeletonText className="w-16" />
+                        </small>
                       </span>
                       <Skeleton className="size-[9px] shrink-0 rounded-full" />
                     </li>
