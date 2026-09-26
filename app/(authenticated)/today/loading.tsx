@@ -1,1 +1,1 @@
-export { default } from '@/components/layout/PageLoading';
+export { WeekOverviewSkeleton as default } from '@/components/week/WeekOverviewSkeleton';
