@@ -3,7 +3,14 @@ import { db } from '@/db';
 import { slackMessages, status, users } from '@/db/schema';
 import { inspectSlackEvent } from './events';
 import { descriptionRows, extractAttendance, statusRows } from './extraction';
+import { createSlackAiUsageRecorder } from './ai-usage';
 import { supabase } from '@/lib/supabaseClient';
+
+const MAX_REVIEW_TEXT_LENGTH = 12000;
+
+function retainedReviewText(text: string | null | undefined) {
+  return text ? text.slice(0, MAX_REVIEW_TEXT_LENGTH) : null;
+}
 
 export async function enqueueSlackEvent(input: unknown) {
   const inspected = inspectSlackEvent(
@@ -16,15 +23,26 @@ export async function enqueueSlackEvent(input: unknown) {
   const changed = await db.transaction(async (tx) => {
     const [changed] = await tx
       .insert(slackMessages)
-      .values({ ...event, receivedAt: new Date(), nextAttemptAt: new Date() })
+      .values({
+        ...event,
+        reviewText: event.state === 'deleted' ? null : retainedReviewText(event.text),
+        convertedToStatus: null,
+        processedAt: event.state === 'deleted' ? new Date() : null,
+        outcome: event.state === 'deleted' ? { reason: 'deleted' } : null,
+        receivedAt: new Date(),
+        nextAttemptAt: new Date(),
+      })
       .onConflictDoUpdate({
         target: slackMessages.messageKey,
         set: {
           ...event,
+          reviewText: event.state === 'deleted' ? null : retainedReviewText(event.text),
+          convertedToStatus: null,
+          processedAt: event.state === 'deleted' ? new Date() : null,
+          outcome: event.state === 'deleted' ? { reason: 'deleted' } : null,
           attempts: 0,
           receivedAt: new Date(),
           nextAttemptAt: new Date(),
-          outcome: null,
         },
         // Slack ts values are decimal strings. Numeric comparison handles out-of-order events.
         setWhere: sql`${slackMessages.revision}::numeric < ${event.revision}::numeric`,
@@ -37,7 +55,13 @@ export async function enqueueSlackEvent(input: unknown) {
       if (event.text && event.text.length > 12000) {
         await tx
           .update(slackMessages)
-          .set({ text: null, state: 'review', outcome: { reason: 'unsupported' } })
+          .set({
+            text: null,
+            state: 'review',
+            convertedToStatus: false,
+            processedAt: new Date(),
+            outcome: { reason: 'unsupported', failureReason: null },
+          })
           .where(eq(slackMessages.messageKey, event.messageKey));
       }
     }
@@ -67,7 +91,13 @@ export async function cleanupExpiredSlackMessages() {
   // Also called by daily directory maintenance when there are no new messages.
   await db
     .update(slackMessages)
-    .set({ text: null, state: 'review', outcome: { reason: 'processing_expired' } })
+    .set({
+      text: null,
+      state: 'review',
+      convertedToStatus: false,
+      processedAt: new Date(),
+      outcome: { reason: 'processing_expired', failureReason: 'processing_expired' },
+    })
     .where(
       and(
         eq(slackMessages.state, 'pending'),
@@ -100,7 +130,13 @@ export async function processSlackInbox(limit = 2, messageKey?: string, revision
         // A killed process may never reach the catch block. Bound those attempts too.
         await tx
           .update(slackMessages)
-          .set({ state: 'review', text: null, outcome: { reason: 'processing_failed' } })
+          .set({
+            state: 'review',
+            text: null,
+            convertedToStatus: false,
+            processedAt: new Date(),
+            outcome: { reason: 'processing_failed', failureReason: 'processing_failed' },
+          })
           .where(eq(slackMessages.messageKey, candidate.messageKey));
         counts.review++;
         return null;
@@ -135,7 +171,13 @@ export async function processSlackInbox(limit = 2, messageKey?: string, revision
         : 'gateway_key_missing';
       const extraction = await extractAttendance(
         job.text ?? '',
-        new Date(Number(job.messageTs) * 1000)
+        new Date(Number(job.messageTs) * 1000),
+        createSlackAiUsageRecorder({
+          messageKey: job.messageKey,
+          revision: job.revision,
+          teamId: job.teamId,
+          channelId: job.channelId,
+        })
       );
       const rows =
         extraction.decision === 'apply'
@@ -167,7 +209,10 @@ export async function processSlackInbox(limit = 2, messageKey?: string, revision
           .update(slackMessages)
           .set({
             text: null,
+            reviewText: rows.some((row) => row.status !== null) ? null : job.text,
             state: hasRows ? 'applied' : extraction.decision === 'ignore' ? 'ignored' : 'review',
+            convertedToStatus: rows.some((row) => row.status !== null),
+            processedAt: new Date(),
             outcome: { reason: extraction.reason },
           })
           .where(eq(slackMessages.messageKey, job.messageKey));
@@ -188,7 +233,14 @@ export async function processSlackInbox(limit = 2, messageKey?: string, revision
         .update(slackMessages)
         .set({
           state: exhausted ? 'review' : 'pending',
-          ...(exhausted ? { text: null, outcome: { reason: 'processing_failed' } } : {}),
+          ...(exhausted
+            ? {
+                text: null,
+                convertedToStatus: false,
+                processedAt: new Date(),
+                outcome: { reason: 'processing_failed', failureReason },
+              }
+            : {}),
           nextAttemptAt: new Date(Date.now() + Math.min(3600000, 60000 * 2 ** job.attempts)),
         })
         .where(

@@ -2,6 +2,8 @@
 
 Slack login, directory sync and #wørk attendance import are configured in [Slack setup](docs/slack-setup.md). Read that guide before database cutover or deployment.
 
+The restricted [message quality review](docs/message-quality.md) explains weekly import conversion, missed messages and reviewer access.
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 # Getting Started

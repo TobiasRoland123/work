@@ -2,7 +2,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 import { eq } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { db, pool } from '@/db';
-import { slackMessages, status, users } from '@/db/schema';
+import { slackAiUsage, slackMessages, status, users } from '@/db/schema';
 import {
   cleanupExpiredSlackMessages,
   enqueueSlackEvent,
@@ -89,11 +89,13 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
     beforeEach(async () => {
       await db.delete(status).where(eq(status.userID, userID));
       await db.delete(slackMessages).where(eq(slackMessages.messageKey, key));
+      await db.delete(slackAiUsage).where(eq(slackAiUsage.messageKey, key));
       vi.mocked(extractAttendance).mockReset().mockResolvedValue(extraction);
       broadcastSend.mockClear();
       broadcastChannel.mockClear();
     });
     afterAll(async () => {
+      await db.delete(slackAiUsage).where(eq(slackAiUsage.messageKey, key));
       await db.delete(slackMessages).where(eq(slackMessages.messageKey, key));
       await db.delete(users).where(eq(users.userId, userID));
       vi.unstubAllEnvs();
@@ -110,6 +112,58 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
       const [job] = await db.select().from(slackMessages).where(eq(slackMessages.messageKey, key));
       expect(job.text).toBeNull();
       expect(job.state).toBe('applied');
+      expect(job.reviewText).toBeNull();
+      expect(job.convertedToStatus).toBe(true);
+      expect(job.processedAt).toBeInstanceOf(Date);
+    });
+    it('retains a recorded AI charge after the Slack message is deleted', async () => {
+      vi.mocked(extractAttendance).mockImplementationOnce(async (_text, _date, usage) => {
+        await usage?.onStart('provider/model');
+        await usage?.onFinish({
+          state: 'completed',
+          costUsd: '0.000012345678',
+          inputTokens: 20,
+          outputTokens: 7,
+          responseId: 'response-1',
+        });
+        return extraction;
+      });
+      await enqueueSlackEvent(original);
+      await makeQueuedMessageDue();
+      expect(await processSlackInbox(1, key)).toMatchObject({ applied: 1 });
+      const [recorded] = await db
+        .select()
+        .from(slackAiUsage)
+        .where(eq(slackAiUsage.messageKey, key));
+      expect(recorded).toMatchObject({
+        messageKey: key,
+        revision: messageTs,
+        teamId: team,
+        channelId: channel,
+        model: 'provider/model',
+        state: 'completed',
+        costUsd: '0.000012345678',
+        inputTokens: 20,
+        outputTokens: 7,
+        responseId: 'response-1',
+      });
+      expect(recorded.completedAt).toBeInstanceOf(Date);
+      expect(recorded).not.toHaveProperty('text');
+      await enqueueSlackEvent({
+        ...original,
+        event: {
+          type: 'message',
+          subtype: 'message_deleted',
+          channel,
+          deleted_ts: messageTs,
+          event_ts: '1788766201.000001',
+          previous_message: original.event,
+        },
+      });
+      expect(await db.select().from(status).where(eq(status.userID, userID))).toHaveLength(0);
+      expect(
+        await db.select().from(slackAiUsage).where(eq(slackAiUsage.messageKey, key))
+      ).toHaveLength(1);
     });
     it('applies uncertain status as a source-linked description using the original message text and Copenhagen day', async () => {
       const uncertainMessageTs = '1788733800.000001';
@@ -144,7 +198,13 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
           .select()
           .from(slackMessages)
           .where(eq(slackMessages.messageKey, uncertainKey));
-        expect(job).toMatchObject({ state: 'applied', text: null });
+        expect(job).toMatchObject({
+          state: 'applied',
+          text: null,
+          reviewText: uncertainMessage.event.text,
+          convertedToStatus: false,
+        });
+        expect(job.processedAt).toBeInstanceOf(Date);
         expect(job.outcome).toEqual({ reason: 'uncertain_status' });
         expect(broadcastChannel).toHaveBeenCalledWith('status-sync');
         expect(broadcastSend).toHaveBeenCalledWith({
@@ -192,6 +252,15 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
         });
         await makeQueuedMessageDue(uncertainKey);
         await processSlackInbox(1, uncertainKey);
+        const [editedJob] = await db
+          .select()
+          .from(slackMessages)
+          .where(eq(slackMessages.messageKey, uncertainKey));
+        expect(editedJob).toMatchObject({
+          revision: editedRevision,
+          reviewText: 'Possibly working from home',
+          convertedToStatus: false,
+        });
         expect(await db.select().from(status).where(eq(status.userID, userID))).toMatchObject([
           { details: 'Possibly working from home', sourceMessageKey: uncertainKey },
         ]);
@@ -210,6 +279,15 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
           processQueuedSlackMessage(uncertainKey, '1788737500.000001')
         ).resolves.toBeUndefined();
         expect(await db.select().from(status).where(eq(status.userID, userID))).toHaveLength(0);
+        const [deletedJob] = await db
+          .select()
+          .from(slackMessages)
+          .where(eq(slackMessages.messageKey, uncertainKey));
+        expect(deletedJob).toMatchObject({
+          state: 'deleted',
+          reviewText: null,
+          convertedToStatus: null,
+        });
       } finally {
         await db.delete(slackMessages).where(eq(slackMessages.messageKey, uncertainKey));
       }
@@ -230,7 +308,14 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
       expect(await processSlackInbox(1, key)).toMatchObject({ review: 1, applied: 0 });
       expect(await db.select().from(status).where(eq(status.userID, userID))).toHaveLength(0);
       const [job] = await db.select().from(slackMessages).where(eq(slackMessages.messageKey, key));
-      expect(job).toMatchObject({ state: 'review', text: null, outcome: { reason } });
+      expect(job).toMatchObject({
+        state: 'review',
+        text: null,
+        reviewText: original.event.text,
+        convertedToStatus: false,
+        outcome: { reason },
+      });
+      expect(job.processedAt).toBeInstanceOf(Date);
       expect(broadcastSend).not.toHaveBeenCalled();
     });
     it('processes a newly received message immediately, ahead of unrelated backlog', async () => {
@@ -339,7 +424,10 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
         state: 'review',
         text: null,
         outcome: { reason: 'processing_failed' },
+        reviewText: original.event.text,
+        convertedToStatus: false,
       });
+      expect(job.processedAt).toBeInstanceOf(Date);
     });
     it('stops queue retries after five failed extraction attempts', async () => {
       await enqueueSlackEvent(original);
@@ -354,7 +442,18 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
       }
       expect(extractAttendance).toHaveBeenCalledTimes(5);
       const [job] = await db.select().from(slackMessages).where(eq(slackMessages.messageKey, key));
-      expect(job).toMatchObject({ state: 'review', text: null, attempts: 5 });
+      expect(job).toMatchObject({
+        state: 'review',
+        text: null,
+        attempts: 5,
+        reviewText: original.event.text,
+        convertedToStatus: false,
+        outcome: {
+          reason: 'processing_failed',
+          failureReason: expect.stringMatching(/^(extraction_failed|gateway_key_missing)$/),
+        },
+      });
+      expect(job.processedAt).toBeInstanceOf(Date);
     });
     it('can purge expired text during daily maintenance without processing any job', async () => {
       await enqueueSlackEvent(original);
@@ -369,7 +468,10 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
         state: 'review',
         text: null,
         outcome: { reason: 'processing_expired' },
+        reviewText: original.event.text,
+        convertedToStatus: false,
       });
+      expect(job.processedAt).toBeInstanceOf(Date);
       await expect(processQueuedSlackMessage(key, messageTs)).resolves.toBeUndefined();
     });
     it('persists and updates AI-separated comments while applying uncertain descriptions and deletion behavior', async () => {
@@ -588,6 +690,44 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
         expect(await db.select().from(status).where(eq(status.userID, legacyID))).toHaveLength(1);
       } finally {
         await db.delete(users).where(eq(users.userId, legacyID));
+      }
+    });
+
+    it('grants the approved identity on first provisioning and preserves a later revocation', async () => {
+      const identity = {
+        slackTeamId: 'T02HKL21R',
+        slackUserId: 'U05NP1NF3QB',
+        email: 'message-review-bootstrap@example.com',
+      };
+      const created = await resolveSlackIdentity(identity);
+      try {
+        expect(created.canReviewMessages).toBe(true);
+        await db
+          .update(users)
+          .set({ canReviewMessages: false })
+          .where(eq(users.userId, created.userId));
+
+        const signedInAgain = await resolveSlackIdentity(identity);
+        expect(signedInAgain.canReviewMessages).toBe(false);
+      } finally {
+        await db.delete(users).where(eq(users.userId, created.userId));
+      }
+    });
+
+    it('grants the approved identity when linking an existing unlinked account', async () => {
+      const legacyUserId = randomUUID();
+      const identity = {
+        slackTeamId: 'T02HKL21R',
+        slackUserId: 'U05NP1NF3QB',
+        email: `${legacyUserId}@example.com`,
+      };
+      await db.insert(users).values({ userId: legacyUserId, email: identity.email });
+      try {
+        const linked = await resolveSlackIdentity(identity);
+        expect(linked.userId).toBe(legacyUserId);
+        expect(linked.canReviewMessages).toBe(true);
+      } finally {
+        await db.delete(users).where(eq(users.userId, legacyUserId));
       }
     });
 

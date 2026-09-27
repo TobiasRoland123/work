@@ -8,9 +8,9 @@ import './sandbox.css';
 export default function SandboxLayout({ children }: { children: ReactNode }) {
   if (!isSandbox()) notFound();
   return (
-    <main id="dashboard-main" className="sandbox-page">
+    <>
       {children}
       <Toaster />
-    </main>
+    </>
   );
 }

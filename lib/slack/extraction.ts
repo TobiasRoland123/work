@@ -2,6 +2,8 @@ import { z } from 'zod';
 import { generateText, NoObjectGeneratedError, Output } from 'ai';
 import { createOpenAI } from '@ai-sdk/openai';
 import { extractShorthand, nextDate, SHORTHAND_INSTRUCTIONS } from './shorthand';
+import { parseGatewayUsage } from './ai-usage-response';
+import type { ExtractionUsageObserver } from './ai-usage-types';
 
 export { nextDate } from './shorthand';
 
@@ -197,7 +199,11 @@ Statuses: FROM_HOME for WFH/hjemme/hjemmearbejde; IN_LATE for delayed office arr
 Intervals use inclusive fromDate/toDate YYYY-MM-DD and nullable startTime/endTime HH:mm. Never invent clock times for morning, later or early. Use only the explicitly defined channel convention below for lunch. Preserve an explicitly stated approximate clock such as around 10, 10ish, circa ti, omkring 10 as its nominal HH:mm with startApproximate or endApproximate true. All other bounds use false. Do not invent an exact range around a nominal approximate clock. Approximate arrival/return produces only the exception (IN_LATE or AWAY with approximate end), never an IN_OFFICE transition; approximate departures use LEAVING_EARLY with approximate start. No IN_OFFICE interval may have approximate bounds. A day-long WFH statement has null times; this represents dates, not an assertion about working hours. 'In late' without a clock time can apply IN_LATE that day with null times. A future temporary absence with unknown bounds requires review. If exact departure/return times are given, create separate nonoverlapping intervals for AWAY and explicit IN_OFFICE return until the end of that day. For 'in at 10', create IN_LATE until 10:00 and IN_OFFICE from 10:00. For 'leave at 14' create LEAVING_EARLY from 14:00 until day end. Do not infer a return to office after WFH or client work unless stated. 'WFH until 10, then office' is FROM_HOME until 10:00 plus IN_OFFICE from 10:00. Multi-day statements can be date-only intervals (for example, 'at conference today and tomorrow' or 'at conference today and tomorow' yields a single date-only interval with status AWAY, fromDate today, toDate tomorrow, null startTime/endTime, both approximation flags false, and comment 'at conference'). A timed interval must use the same fromDate/toDate; split separate days if needed. Never output overlapping intervals. If precise interpretation is unsupported or uncertain, return decision review, appropriate reason, intervals []. Ignore also has intervals []. Apply requires reason clear.
 ${SHORTHAND_INSTRUCTIONS}`;
 
-export async function extractAttendance(text: string, messageInstant: Date): Promise<Extraction> {
+export async function extractAttendance(
+  text: string,
+  messageInstant: Date,
+  usageObserver?: ExtractionUsageObserver
+): Promise<Extraction> {
   if (text.length > 12000) return { decision: 'review', reason: 'unsupported', intervals: [] };
   const localTime = new Intl.DateTimeFormat('en-GB', {
     timeZone: ATTENDANCE_TIME_ZONE,
@@ -216,6 +222,7 @@ export async function extractAttendance(text: string, messageInstant: Date): Pro
   const apiKey = process.env.AI_GATEWAY_API_KEY?.trim();
   const modelId = process.env.SLACK_EXTRACTION_MODEL?.trim() || DEFAULT_SLACK_EXTRACTION_MODEL;
   if (!apiKey) throw new Error('AI Gateway configuration missing: AI_GATEWAY_API_KEY');
+  await usageObserver?.onStart(modelId);
   let result;
   try {
     result = await generateText({
@@ -231,12 +238,32 @@ export async function extractAttendance(text: string, messageInstant: Date): Pro
       // The durable inbox owns retries; keep each claim within its existing time budget.
       maxRetries: 0,
       abortSignal: AbortSignal.timeout(20000),
+      // Gateway adds billed cost to the OpenAI-compatible response body. Keep it
+      // in memory long enough to record exact usage; never persist the raw body.
+      include: { responseBody: true },
     });
   } catch (error) {
-    if (!NoObjectGeneratedError.isInstance(error)) throw error;
+    if (!NoObjectGeneratedError.isInstance(error)) {
+      await usageObserver?.onFinish({
+        state: 'failed',
+        costUsd: null,
+        inputTokens: null,
+        outputTokens: null,
+        responseId: null,
+      });
+      throw error;
+    }
+    const usage = parseGatewayUsage(error.response?.body, undefined, error.response?.id);
+    await usageObserver?.onFinish({ state: 'completed', ...usage });
     if (error.finishReason !== 'stop' || !error.text) throw new Error('Incomplete extraction');
     return { decision: 'review', reason: 'unsupported', intervals: [] };
   }
+  const usage = parseGatewayUsage(
+    result.finalStep.response?.body,
+    result.usage,
+    result.finalStep.response?.id
+  );
+  await usageObserver?.onFinish({ state: 'completed', ...usage });
   if (result.finishReason !== 'stop') throw new Error('Incomplete extraction');
   try {
     return validateExtraction(result.output, messageInstant, text);

@@ -267,6 +267,20 @@
       "when": 1788954225992,
       "tag": "0037_slack_description_only",
       "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1790461098132,
+      "tag": "0038_message_quality",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1790463845706,
+      "tag": "0039_slack_ai_usage",
+      "breakpoints": true
     }
   ]
 }

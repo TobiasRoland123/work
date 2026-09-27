@@ -196,6 +196,21 @@ describe('multi-day out-of-office status extraction', () => {
 });
 
 describe('AI Gateway transport', () => {
+  it('does not create an AI attempt for deterministic shorthand', async () => {
+    vi.stubEnv('AI_GATEWAY_API_KEY', '');
+    const usageObserver = { onStart: vi.fn(), onFinish: vi.fn() };
+    try {
+      await expect(extractAttendance('wfh', sent, usageObserver)).resolves.toMatchObject({
+        decision: 'apply',
+        reason: 'clear',
+      });
+      expect(usageObserver.onStart).not.toHaveBeenCalled();
+      expect(usageObserver.onFinish).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
   it('uses the Gateway URL, bearer key, provider-qualified default model, and disables storage', async () => {
     vi.stubEnv('AI_GATEWAY_API_KEY', 'gateway-test-key');
     vi.stubEnv('SLACK_EXTRACTION_MODEL', '');
@@ -208,21 +223,44 @@ describe('AI Gateway transport', () => {
               finish_reason: 'stop',
               message: {
                 role: 'assistant',
-                content: JSON.stringify({ decision: 'ignore', reason: 'not_attendance', intervals: [] }),
+                content: JSON.stringify({
+                  decision: 'ignore',
+                  reason: 'not_attendance',
+                  intervals: [],
+                }),
               },
             },
           ],
+          id: 'gen_123',
+          generationId: 'gen_123',
+          usage: {
+            prompt_tokens: 10,
+            completion_tokens: 5,
+            total_tokens: 15,
+            cost: 0.000008,
+          },
         }),
         { headers: { 'content-type': 'application/json' } }
       )
     );
     vi.stubGlobal('fetch', request);
+    const usageObserver = { onStart: vi.fn(), onFinish: vi.fn() };
 
     try {
-      await expect(extractAttendance('hello', sent)).resolves.toEqual({
+      await expect(extractAttendance('hello', sent, usageObserver)).resolves.toEqual({
         decision: 'ignore',
         reason: 'not_attendance',
         intervals: [],
+      });
+      expect(usageObserver.onStart).toHaveBeenCalledOnce();
+      expect(usageObserver.onStart).toHaveBeenCalledWith(DEFAULT_SLACK_EXTRACTION_MODEL);
+      expect(usageObserver.onFinish).toHaveBeenCalledOnce();
+      expect(usageObserver.onFinish).toHaveBeenCalledWith({
+        state: 'completed',
+        costUsd: '0.000008',
+        inputTokens: 10,
+        outputTokens: 5,
+        responseId: 'gen_123',
       });
       expect(request).toHaveBeenCalledOnce();
       const [input, init] = request.mock.calls[0] as [RequestInfo | URL, RequestInit];
@@ -244,6 +282,29 @@ describe('AI Gateway transport', () => {
         'AI Gateway configuration missing: AI_GATEWAY_API_KEY'
       );
     } finally {
+      vi.unstubAllEnvs();
+    }
+  });
+
+  it('records a failed model call without estimating its cost', async () => {
+    vi.stubEnv('AI_GATEWAY_API_KEY', 'gateway-test-key');
+    const request = vi.fn().mockRejectedValue(new Error('connection closed'));
+    vi.stubGlobal('fetch', request);
+    const usageObserver = { onStart: vi.fn(), onFinish: vi.fn() };
+    try {
+      await expect(extractAttendance('hello', sent, usageObserver)).rejects.toThrow(
+        'connection closed'
+      );
+      expect(usageObserver.onStart).toHaveBeenCalledOnce();
+      expect(usageObserver.onFinish).toHaveBeenCalledWith({
+        state: 'failed',
+        costUsd: null,
+        inputTokens: null,
+        outputTokens: null,
+        responseId: null,
+      });
+    } finally {
+      vi.unstubAllGlobals();
       vi.unstubAllEnvs();
     }
   });
