@@ -56,6 +56,8 @@ export async function syncSlackUsers(slackUsers: SlackUser[] = []) {
         null;
       const lastName =
         profile.last_name || profile.real_name?.split(/\s+/).slice(1).join(' ') || null;
+      // Reviewer access is assigned on first provisioning in resolveSlackIdentity;
+      // directory refreshes must leave that operator-managed permission untouched.
       const update: Record<string, unknown> = {
         firstName,
         lastName,

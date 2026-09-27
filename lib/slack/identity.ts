@@ -4,6 +4,7 @@ import { and, eq, sql } from 'drizzle-orm';
 import { db } from '@/db';
 import { users } from '@/db/schema';
 import { getSlackTeamId, SlackUser } from './client';
+import { isInitialMessageReviewer } from '@/lib/auth/message-review-defaults';
 export class SlackIdentityError extends Error {
   constructor(message: string) {
     super(message);
@@ -115,16 +116,27 @@ export async function resolveSlackIdentity(identity: TrustedSlackIdentity) {
       email: identity.email,
     };
     if (user) {
+      const isFirstSlackLink = !user.slackUserId && !user.slackTeamId;
       const [updated] = await tx
         .update(users)
-        .set(profile)
+        .set({
+          ...profile,
+          ...(isFirstSlackLink &&
+          isInitialMessageReviewer(identity.slackTeamId, identity.slackUserId)
+            ? { canReviewMessages: true }
+            : {}),
+        })
         .where(eq(users.userId, user.userId))
         .returning();
       return updated;
     }
     const [created] = await tx
       .insert(users)
-      .values({ userId: randomUUID(), ...profile })
+      .values({
+        userId: randomUUID(),
+        ...profile,
+        canReviewMessages: isInitialMessageReviewer(identity.slackTeamId, identity.slackUserId),
+      })
       .returning();
     return created;
   });

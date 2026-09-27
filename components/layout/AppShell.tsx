@@ -1,8 +1,9 @@
 'use client';
 
+import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { CalendarDays, FlaskConical, Users, UserRound } from 'lucide-react';
+import { CalendarDays, FlaskConical, MessageSquareWarning, Users, UserRound } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { isSandbox } from '@/lib/sandbox/enabled';
 import './shell.css';
@@ -20,9 +21,11 @@ const links = [
 export function AppShell({
   children,
   firstName,
+  showMessageQuality = false,
 }: {
   children: ReactNode;
   firstName?: string | null;
+  showMessageQuality?: boolean;
 }) {
   const pathname = usePathname();
   return (
@@ -35,7 +38,19 @@ export function AppShell({
           WØRK
         </Link>
         <div className="office-nav-links">
-          {links.map(({ href, label, Icon, prefetch }) => (
+          {[
+            ...links,
+            ...(showMessageQuality
+              ? [
+                  {
+                    href: '/message-quality',
+                    label: 'Review',
+                    Icon: MessageSquareWarning,
+                    prefetch: null,
+                  },
+                ]
+              : []),
+          ].map(({ href, label, Icon, prefetch }) => (
             <Link
               key={href}
               href={href}

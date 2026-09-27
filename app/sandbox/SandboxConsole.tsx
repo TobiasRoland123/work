@@ -215,11 +215,6 @@ export function SandboxConsole({
             message would and is processed in this process. Nothing here contacts Slack.
           </p>
         </div>
-        <nav aria-label="App pages">
-          <Link href="/today">Week</Link>
-          <Link href="/contact">Contact</Link>
-          <Link href="/profile">Profile</Link>
-        </nav>
       </header>
 
       <div className="sandbox-grid">

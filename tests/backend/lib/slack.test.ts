@@ -11,6 +11,7 @@ import {
   validateSlackProfile,
 } from '@/lib/slack/identity';
 import { authConfig } from '@/auth.config';
+import { isInitialMessageReviewer } from '@/lib/auth/message-review-defaults';
 
 describe('Slack identity guards', () => {
   beforeEach(() => {
@@ -55,6 +56,14 @@ describe('Slack identity guards', () => {
     expect(() =>
       validateIdentityMapping(identity, [existing], [{ ...existing, userId: 'local-2' }])
     ).toThrow('different users');
+  });
+});
+
+describe('initial message reviewer', () => {
+  it('matches only the approved Slack team and user IDs', () => {
+    expect(isInitialMessageReviewer('T02HKL21R', 'U05NP1NF3QB')).toBe(true);
+    expect(isInitialMessageReviewer('T02HKL21R', 'UOTHER')).toBe(false);
+    expect(isInitialMessageReviewer('TOTHER', 'U05NP1NF3QB')).toBe(false);
   });
 });
 

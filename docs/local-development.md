@@ -91,13 +91,25 @@ because the dashboard polls every 15 seconds. Without Supabase there is no broad
 expect up to 15 seconds of lag.
 
 **Channel view.** Messages you typed are kept per Author in the browser's `localStorage`
-only, because the inbox nulls message text on every terminal outcome. Edit and Delete send
-real `message_changed` and `message_deleted` envelopes; a stale edit surfaces as
+only. The normal inbox text is cleared on terminal outcomes, but accepted messages without
+a saved status can also retain up to the first 12,000 characters in `review_text` for
+future analysis. A successful status conversion or explicit deletion clears that retained
+text; a newer edit replaces it. There is no automatic age cutoff. Edit and Delete send real
+`message_changed` and `message_deleted` envelopes; a stale edit surfaces as
 `duplicate_or_stale`. "Clear list" forgets the browser list without touching data.
 
+**Message quality review.** Every active mapped Sandbox Profile can open `/message-quality`
+after signing in. This exception applies only to the nonproduction `T_LOCAL` workspace.
+Real workspaces require `users.can_review_messages`; Tobias Roland's confirmed Slack account
+gets an initial grant in each environment. Use `pnpm message-review:access grant <user-id>`
+or `pnpm message-review:access revoke <user-id>` to manage other real-workspace grants with
+the intended environment's database configuration. See
+[Message quality review](message-quality.md) for access requirements and what the dashboard retains.
+
 **Reset.** Deletes `status` rows of `T_LOCAL` profiles and `slack_messages` rows of team
-`T_LOCAL`, then clears the browser list. Profiles are kept. Both deletes are scoped and
-`tests/backend/sandbox/reset.test.ts` asserts the generated SQL.
+`T_LOCAL` (including any retained `review_text`), then clears the browser list. Profiles
+are kept. Both deletes are scoped and `tests/backend/sandbox/reset.test.ts` asserts the
+generated SQL.
 
 ## What the sandbox does not exercise
 

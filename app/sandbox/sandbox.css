@@ -25,14 +25,6 @@
   color: #55543c;
   max-width: 70ch;
 }
-.sandbox-header nav {
-  display: flex;
-  gap: 14px;
-}
-.sandbox-header nav a {
-  text-decoration: underline;
-  color: #2d6ea8;
-}
 .sandbox-grid {
   display: grid;
   grid-template-columns: minmax(0, 3fr) minmax(300px, 2fr);

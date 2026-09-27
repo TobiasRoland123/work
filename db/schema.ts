@@ -12,6 +12,8 @@ import {
   pgPolicy,
   jsonb,
   boolean,
+  numeric,
+  index,
 } from 'drizzle-orm/pg-core';
 
 export const systemRole = pgEnum('system_role', ['ADMIN', 'USER', 'GUEST']);
@@ -42,6 +44,7 @@ export const users = pgTable(
     lastName: varchar('last_name', { length: 255 }),
     email: varchar({ length: 100 }).notNull(),
     systemRole: systemRole('system_role').default('USER').notNull(),
+    canReviewMessages: boolean('can_review_messages').default(false).notNull(),
     createdAt: timestamp('created_at', { mode: 'string' }).defaultNow().notNull(),
     organisationId: integer('organisation_id').references(() => organisations.id, {
       onDelete: 'restrict',
@@ -119,7 +122,8 @@ export const status = pgTable(
   ]
 ).enableRLS();
 
-// Durable inbox. Message text is cleared after processing or after 24 hours on failure.
+// Durable inbox. Raw processing text is cleared at terminal outcomes; reviewText retains
+// bounded input only when the latest revision did not create an attendance status.
 // No public RLS policies: only the server database role may access this table.
 export const slackMessages = pgTable('slack_messages', {
   messageKey: text('message_key').primaryKey(),
@@ -129,9 +133,40 @@ export const slackMessages = pgTable('slack_messages', {
   revision: text('revision').notNull(),
   slackUserId: text('slack_user_id'),
   text: text('text'),
+  reviewText: text('review_text'),
   state: text('state').notNull().default('pending'),
   attempts: integer('attempts').notNull().default(0),
   nextAttemptAt: timestamp('next_attempt_at', { withTimezone: true }).defaultNow().notNull(),
   receivedAt: timestamp('received_at', { withTimezone: true }).defaultNow().notNull(),
   outcome: jsonb('outcome'),
+  convertedToStatus: boolean('converted_to_status'),
+  processedAt: timestamp('processed_at', { withTimezone: true }),
 }).enableRLS();
+
+// One row per attempted AI request. Keep it separate from Slack messages so
+// edits, deletion, and inbox cleanup cannot erase costs already incurred.
+export const slackAiUsage = pgTable(
+  'slack_ai_usage',
+  {
+    id: text('id').primaryKey(),
+    messageKey: text('message_key').notNull(),
+    revision: text('revision').notNull(),
+    teamId: text('team_id').notNull(),
+    channelId: text('channel_id').notNull(),
+    model: text('model').notNull(),
+    startedAt: timestamp('started_at', { withTimezone: true }).defaultNow().notNull(),
+    completedAt: timestamp('completed_at', { withTimezone: true }),
+    costUsd: numeric('cost_usd', { precision: 20, scale: 12 }),
+    inputTokens: integer('input_tokens'),
+    outputTokens: integer('output_tokens'),
+    responseId: text('response_id'),
+    state: text('state').default('started').notNull(),
+  },
+  (table) => [
+    index('slack_ai_usage_team_channel_started_idx').on(
+      table.teamId,
+      table.channelId,
+      table.startedAt
+    ),
+  ]
+).enableRLS();
