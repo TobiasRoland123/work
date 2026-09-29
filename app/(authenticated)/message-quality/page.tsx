@@ -5,6 +5,7 @@ import { requirePageUserId } from '@/lib/auth/require-user';
 import { requireMessageReviewer } from '@/lib/auth/message-review';
 import { getMessageQualityDashboard } from '@/lib/message-quality/service';
 import type { AiCostSummary, WeeklyConversion, ReviewMessage } from '@/lib/message-quality/service';
+import { ExpectedStatusForm } from './ExpectedStatusForm';
 import './message-quality.css';
 
 export const dynamic = 'force-dynamic';
@@ -138,6 +139,13 @@ function MessageCard({ message }: { message: ReviewMessage }) {
           </div>
         )}
       </dl>
+      <ExpectedStatusForm
+        key={message.revision}
+        messageKey={message.messageKey}
+        revision={message.revision}
+        expectedStatus={message.expectedStatus}
+        expectedStatusNote={message.expectedStatusNote}
+      />
       <details className="quality-message-details">
         <summary>Technical details</summary>
         <dl>

@@ -170,3 +170,23 @@ export const slackAiUsage = pgTable(
     ),
   ]
 ).enableRLS();
+
+// Human review labels an extraction result without changing the attendance status.
+// Keep feedback bound to the exact Slack revision so edits cannot inherit stale labels.
+export const slackMessageFeedback = pgTable(
+  'slack_message_feedback',
+  {
+    messageKey: text('message_key')
+      .notNull()
+      .references(() => slackMessages.messageKey, { onDelete: 'cascade' }),
+    revision: text('revision').notNull(),
+    preferredStatus: userStatus('preferred_status').notNull(),
+    note: varchar('note', { length: 2000 }),
+    reviewerUserId: varchar('reviewer_user_id', { length: 36 }).references(() => users.userId, {
+      onDelete: 'set null',
+    }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [unique('slack_message_feedback_revision_unique').on(table.messageKey, table.revision)]
+).enableRLS();

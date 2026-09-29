@@ -1,6 +1,6 @@
 import { and, eq, lte, sql } from 'drizzle-orm';
 import { db } from '@/db';
-import { slackMessages, status, users } from '@/db/schema';
+import { slackMessageFeedback, slackMessages, status, users } from '@/db/schema';
 import { inspectSlackEvent } from './events';
 import { descriptionRows, extractAttendance, statusRows } from './extraction';
 import { createSlackAiUsageRecorder } from './ai-usage';
@@ -50,8 +50,12 @@ export async function enqueueSlackEvent(input: unknown) {
       .returning({ key: slackMessages.messageKey });
     if (changed) {
       // Only explicit deletion withdraws valid status before re-extraction.
-      if (event.state === 'deleted')
+      if (event.state === 'deleted') {
         await tx.delete(status).where(eq(status.sourceMessageKey, event.messageKey));
+        await tx
+          .delete(slackMessageFeedback)
+          .where(eq(slackMessageFeedback.messageKey, event.messageKey));
+      }
       if (event.text && event.text.length > 12000) {
         await tx
           .update(slackMessages)

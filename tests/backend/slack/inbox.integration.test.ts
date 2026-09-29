@@ -2,7 +2,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 import { eq } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { db, pool } from '@/db';
-import { slackAiUsage, slackMessages, status, users } from '@/db/schema';
+import { slackAiUsage, slackMessageFeedback, slackMessages, status, users } from '@/db/schema';
 import {
   cleanupExpiredSlackMessages,
   enqueueSlackEvent,
@@ -149,6 +149,13 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
       });
       expect(recorded.completedAt).toBeInstanceOf(Date);
       expect(recorded).not.toHaveProperty('text');
+      await db.insert(slackMessageFeedback).values({
+        messageKey: key,
+        revision: messageTs,
+        preferredStatus: 'FROM_HOME',
+        note: 'expected work from home',
+        reviewerUserId: userID,
+      });
       await enqueueSlackEvent({
         ...original,
         event: {
@@ -161,6 +168,9 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
         },
       });
       expect(await db.select().from(status).where(eq(status.userID, userID))).toHaveLength(0);
+      expect(
+        await db.select().from(slackMessageFeedback).where(eq(slackMessageFeedback.messageKey, key))
+      ).toHaveLength(0);
       expect(
         await db.select().from(slackAiUsage).where(eq(slackAiUsage.messageKey, key))
       ).toHaveLength(1);

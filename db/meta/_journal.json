@@ -281,6 +281,13 @@
       "when": 1790463845706,
       "tag": "0039_slack_ai_usage",
       "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1790501885571,
+      "tag": "0040_slack_message_feedback",
+      "breakpoints": true
     }
   ]
 }

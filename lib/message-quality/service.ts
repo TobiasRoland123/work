@@ -1,6 +1,7 @@
 import { and, desc, eq, ne, sql } from 'drizzle-orm';
 import { db } from '@/db';
-import { slackAiUsage, slackMessages, users } from '@/db/schema';
+import { slackAiUsage, slackMessageFeedback, slackMessages, users } from '@/db/schema';
+import type { UserStatus } from '@/db/types';
 import { requireMessageReviewer } from '@/lib/auth/message-review';
 import {
   addAiCosts,
@@ -26,6 +27,8 @@ export type ReviewMessage = {
   reason: string;
   failureReason: string | null;
   attempts: number;
+  expectedStatus: UserStatus | null;
+  expectedStatusNote: string | null;
 };
 
 const PAGE_SIZE = 25;
@@ -136,6 +139,8 @@ export async function getMessageQualityDashboard(
       reason,
       failureReason: sql<string | null>`${slackMessages.outcome}->>'failureReason'`,
       attempts: slackMessages.attempts,
+      expectedStatus: slackMessageFeedback.preferredStatus,
+      expectedStatusNote: slackMessageFeedback.note,
     })
     .from(slackMessages)
     .leftJoin(
@@ -143,6 +148,13 @@ export async function getMessageQualityDashboard(
       and(
         eq(users.slackTeamId, slackMessages.teamId),
         eq(users.slackUserId, slackMessages.slackUserId)
+      )
+    )
+    .leftJoin(
+      slackMessageFeedback,
+      and(
+        eq(slackMessageFeedback.messageKey, slackMessages.messageKey),
+        eq(slackMessageFeedback.revision, slackMessages.revision)
       )
     )
     .where(and(selectedScope, selectedReason ? sql`${reason} = ${selectedReason}` : undefined))

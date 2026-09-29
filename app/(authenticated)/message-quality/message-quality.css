@@ -239,6 +239,89 @@
 .quality-message-facts dd {
   font-weight: 600;
 }
+.quality-expected-status {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--quality-border-soft);
+  font-size: 13px;
+}
+.quality-expected-summary {
+  margin-bottom: 9px;
+}
+.quality-expected-summary span {
+  color: var(--quality-muted);
+  margin-right: 5px;
+}
+.quality-expected-note {
+  margin-top: 5px;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+.quality-expected-button,
+.quality-expected-field select,
+.quality-expected-field textarea {
+  background: var(--quality-surface);
+  border: 1px solid var(--quality-border);
+  color: var(--quality-ink);
+  border-radius: 5px;
+  padding: 8px 11px;
+  font: inherit;
+}
+.quality-expected-button {
+  cursor: pointer;
+}
+.quality-expected-button:hover:not(:disabled) {
+  border-color: var(--quality-link);
+}
+.quality-expected-button:disabled,
+.quality-expected-field select:disabled,
+.quality-expected-field textarea:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+.quality-expected-button:focus-visible,
+.quality-expected-field select:focus-visible,
+.quality-expected-field textarea:focus-visible {
+  outline: 2px solid var(--quality-link);
+  outline-offset: 2px;
+}
+.quality-expected-form {
+  display: grid;
+  gap: 12px;
+  max-width: 560px;
+  margin-top: 12px;
+}
+.quality-expected-field {
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+}
+.quality-expected-field select,
+.quality-expected-field textarea {
+  width: 100%;
+  min-width: 0;
+}
+.quality-expected-field textarea {
+  resize: vertical;
+}
+.quality-expected-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.quality-expected-save {
+  background: var(--quality-primary);
+  border-color: var(--quality-primary);
+  color: var(--quality-primary-ink);
+}
+.quality-expected-error {
+  color: var(--quality-ink);
+  border-left: 3px solid var(--quality-link);
+  padding-left: 8px;
+}
+.quality-expected-success {
+  margin-top: 8px;
+}
 .quality-message-details {
   margin-top: 8px;
   font-size: 12px;

@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { db, pool } from '@/db';
-import { slackAiUsage, slackMessages, status, users } from '@/db/schema';
+import { slackAiUsage, slackMessageFeedback, slackMessages, status, users } from '@/db/schema';
 import { getMessageQualityDashboard } from '@/lib/message-quality/service';
 import { requireMessageReviewer } from '@/lib/auth/message-review';
 
@@ -113,6 +113,33 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
       const result = await getMessageQualityDashboard({}, now);
       expect(result.selectedSummary).toMatchObject({ total: 1, converted: 0, percentage: 0 });
       expect(result.messages[0].reason).toBe('uncertain_date');
+    });
+
+    it('shows only expected status feedback for the exact current revision', async () => {
+      const entry = message(1, { revision: '1790000000.000002' });
+      await db.insert(slackMessages).values(entry);
+      await db.insert(slackMessageFeedback).values([
+        {
+          messageKey: entry.messageKey,
+          revision: '1790000000.000001',
+          preferredStatus: 'SICK',
+          note: 'old revision',
+          reviewerUserId: userId,
+        },
+        {
+          messageKey: entry.messageKey,
+          revision: entry.revision,
+          preferredStatus: 'FROM_HOME',
+          note: 'work from home',
+          reviewerUserId: userId,
+        },
+      ]);
+
+      const result = await getMessageQualityDashboard({}, now);
+      expect(result.messages[0]).toMatchObject({
+        expectedStatus: 'FROM_HOME',
+        expectedStatusNote: 'work from home',
+      });
     });
 
     it('handles legacy records without inventing missing original text', async () => {
