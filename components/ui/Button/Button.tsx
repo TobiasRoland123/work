@@ -24,7 +24,7 @@ const variants = cva(
     variants: {
       variant: {
         default: 'rounded-[35px] text-base',
-        large: 'text-24 rounded-[48px] w-full ',
+        large: 'text-2xl rounded-[48px] w-full ',
       },
     },
     defaultVariants: {
@@ -73,7 +73,7 @@ export function Button({
       disabled={isLoading}
       aria-busy={isLoading}
     >
-      {isLoading ? <Spinner /> : label || children}
+      {isLoading ? <Spinner className="text-current" /> : label || children}
     </button>
   );
 }
