@@ -9,7 +9,7 @@ export { nextDate } from './shorthand';
 
 export const ATTENDANCE_TIME_ZONE = 'Europe/Copenhagen';
 export const AI_GATEWAY_BASE_URL = 'https://ai-gateway.vercel.sh/v1';
-export const DEFAULT_SLACK_EXTRACTION_MODEL = 'openai/gpt-5.6-luna';
+export const DEFAULT_SLACK_EXTRACTION_MODEL = 'openai/gpt-6-luna';
 const statuses = [
   'IN_OFFICE',
   'FROM_HOME',

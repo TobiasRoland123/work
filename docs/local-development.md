@@ -8,33 +8,29 @@ tunnel is needed, and no Vercel project link is needed. The decision is recorded
 [ADR 0001](adr/0001-local-sandbox-replaces-slack.md); the vocabulary (Author, Signed-in
 Profile, Sandbox Profile, Sandbox Message) is in [CONTEXT.md](../CONTEXT.md).
 
-The recommended cross-platform command is:
+After database setup, start local development with:
 
 ```bash
-pnpm local:dev:docker
+pnpm run dev
 ```
 
-It reads `.env.local`, starts the repository's PostgreSQL container, waits for it to become
-healthy, creates the local `service_role`, synchronizes the schema with `drizzle-kit push`,
-seeds the checked-in Sandbox Profiles, and starts Next.js on `http://127.0.0.1:3000`. It
-never drops an existing database.
+This runs the existing `next dev --turbopack` command. Next.js uses its normal localhost
+port, `3000`; open `http://127.0.0.1:3000/sandbox`, matching the example `AUTH_URL`.
 
 ## First run
 
 1. Run `pnpm install`.
 2. Copy `.env.example` to `.env.local`. Set `AUTH_SECRET` (any long random string) and
-   `AI_GATEWAY_API_KEY`. Keep `SLACK_TEAM_ID=T_LOCAL` and `SLACK_CHANNEL_ID=C_LOCAL`: the
-   sandbox only accepts those ids, and the start script refuses a real workspace id. The
-   checked-in PostgreSQL values are disposable Docker development defaults.
-3. Install Docker. Make sure the current user can run `docker compose` without `sudo` and
-   port 3000 is free.
-4. Run `pnpm local:dev:docker` and open `http://127.0.0.1:3000/sandbox`.
+   `AI_GATEWAY_API_KEY`. Keep `SLACK_TEAM_ID=T_LOCAL` and `SLACK_CHANNEL_ID=C_LOCAL` for
+   sandbox data. The checked-in PostgreSQL values are disposable Docker development defaults.
+3. Install Docker. Make sure the current user can run `docker compose` without `sudo`.
+4. Run `pnpm local:db`, then `pnpm sandbox:seed`, then `pnpm run dev`. Open
+   `http://127.0.0.1:3000/sandbox`. On repeated starts, run only `pnpm run dev`.
 
-For an existing Mac/Homebrew PostgreSQL setup, use `pnpm local:dev`. It does not start
-Docker or change the schema, but rejects an incomplete database. `pnpm local:db` starts and
-synchronizes the Docker database without starting the app; `pnpm local:db:reset` discards
-the disposable Docker volume and rebuilds it. `pnpm sandbox:seed` re-seeds the fixture
-profiles on its own.
+For an existing PostgreSQL setup, configure its connection values in `.env.local`, then run
+`pnpm db:push` and `pnpm sandbox:seed` once. Start the app with `pnpm run dev`; repeated
+starts need only that command. `pnpm local:db:reset` discards the disposable Docker volume
+and rebuilds it. Run `pnpm sandbox:seed` again if you want to restore the fixture profiles.
 
 On Linux, Docker group changes only reach new login sessions. If `getent group docker`
 lists your username but `id -nG` does not list `docker`, run `newgrp docker` in the current
@@ -42,14 +38,14 @@ terminal or sign out and back in, then rerun the project command.
 
 Do not use `pnpm db:migrate` to initialize a blank database. The historical migration
 chain starts from an introspected existing schema; fresh development databases use
-`drizzle-kit push` through `pnpm local:db`.
+`pnpm local:db` for Docker or `pnpm db:push` for an existing PostgreSQL server.
 
 ## Gating
 
 `NODE_ENV !== 'production'` is the only switch (`lib/sandbox/enabled.ts`). There is no
-`LOCAL_SANDBOX` flag, so a plain `pnpm dev` also exposes the sandbox. The database host
-guard in `scripts/local-dev.mjs` and the `T_LOCAL` scoping described below are what keep
-that safe. A production build never registers the sandbox sign-in provider, never lets
+`LOCAL_SANDBOX` flag, so `pnpm run dev` also exposes the sandbox. The `T_LOCAL` scoping
+described below keeps sandbox data isolated. A production build never registers the
+sandbox sign-in provider, never lets
 `/sandbox` through middleware without a session, and answers `/sandbox` with 404;
 `tests/backend/sandbox/` asserts each of those under `NODE_ENV=production`.
 
@@ -120,4 +116,4 @@ configuration must be verified on the preview deployment before merging. The pre
 environment has its own database and its own Slack app credentials; see
 [Slack setup](slack-setup.md).
 
-Stop the app with Ctrl+C. Run `pnpm local:dev` again after changing `.env.local`.
+Stop the app with Ctrl+C. Run `pnpm run dev` again after changing `.env.local`.

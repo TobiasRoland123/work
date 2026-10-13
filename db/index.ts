@@ -8,6 +8,8 @@ dotenv.config({
     process.env.NODE_ENV === 'production' || process.env.NODE_ENV === 'test'
       ? '.env'
       : '.env.local',
+  // Local credentials take precedence over inherited shell defaults.
+  override: process.env.NODE_ENV !== 'production' && process.env.NODE_ENV !== 'test',
 });
 
 // Create a PostgreSQL connection pool
