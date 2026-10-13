@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import LoginForm from '@/components/ui/LoginForm/LoginForm';
 import { Logo } from '@/components/ui/Logo/Logo';
-import { isSandbox } from '@/lib/sandbox/enabled';
+import { isLocalSandbox } from '@/lib/sandbox/enabled';
 import React from 'react';
 
 const Login = async () => {
@@ -13,7 +13,7 @@ const Login = async () => {
           <h1 className="text-4xl lg:text-5xl leading-14 hyphens-auto">
             Make sure your colleagues know how to get a hold of you!
           </h1>
-          {isSandbox() && (
+          {isLocalSandbox() && (
             <p className="mt-6 text-sm">
               Local development: Slack is replaced by the{' '}
               <Link href="/sandbox" className="underline">

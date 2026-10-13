@@ -712,13 +712,15 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
       const created = await resolveSlackIdentity(identity);
       try {
         expect(created.canReviewMessages).toBe(true);
+        expect(created.canUseSandbox).toBe(true);
         await db
           .update(users)
-          .set({ canReviewMessages: false })
+          .set({ canReviewMessages: false, canUseSandbox: false })
           .where(eq(users.userId, created.userId));
 
         const signedInAgain = await resolveSlackIdentity(identity);
         expect(signedInAgain.canReviewMessages).toBe(false);
+        expect(signedInAgain.canUseSandbox).toBe(false);
       } finally {
         await db.delete(users).where(eq(users.userId, created.userId));
       }
@@ -736,6 +738,7 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
         const linked = await resolveSlackIdentity(identity);
         expect(linked.userId).toBe(legacyUserId);
         expect(linked.canReviewMessages).toBe(true);
+        expect(linked.canUseSandbox).toBe(true);
       } finally {
         await db.delete(users).where(eq(users.userId, legacyUserId));
       }

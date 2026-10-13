@@ -3,10 +3,10 @@ import { getTableName } from 'drizzle-orm';
 import { SlackMessagePendingError } from '@/lib/slack/inbox';
 import {
   announcementInstant,
-  SandboxInputError,
   sendSandboxMessage,
   editSandboxMessage,
   deleteSandboxMessage,
+  runSandboxRetries,
 } from '@/lib/sandbox/service';
 
 // Rows returned per table, consumed in call order.
@@ -63,12 +63,19 @@ describe('announcementInstant', () => {
 });
 
 describe('sendSandboxMessage', () => {
-  it('refuses to send when the intake is configured for another workspace', async () => {
+  it('uses the isolated workspace in production without changing real Slack configuration', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
     vi.stubEnv('SLACK_TEAM_ID', 'T02HKL21R');
-    await expect(sendSandboxMessage({ slackUserId: author, text: 'wfh' })).rejects.toBeInstanceOf(
-      SandboxInputError
-    );
-    expect(enqueue).not.toHaveBeenCalled();
+    vi.stubEnv('SLACK_CHANNEL_ID', 'C_REAL');
+    queue('users', [{ id: 'sandbox-anna' }]);
+    enqueue.mockResolvedValue({ outcome: 'ignored', reason: 'invalid_event' });
+    await sendSandboxMessage({ slackUserId: author, text: 'wfh' });
+    expect(enqueue).toHaveBeenCalledWith(expect.objectContaining({ team_id: 'T_LOCAL' }), {
+      teamId: 'T_LOCAL',
+      channelId: 'C_LOCAL',
+    });
+    expect(process.env.SLACK_TEAM_ID).toBe('T02HKL21R');
+    expect(process.env.SLACK_CHANNEL_ID).toBe('C_REAL');
   });
   it('fails up front without an AI key unless shorthand handles the text', async () => {
     vi.stubEnv('AI_GATEWAY_API_KEY', '');
@@ -116,9 +123,13 @@ describe('sendSandboxMessage', () => {
       expect.objectContaining({
         team_id: 'T_LOCAL',
         event: expect.objectContaining({ channel: 'C_LOCAL', user: author, text: 'in 10ish' }),
-      })
+      }),
+      { teamId: 'T_LOCAL', channelId: 'C_LOCAL' }
     );
-    expect(consume).toHaveBeenCalledWith(result.messageKey, result.messageTs);
+    expect(consume).toHaveBeenCalledWith(result.messageKey, result.messageTs, {
+      workspace: { teamId: 'T_LOCAL', channelId: 'C_LOCAL' },
+      broadcast: false,
+    });
     expect(result).toMatchObject({
       intake: { outcome: 'queued' },
       handledBy: 'model',
@@ -193,7 +204,8 @@ describe('edits and deletions', () => {
           subtype: 'message_changed',
           message: expect.objectContaining({ ts: messageTs, text: 'wfh tomorrow' }),
         }),
-      })
+      }),
+      { teamId: 'T_LOCAL', channelId: 'C_LOCAL' }
     );
     expect(Number(result.revision)).toBeGreaterThan(Number(messageTs));
   });
@@ -206,7 +218,8 @@ describe('edits and deletions', () => {
     expect(enqueue).toHaveBeenCalledWith(
       expect.objectContaining({
         event: expect.objectContaining({ subtype: 'message_deleted', deleted_ts: messageTs }),
-      })
+      }),
+      { teamId: 'T_LOCAL', channelId: 'C_LOCAL' }
     );
     expect(consume).toHaveBeenCalledOnce();
     expect(result).toMatchObject({
@@ -214,5 +227,13 @@ describe('edits and deletions', () => {
       processing: { kind: 'terminal', state: 'deleted' },
       interpretation: null,
     });
+  });
+});
+
+it('limits retries and expiry cleanup to sandbox jobs without broadcasting to real dashboards', async () => {
+  await runSandboxRetries();
+  expect(inbox.processSlackInbox).toHaveBeenCalledWith(5, undefined, undefined, {
+    workspace: { teamId: 'T_LOCAL', channelId: 'C_LOCAL' },
+    broadcast: false,
   });
 });

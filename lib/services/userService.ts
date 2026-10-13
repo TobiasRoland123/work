@@ -9,7 +9,7 @@ import {
   business_phone_numbers,
   organisations,
 } from '@/db/schema';
-import { inArray, eq } from 'drizzle-orm';
+import { and, inArray, eq } from 'drizzle-orm';
 import { statusService } from './statusService';
 import { resolvePresenceStatus } from '@/lib/status/active';
 import { resolveWorkWeek } from '@/lib/status/week';
@@ -128,7 +128,12 @@ export const userService = {
     const usersList = await db
       .select()
       .from(users)
-      .where(eq(users.slackDeactivated, false))
+      .where(
+        and(
+          eq(users.slackDeactivated, false),
+          eq(users.slackTeamId, process.env.SLACK_TEAM_ID ?? '')
+        )
+      )
       .orderBy(users.firstName, users.lastName);
 
     if (usersList.length === 0) return [];

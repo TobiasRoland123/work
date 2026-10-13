@@ -1,7 +1,7 @@
 import { NewStatus } from '@/db/types';
-import { status } from '@/db/schema';
+import { status, users } from '@/db/schema';
 import { db } from '@/db';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { supabase } from '../supabaseClient';
 import { resolvePresenceStatus } from '@/lib/status/active';
 import { upcomingStatuses } from '@/lib/status/plan';
@@ -9,7 +9,18 @@ import { upcomingStatuses } from '@/lib/status/plan';
 export const statusService = {
   // GET METHODS
   async getAllStatuses() {
-    const allStatuses = await db.select().from(status);
+    const allStatuses = await db
+      .select()
+      .from(status)
+      .where(
+        inArray(
+          status.userID,
+          db
+            .select({ userId: users.userId })
+            .from(users)
+            .where(eq(users.slackTeamId, process.env.SLACK_TEAM_ID ?? ''))
+        )
+      );
     return allStatuses;
   },
 

@@ -209,7 +209,7 @@ export function SandboxConsole({
     <>
       <header className="sandbox-header">
         <div>
-          <h1>Local Sandbox</h1>
+          <h1>Sandbox</h1>
           <p>
             Compose Sandbox Messages on behalf of an Author. Each one enters the same intake a Slack
             message would and is processed in this process. Nothing here contacts Slack.
@@ -442,8 +442,14 @@ export function SandboxConsole({
           <section className="sandbox-card" aria-labelledby="signed-in-heading">
             <h2 id="signed-in-heading">Signed-in Profile</h2>
             <p>
-              Whose <Link href="/profile">/profile</Link> and manual status form the browser shows.
-              Independent of Author.
+              {overview.localProfileSignIn ? (
+                <>
+                  Whose <Link href="/profile">profile</Link> and manual status form the browser
+                  shows. Independent of Author.
+                </>
+              ) : (
+                'You stay signed in as yourself. Messages belong to the selected test Author.'
+              )}
             </p>
             {overview.signedIn ? (
               <div className="sandbox-row">
@@ -453,46 +459,50 @@ export function SandboxConsole({
                 ) : (
                   <span className="sandbox-badge">real Slack session</span>
                 )}
-                <form action={signOutSandboxAction}>
-                  <button className="sandbox-inline" type="submit">
-                    Sign out
-                  </button>
-                </form>
+                {overview.localProfileSignIn && (
+                  <form action={signOutSandboxAction}>
+                    <button className="sandbox-inline" type="submit">
+                      Sign out
+                    </button>
+                  </form>
+                )}
               </div>
             ) : (
               <p className="sandbox-hint">Not signed in.</p>
             )}
-            <form
-              action={signInAsSandboxProfileAction}
-              className="sandbox-row"
-              style={{ marginTop: 10 }}
-            >
-              <label htmlFor="sandbox-sign-in" className="sr-only">
-                Sign in as
-              </label>
-              <select id="sandbox-sign-in" name="userId" defaultValue={activeProfiles[0]?.userId}>
-                {activeProfiles.map((profile) => (
-                  <option key={profile.userId} value={profile.userId}>
-                    {profileName(profile)}
-                  </option>
-                ))}
-              </select>
-              <button
-                className="sandbox-button"
-                type="submit"
-                disabled={activeProfiles.length === 0}
+            {overview.localProfileSignIn && (
+              <form
+                action={signInAsSandboxProfileAction}
+                className="sandbox-row"
+                style={{ marginTop: 10 }}
               >
-                Sign in as
-              </button>
-            </form>
+                <label htmlFor="sandbox-sign-in" className="sr-only">
+                  Sign in as
+                </label>
+                <select id="sandbox-sign-in" name="userId" defaultValue={activeProfiles[0]?.userId}>
+                  {activeProfiles.map((profile) => (
+                    <option key={profile.userId} value={profile.userId}>
+                      {profileName(profile)}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  className="sandbox-button"
+                  type="submit"
+                  disabled={activeProfiles.length === 0}
+                >
+                  Sign in as
+                </button>
+              </form>
+            )}
           </section>
 
           <section className="sandbox-card" aria-labelledby="profiles-heading">
             <h2 id="profiles-heading">Sandbox Profiles</h2>
-            <p>People who exist only in this local database, under team {`T_LOCAL`}.</p>
+            <p>Test profiles kept separate from your real colleagues.</p>
             {overview.profiles.length === 0 ? (
               <p className="sandbox-hint">
-                No profiles yet. Seed the fixtures or run <code>pnpm sandbox:seed</code>.
+                No profiles yet. Use Seed fixture profiles to add test authors.
               </p>
             ) : (
               <ul className="sandbox-profiles">

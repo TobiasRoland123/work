@@ -4,7 +4,8 @@ import { auth, signIn, signOut } from '@/auth';
 import { db } from '@/db';
 import { users } from '@/db/schema';
 import { eq } from 'drizzle-orm';
-import { assertSandbox } from '@/lib/sandbox/enabled';
+import { assertSandbox, isLocalSandbox } from '@/lib/sandbox/enabled';
+import { requireSandboxAccess } from '@/lib/auth/sandbox';
 import { SANDBOX_PROVIDER_ID } from '@/lib/sandbox/auth';
 import { seedSandboxProfiles } from '@/lib/sandbox/profiles';
 import {
@@ -33,7 +34,7 @@ function failure(error: unknown) {
 }
 
 export async function getSandboxOverview() {
-  assertSandbox();
+  await requireSandboxAccess();
   const session = await auth();
   const signedIn =
     session?.provider === 'slack' && session.userId
@@ -49,6 +50,7 @@ export async function getSandboxOverview() {
     profiles: await listSandboxProfiles(),
     inbox: await listSandboxInbox(),
     signedIn,
+    localProfileSignIn: isLocalSandbox(),
   };
 }
 
@@ -57,7 +59,7 @@ export async function sendSandboxMessageAction(input: {
   text: string;
   announcedAt?: string | null;
 }) {
-  assertSandbox();
+  await requireSandboxAccess();
   try {
     const parsed = z
       .object({ slackUserId, text, announcedAt: z.string().nullable().optional() })
@@ -73,7 +75,7 @@ export async function editSandboxMessageAction(input: {
   messageTs: string;
   text: string;
 }) {
-  assertSandbox();
+  await requireSandboxAccess();
   try {
     const parsed = z.object({ slackUserId, messageTs, text }).parse(input);
     return { ok: true as const, result: await editSandboxMessage(parsed) };
@@ -86,7 +88,7 @@ export async function deleteSandboxMessageAction(input: {
   slackUserId: string;
   messageTs: string;
 }) {
-  assertSandbox();
+  await requireSandboxAccess();
   try {
     const parsed = z.object({ slackUserId, messageTs }).parse(input);
     return { ok: true as const, result: await deleteSandboxMessage(parsed) };
@@ -96,7 +98,7 @@ export async function deleteSandboxMessageAction(input: {
 }
 
 export async function runSandboxRetriesAction() {
-  assertSandbox();
+  await requireSandboxAccess();
   try {
     return { ok: true as const, counts: await runSandboxRetries() };
   } catch (error) {
@@ -105,7 +107,7 @@ export async function runSandboxRetriesAction() {
 }
 
 export async function createSandboxProfileAction(input: { firstName: string; lastName: string }) {
-  assertSandbox();
+  await requireSandboxAccess();
   try {
     const parsed = z
       .object({ firstName: z.string().max(60), lastName: z.string().max(255) })
@@ -117,7 +119,7 @@ export async function createSandboxProfileAction(input: { firstName: string; las
 }
 
 export async function seedSandboxProfilesAction() {
-  assertSandbox();
+  await requireSandboxAccess();
   try {
     return { ok: true as const, ...(await seedSandboxProfiles()) };
   } catch (error) {
@@ -126,7 +128,7 @@ export async function seedSandboxProfilesAction() {
 }
 
 export async function resetSandboxDataAction() {
-  assertSandbox();
+  await requireSandboxAccess();
   try {
     return { ok: true as const, deleted: await resetSandboxData() };
   } catch (error) {

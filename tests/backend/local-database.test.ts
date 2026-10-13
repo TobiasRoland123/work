@@ -17,6 +17,7 @@ const currentSchema = [
   { table_name: 'users', column_name: 'slack_team_id' },
   { table_name: 'users', column_name: 'slack_deactivated' },
   { table_name: 'users', column_name: 'can_review_messages' },
+  { table_name: 'users', column_name: 'can_use_sandbox' },
   { table_name: 'status', column_name: 'id' },
   { table_name: 'slack_messages', column_name: 'message_key' },
   { table_name: 'slack_messages', column_name: 'review_text' },

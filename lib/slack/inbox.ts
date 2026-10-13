@@ -12,11 +12,21 @@ function retainedReviewText(text: string | null | undefined) {
   return text ? text.slice(0, MAX_REVIEW_TEXT_LENGTH) : null;
 }
 
-export async function enqueueSlackEvent(input: unknown) {
+type SlackWorkspace = { teamId: string; channelId: string };
+type SlackInboxOptions = { workspace?: SlackWorkspace; broadcast?: boolean };
+
+function configuredWorkspace(): SlackWorkspace {
+  return {
+    teamId: process.env.SLACK_TEAM_ID ?? '',
+    channelId: process.env.SLACK_CHANNEL_ID ?? '',
+  };
+}
+
+export async function enqueueSlackEvent(input: unknown, workspace?: SlackWorkspace) {
   const inspected = inspectSlackEvent(
     input,
-    process.env.SLACK_TEAM_ID ?? '',
-    process.env.SLACK_CHANNEL_ID ?? ''
+    workspace?.teamId ?? process.env.SLACK_TEAM_ID ?? '',
+    workspace?.channelId ?? process.env.SLACK_CHANNEL_ID ?? ''
   );
   if (!inspected.event) return { outcome: 'ignored' as const, reason: inspected.reason };
   const event = inspected.event;
@@ -91,7 +101,7 @@ export async function broadcastSlackStatus() {
       .send({ type: 'broadcast', event: 'status_updated', payload: {} });
 }
 
-export async function cleanupExpiredSlackMessages() {
+export async function cleanupExpiredSlackMessages(workspace: SlackWorkspace = configuredWorkspace()) {
   // Also called by daily directory maintenance when there are no new messages.
   await db
     .update(slackMessages)
@@ -105,13 +115,21 @@ export async function cleanupExpiredSlackMessages() {
     .where(
       and(
         eq(slackMessages.state, 'pending'),
+        eq(slackMessages.teamId, workspace.teamId),
+        eq(slackMessages.channelId, workspace.channelId),
         lte(slackMessages.receivedAt, new Date(Date.now() - 86400000))
       )
     );
 }
 
-export async function processSlackInbox(limit = 2, messageKey?: string, revision?: string) {
-  await cleanupExpiredSlackMessages();
+export async function processSlackInbox(
+  limit = 2,
+  messageKey?: string,
+  revision?: string,
+  options: SlackInboxOptions = {}
+) {
+  const workspace = options.workspace ?? configuredWorkspace();
+  await cleanupExpiredSlackMessages(workspace);
   const counts = { applied: 0, review: 0, ignored: 0, retried: 0, superseded: 0 };
   for (let i = 0; i < limit; i++) {
     const job = await db.transaction(async (tx) => {
@@ -121,6 +139,8 @@ export async function processSlackInbox(limit = 2, messageKey?: string, revision
         .where(
           and(
             eq(slackMessages.state, 'pending'),
+            eq(slackMessages.teamId, workspace.teamId),
+            eq(slackMessages.channelId, workspace.channelId),
             lte(slackMessages.nextAttemptAt, new Date()),
             messageKey ? eq(slackMessages.messageKey, messageKey) : undefined,
             revision ? eq(slackMessages.revision, revision) : undefined
@@ -264,7 +284,7 @@ export async function processSlackInbox(limit = 2, messageKey?: string, revision
       });
     }
   }
-  if (counts.applied) {
+  if (counts.applied && options.broadcast !== false) {
     // A failed broadcast must not turn a successfully committed import into a retry.
     try {
       await broadcastSlackStatus();
@@ -282,8 +302,13 @@ export class SlackMessagePendingError extends Error {
   }
 }
 
-export async function processQueuedSlackMessage(messageKey: string, revision: string) {
-  await processSlackInbox(1, messageKey, revision);
+export async function processQueuedSlackMessage(
+  messageKey: string,
+  revision: string,
+  options: SlackInboxOptions = {}
+) {
+  const workspace = options.workspace ?? configuredWorkspace();
+  await processSlackInbox(1, messageKey, revision, { ...options, workspace });
   const [job] = await db
     .select({
       state: slackMessages.state,
@@ -291,7 +316,13 @@ export async function processQueuedSlackMessage(messageKey: string, revision: st
       nextAttemptAt: slackMessages.nextAttemptAt,
     })
     .from(slackMessages)
-    .where(eq(slackMessages.messageKey, messageKey));
+    .where(
+      and(
+        eq(slackMessages.messageKey, messageKey),
+        eq(slackMessages.teamId, workspace.teamId),
+        eq(slackMessages.channelId, workspace.channelId)
+      )
+    );
   if (!job || job.revision !== revision) return;
   if (job.state === 'pending') {
     // A retry/backoff or another worker's lease is not successful completion.
@@ -300,5 +331,5 @@ export async function processQueuedSlackMessage(messageKey: string, revision: st
       Math.max(1, Math.ceil((job.nextAttemptAt.getTime() - Date.now()) / 1000))
     );
   }
-  if (job.state === 'deleted') await broadcastSlackStatus();
+  if (job.state === 'deleted' && options.broadcast !== false) await broadcastSlackStatus();
 }

@@ -21,6 +21,7 @@ describe('UserService Tests', () => {
     lastName: 'User',
     email: 'testuuser@example.com',
     systemRole: 'USER',
+    slackTeamId: process.env.SLACK_TEAM_ID ?? '',
   };
 
   beforeAll(async () => {

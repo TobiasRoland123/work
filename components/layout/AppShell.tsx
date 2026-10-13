@@ -5,27 +5,24 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { CalendarDays, FlaskConical, MessageSquareWarning, Users, UserRound } from 'lucide-react';
 import type { ReactNode } from 'react';
-import { isSandbox } from '@/lib/sandbox/enabled';
 import './shell.css';
 
 const links = [
   { href: '/today', label: 'Week', Icon: CalendarDays, prefetch: null },
   { href: '/contact', label: 'Contact', Icon: Users, prefetch: true },
   { href: '/profile', label: 'Profile', Icon: UserRound, prefetch: true },
-  // Local development only; production builds never render this entry.
-  ...(isSandbox()
-    ? [{ href: '/sandbox', label: 'Sandbox', Icon: FlaskConical, prefetch: null }]
-    : []),
 ];
 
 export function AppShell({
   children,
   firstName,
   showMessageQuality = false,
+  showSandbox = false,
 }: {
   children: ReactNode;
   firstName?: string | null;
   showMessageQuality?: boolean;
+  showSandbox?: boolean;
 }) {
   const pathname = usePathname();
   return (
@@ -40,6 +37,9 @@ export function AppShell({
         <div className="office-nav-links">
           {[
             ...links,
+            ...(showSandbox
+              ? [{ href: '/sandbox', label: 'Sandbox', Icon: FlaskConical, prefetch: null }]
+              : []),
             ...(showMessageQuality
               ? [
                   {

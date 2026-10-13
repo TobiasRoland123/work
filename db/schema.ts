@@ -45,6 +45,7 @@ export const users = pgTable(
     email: varchar({ length: 100 }).notNull(),
     systemRole: systemRole('system_role').default('USER').notNull(),
     canReviewMessages: boolean('can_review_messages').default(false).notNull(),
+    canUseSandbox: boolean('can_use_sandbox').default(false).notNull(),
     createdAt: timestamp('created_at', { mode: 'string' }).defaultNow().notNull(),
     organisationId: integer('organisation_id').references(() => organisations.id, {
       onDelete: 'restrict',

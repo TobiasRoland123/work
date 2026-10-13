@@ -35,12 +35,19 @@ describe('sandbox credentials provider', () => {
   });
   it('is registered outside production under its own id', () => {
     vi.stubEnv('NODE_ENV', 'development');
+    vi.stubEnv('SLACK_TEAM_ID', 'T_LOCAL');
     const [provider] = sandboxProviders() as CredentialsProvider[];
     expect(provider.type).toBe('credentials');
     expect(provider.options?.id).toBe(SANDBOX_PROVIDER_ID);
   });
+  it('is not registered in a development build pointed at a real workspace', () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    vi.stubEnv('SLACK_TEAM_ID', 'T_REAL');
+    expect(sandboxProviders()).toEqual([]);
+  });
   it('authorizes only active profiles of the sandbox workspace', async () => {
     vi.stubEnv('NODE_ENV', 'development');
+    vi.stubEnv('SLACK_TEAM_ID', 'T_LOCAL');
     const [provider] = sandboxProviders() as CredentialsProvider[];
     const authorize = provider.options!.authorize!;
     const request = new Request('http://127.0.0.1:3000/api/auth/callback/sandbox');
@@ -58,6 +65,7 @@ describe('sandbox credentials provider', () => {
 describe('sandbox sign-in claim', () => {
   it('masquerades as the Slack provider and records the truth for display', () => {
     vi.stubEnv('NODE_ENV', 'development');
+    vi.stubEnv('SLACK_TEAM_ID', 'T_LOCAL');
     const token: JWT = { provider: SANDBOX_PROVIDER_ID };
     expect(applySandboxSignIn(token, account, { id: 'sandbox-user' })).toEqual({
       provider: 'slack',
@@ -75,6 +83,7 @@ describe('sandbox sign-in claim', () => {
   });
   it('ignores sign-ins through other providers', () => {
     vi.stubEnv('NODE_ENV', 'development');
+    vi.stubEnv('SLACK_TEAM_ID', 'T_LOCAL');
     const token: JWT = { provider: 'slack', userId: 'real' };
     expect(applySandboxSignIn(token, { ...account, provider: 'slack' }, { id: 'other' })).toEqual({
       provider: 'slack',

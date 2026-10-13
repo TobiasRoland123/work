@@ -15,6 +15,7 @@ afterEach(() => {
 describe('/sandbox in middleware', () => {
   it('is reachable without a session outside production', async () => {
     vi.stubEnv('NODE_ENV', 'development');
+    vi.stubEnv('SLACK_TEAM_ID', 'T_LOCAL');
     auth.mockResolvedValue(null);
     const response = await middleware(request('/sandbox'));
     expect(response.status).toBe(200);
@@ -28,8 +29,17 @@ describe('/sandbox in middleware', () => {
     expect(response.status).toBe(307);
     expect(new URL(response.headers.get('location')!).pathname).toBe('/login');
   });
+  it('requires login in a development build pointed at a real workspace', async () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    vi.stubEnv('SLACK_TEAM_ID', 'T_REAL');
+    auth.mockResolvedValue(null);
+    const response = await middleware(request('/sandbox'));
+    expect(response.status).toBe(307);
+    expect(new URL(response.headers.get('location')!).pathname).toBe('/login');
+  });
   it('does not widen the service route allowlist', async () => {
     vi.stubEnv('NODE_ENV', 'development');
+    vi.stubEnv('SLACK_TEAM_ID', 'T_LOCAL');
     auth.mockResolvedValue(null);
     const response = await middleware(request('/api/sandbox'));
     expect(response.status).toBe(401);

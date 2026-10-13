@@ -25,12 +25,13 @@ _Avoid_: Fallback, implicit status
 
 ### Local Sandbox
 
-The Local Sandbox replaces the Slack workspace during local development. It runs only
-outside production builds, and nothing in it contacts Slack.
+The Sandbox composes fixture messages without contacting Slack. Locally it replaces
+the Slack workspace. On hosted deployments it requires a real Slack session and the
+account's `can_use_sandbox` permission; test data stays under `T_LOCAL`.
 
 **Sandbox Profile**:
-A seeded person who exists only in a local database. No Slack account corresponds to
-one, and none can sign in to the real workspace.
+A person stored under the sandbox workspace. No real Slack account corresponds to
+one. Signing in as a Sandbox Profile is available only in local development.
 _Avoid_: Test user, fake user, dummy profile
 
 **Author**:
@@ -38,8 +39,8 @@ The Sandbox Profile a Sandbox Message is attributed to. Chosen per message.
 _Avoid_: Sender, poster, from-user
 
 **Signed-in Profile**:
-The Sandbox Profile whose session the browser currently holds, and therefore whose
-`/profile` page and manual status form are shown. Independent of Author.
+In local development, the Sandbox Profile whose session the browser currently holds.
+Its `/profile` page and manual status form are shown. Independent of Author.
 _Avoid_: Current user, active profile, me
 
 **Sandbox Message**:

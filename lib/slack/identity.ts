@@ -4,7 +4,7 @@ import { and, eq, sql } from 'drizzle-orm';
 import { db } from '@/db';
 import { users } from '@/db/schema';
 import { getSlackTeamId, SlackUser } from './client';
-import { isInitialMessageReviewer } from '@/lib/auth/message-review-defaults';
+import { isInitialPrivilegedAccount } from '@/lib/auth/initial-access';
 export class SlackIdentityError extends Error {
   constructor(message: string) {
     super(message);
@@ -122,8 +122,8 @@ export async function resolveSlackIdentity(identity: TrustedSlackIdentity) {
         .set({
           ...profile,
           ...(isFirstSlackLink &&
-          isInitialMessageReviewer(identity.slackTeamId, identity.slackUserId)
-            ? { canReviewMessages: true }
+          isInitialPrivilegedAccount(identity.slackTeamId, identity.slackUserId)
+            ? { canReviewMessages: true, canUseSandbox: true }
             : {}),
         })
         .where(eq(users.userId, user.userId))
@@ -135,7 +135,8 @@ export async function resolveSlackIdentity(identity: TrustedSlackIdentity) {
       .values({
         userId: randomUUID(),
         ...profile,
-        canReviewMessages: isInitialMessageReviewer(identity.slackTeamId, identity.slackUserId),
+        canReviewMessages: isInitialPrivilegedAccount(identity.slackTeamId, identity.slackUserId),
+        canUseSandbox: isInitialPrivilegedAccount(identity.slackTeamId, identity.slackUserId),
       })
       .returning();
     return created;

@@ -83,11 +83,12 @@ export async function seedSandboxProfiles() {
   for (const fixture of SANDBOX_FIXTURES) {
     const { note, seededStatus, ...profile } = fixture;
     void note;
-    await db
+    const [seeded] = await db
       .insert(users)
       .values({ ...profile, slackTeamId: SANDBOX_TEAM_ID, organisationId: organisation.id })
       .onConflictDoUpdate({
         target: users.userId,
+        setWhere: eq(users.slackTeamId, SANDBOX_TEAM_ID),
         set: {
           slackUserId: profile.slackUserId,
           slackTeamId: SANDBOX_TEAM_ID,
@@ -95,7 +96,9 @@ export async function seedSandboxProfiles() {
           firstName: profile.firstName,
           lastName: profile.lastName,
         },
-      });
+      })
+      .returning({ userId: users.userId });
+    if (!seeded) throw new Error('Sandbox fixture conflicts with an existing account');
     if (!seededStatus) continue;
     const [existing] = await db
       .select({ id: status.id })

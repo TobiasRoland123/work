@@ -16,6 +16,7 @@ describe('Local Sandbox guard', () => {
   });
   it.each(['development', 'test'])('is enabled when NODE_ENV is %s', (env) => {
     vi.stubEnv('NODE_ENV', env);
+    vi.stubEnv('SLACK_TEAM_ID', 'T_LOCAL');
     expect(isSandbox()).toBe(true);
     expect(() => assertSandbox()).not.toThrow();
   });

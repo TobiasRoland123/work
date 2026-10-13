@@ -27,5 +27,9 @@ Profile behave like a deactivated colleague.
 A session token will report `provider: 'slack'` on a machine with no Slack configured at
 all. A separate `token.sandbox` claim records the truth and is used only for display; no
 authorization decision may read it. The whole mechanism rests on the guard being false in
-production builds, so a test must assert the provider is not registered when
-`NODE_ENV=production`.
+production builds and outside the `T_LOCAL` workspace. Local profile sign-in remains
+local-only. Hosted `/sandbox` instead uses the operator's real Slack session and an
+account-level `can_use_sandbox` grant; this console gate does not register the credentials
+provider or change the Slack identity used by the rest of the application. A test must
+assert the provider is not registered when `NODE_ENV=production`. See
+[Sandbox access](../sandbox.md) for hosted setup and isolation.

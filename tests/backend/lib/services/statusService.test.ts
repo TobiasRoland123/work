@@ -26,6 +26,7 @@ describe('StatusService Tests', () => {
     lastName: 'User',
     email: 'testuserBE@example.com',
     systemRole: 'USER',
+    slackTeamId: process.env.SLACK_TEAM_ID ?? '',
   };
 
   const testStatus: NewStatus = {

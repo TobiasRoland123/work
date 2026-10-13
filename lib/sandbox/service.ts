@@ -12,6 +12,9 @@ import { extractShorthand } from '@/lib/slack/shorthand';
 import { SANDBOX_CHANNEL_ID, SANDBOX_TEAM_ID } from './enabled';
 import { deletedEnvelope, editedEnvelope, messageEnvelope, sandboxTs } from './envelope';
 
+const sandboxWorkspace = { teamId: SANDBOX_TEAM_ID, channelId: SANDBOX_CHANNEL_ID };
+const sandboxProcessing = { workspace: sandboxWorkspace, broadcast: false };
+
 export type SandboxProfile = {
   userId: string;
   slackUserId: string;
@@ -63,24 +66,14 @@ const HHmm = new Intl.DateTimeFormat('en-GB', {
 export function sandboxReadiness(env: NodeJS.ProcessEnv = process.env): SandboxReadiness {
   const checks = [
     {
-      name: 'SLACK_TEAM_ID',
-      ok: env.SLACK_TEAM_ID === SANDBOX_TEAM_ID,
-      hint: `Set SLACK_TEAM_ID=${SANDBOX_TEAM_ID} in .env.local; the intake rejects other workspaces.`,
-    },
-    {
-      name: 'SLACK_CHANNEL_ID',
-      ok: env.SLACK_CHANNEL_ID === SANDBOX_CHANNEL_ID,
-      hint: `Set SLACK_CHANNEL_ID=${SANDBOX_CHANNEL_ID} in .env.local; the intake rejects other channels.`,
-    },
-    {
       name: 'AUTH_SECRET',
       ok: Boolean(env.AUTH_SECRET?.trim()),
-      hint: 'Set AUTH_SECRET in .env.local to sign in as a Sandbox Profile.',
+      hint: 'Set AUTH_SECRET for sign-in.',
     },
     {
       name: 'AI_GATEWAY_API_KEY',
       ok: Boolean(env.AI_GATEWAY_API_KEY?.trim()),
-      hint: 'Set AI_GATEWAY_API_KEY in .env.local. Only shorthand messages work without it.',
+      hint: 'Set AI_GATEWAY_API_KEY. Only shorthand messages work without it.',
     },
   ];
   return { ready: checks.every((check) => check.ok), checks };
@@ -210,7 +203,7 @@ async function consume(
 ): Promise<SandboxProcessing> {
   let processing: SandboxProcessing;
   try {
-    await processQueuedSlackMessage(messageKey, revision);
+    await processQueuedSlackMessage(messageKey, revision, sandboxProcessing);
     const [job] = await db
       .select({
         state: slackMessages.state,
@@ -261,11 +254,6 @@ export async function sendSandboxMessage(input: {
   text: string;
   announcedAt?: string | null;
 }): Promise<SandboxOutcome> {
-  const readiness = sandboxReadiness();
-  const blocking = readiness.checks.filter(
-    (check) => !check.ok && check.name !== 'AI_GATEWAY_API_KEY' && check.name !== 'AUTH_SECRET'
-  );
-  if (blocking.length) throw new SandboxInputError(blocking.map((check) => check.hint).join(' '));
   const text = input.text.trim();
   if (!text) throw new SandboxInputError('Write a message first.');
   const instant = announcementInstant(input.announcedAt);
@@ -332,7 +320,7 @@ async function deliver(
   }
 ): Promise<SandboxOutcome> {
   // Never write to slack_messages directly: the intake owns deduplication and revisions.
-  const intake = await enqueueSlackEvent(envelope);
+  const intake = await enqueueSlackEvent(envelope, sandboxWorkspace);
   const messageKey = `${SANDBOX_TEAM_ID}:${SANDBOX_CHANNEL_ID}:${context.messageTs}`;
   const base = {
     messageKey,
@@ -363,7 +351,7 @@ async function deliver(
 
 /** Lets due retries run now instead of waiting for their backoff. */
 export async function runSandboxRetries() {
-  return processSlackInbox(5);
+  return processSlackInbox(5, undefined, undefined, sandboxProcessing);
 }
 
 export async function createSandboxProfile(input: { firstName: string; lastName: string }) {

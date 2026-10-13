@@ -1,7 +1,7 @@
 # Local development
 
 Local development runs against the **Local Sandbox** instead of Slack. The sandbox is an
-in-app page at `/sandbox`, reachable without signing in, where you compose messages on
+in-app page at `/sandbox`, where you compose messages on
 behalf of seeded Sandbox Profiles and watch them flow through the real intake
 (`enqueueSlackEvent` → `processQueuedSlackMessage`) in process. Nothing contacts Slack, no
 tunnel is needed, and no Vercel project link is needed. The decision is recorded in
@@ -42,12 +42,11 @@ chain starts from an introspected existing schema; fresh development databases u
 
 ## Gating
 
-`NODE_ENV !== 'production'` is the only switch (`lib/sandbox/enabled.ts`). There is no
-`LOCAL_SANDBOX` flag, so `pnpm run dev` also exposes the sandbox. The `T_LOCAL` scoping
-described below keeps sandbox data isolated. A production build never registers the
-sandbox sign-in provider, never lets
-`/sandbox` through middleware without a session, and answers `/sandbox` with 404;
-`tests/backend/sandbox/` asserts each of those under `NODE_ENV=production`.
+Local profile sign-in is enabled only outside production and when
+`SLACK_TEAM_ID=T_LOCAL`. Hosted `/sandbox` uses the real Slack session and requires an
+active, mapped account in the configured `SLACK_TEAM_ID` with `users.can_use_sandbox`.
+This grant is separate from Message quality review and admin access. Production setup,
+grant commands, and data-isolation details are in [Sandbox access](sandbox.md).
 
 ## Using the sandbox
 
