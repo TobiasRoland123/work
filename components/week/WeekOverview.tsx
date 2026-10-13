@@ -77,7 +77,7 @@ function WeekCell({
 }) {
   const { label, tone } = presenceOf(segment.status);
   const assumed = isAssumed(segment.status);
-  const note = segmentNote(segment, days);
+  const note = days.length === 1 ? dayNote(segment.status) : segmentNote(segment, days);
   const lastDay = days[segment.start + segment.span - 1];
   const title = [label, note, assumed && 'assumed, nothing announced'].filter(Boolean).join(' · ');
   const plannable = onPlan
@@ -293,8 +293,9 @@ export function WeekOverview({
   plans: UpcomingStatus[];
   onStatusSaved: () => void;
 }) {
+  const todayOnly = days.length === 1;
   const [query, setQuery] = useState('');
-  const [filter, setFilter] = useState<Filter>('all');
+  const [filter, setFilter] = useState<Filter>(todayOnly ? 'elsewhere' : 'all');
   const [selectedDay, setSelectedDay] = useState(days.includes(today) ? today : days[0]);
   const [openId, setOpenId] = useState<string | null>(null);
   const [planDays, setPlanDays] = useState<string[] | null>(null);
@@ -314,34 +315,46 @@ export function WeekOverview({
   }
 
   const dayIndex = Math.max(0, days.indexOf(selectedDay));
-  const title = weekTitle(weekStart, currentWeekStart, days.includes(today));
-  const subtitle = `Week ${isoWeekNumber(weekStart)} · ${weekRange(days)}`;
+  const title = todayOnly ? 'Today' : weekTitle(weekStart, currentWeekStart, days.includes(today));
+  const subtitle = todayOnly
+    ? formatDay(today, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+    : `Week ${isoWeekNumber(weekStart)} · ${weekRange(days)}`;
+  const statusOn = (person: UserWithExtras, index: number) =>
+    person.week?.find((day) => day.date === days[index])?.status ?? null;
   const groupOn = (person: UserWithExtras, index: number) =>
-    presenceOf(person.week?.[index]?.status ?? null).group;
+    presenceOf(statusOn(person, index)).group;
+  const inOfficeOn = (person: UserWithExtras, index: number) =>
+    todayOnly
+      ? statusOn(person, index)?.status === 'IN_OFFICE'
+      : groupOn(person, index) === 'office';
 
   // Keep the directory order, with the signed-in person pinned first.
   const people = [...profiles].sort(
     (a, b) => Number(b.userId === userId) - Number(a.userId === userId)
   );
   const officeCounts = days.map(
-    (_, index) => people.filter((person) => groupOn(person, index) === 'office').length
+    (_, index) => people.filter((person) => inOfficeOn(person, index)).length
   );
   const needle = query.trim().toLocaleLowerCase();
   const visible = people.filter((person) => {
     const searchable = [personName(person), ...(person.organisationRoles ?? [])]
       .join(' ')
       .toLocaleLowerCase();
-    const group = groupOn(person, dayIndex);
+    const inOffice = inOfficeOn(person, dayIndex);
     return (
       searchable.includes(needle) &&
-      (filter === 'all' || (filter === 'office' ? group === 'office' : group !== 'office'))
+      (filter === 'all' || (filter === 'office' ? inOffice : !inOffice))
     );
   });
   const selectedWeekday = formatDay(selectedDay, { weekday: 'short' });
   const filters: [Filter, string, number][] = [
     ['all', 'Everyone', people.length],
     ['office', `In office ${selectedWeekday}`, officeCounts[dayIndex]],
-    ['elsewhere', `Not in ${selectedWeekday}`, people.length - officeCounts[dayIndex]],
+    [
+      'elsewhere',
+      todayOnly ? 'Exceptions today' : `Not in ${selectedWeekday}`,
+      people.length - officeCounts[dayIndex],
+    ],
   ];
 
   return (
@@ -359,7 +372,7 @@ export function WeekOverview({
             </Link>
             <Link
               href="/today"
-              aria-current={weekStart === currentWeekStart ? 'page' : undefined}
+              aria-current={todayOnly ? 'page' : undefined}
               className="week-nav-current"
             >
               Today
@@ -403,7 +416,7 @@ export function WeekOverview({
             className="week-board"
             role="table"
             aria-label={`Attendance, ${subtitle}`}
-            style={{ '--selected': dayIndex } as CSSProperties}
+            style={{ '--selected': dayIndex, '--days': days.length } as CSSProperties}
           >
             <div role="rowgroup" className="week-head">
               <div role="row" className="week-row">
@@ -469,7 +482,9 @@ export function WeekOverview({
                   </div>
                   <div className="week-strip">
                     {segmentWeek(
-                      person.week ?? days.map((date): DayPresence => ({ date, status: null }))
+                      days.map(
+                        (date, index): DayPresence => ({ date, status: statusOn(person, index) })
+                      )
                     ).map((segment) => (
                       <WeekCell
                         key={segment.start}
@@ -516,16 +531,20 @@ export function WeekOverview({
               </p>
             )}
             {dayGroups.map(({ id, label }) => {
-              const members = people.filter((person) => groupOn(person, dayIndex) === id);
+              const groupLabel =
+                todayOnly && filter === 'elsewhere' && id === 'office' ? 'Late / leaving early' : label;
+              const members = (todayOnly ? visible : people).filter(
+                (person) => groupOn(person, dayIndex) === id
+              );
               if (!members.length) return null;
               return (
-                <section key={id} className="day-panel-group" aria-label={label}>
+                <section key={id} className="day-panel-group" aria-label={groupLabel}>
                   <h3>
-                    {label} <span>{members.length}</span>
+                    {groupLabel} <span>{members.length}</span>
                   </h3>
                   <ul>
                     {members.map((person) => {
-                      const status = person.week?.[dayIndex]?.status ?? null;
+                      const status = statusOn(person, dayIndex);
                       const { label: statusLabel, tone } = presenceOf(status);
                       const note = dayNote(status);
                       const detail = [statusLabel, note].filter(Boolean).join(' · ');

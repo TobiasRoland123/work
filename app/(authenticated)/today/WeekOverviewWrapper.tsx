@@ -5,6 +5,7 @@ import { getWeekOverviewAction } from '@/app/actions/userActions';
 import { getMyUpcomingStatusesAction } from '@/app/actions/statusActions';
 import { supabase } from '@/lib/supabaseClient';
 import { copenhagenDate } from '@/lib/status/active';
+import { workWeekStart } from '@/lib/status/week';
 import type { UpcomingStatus } from '@/lib/status/plan';
 import { WeekOverview } from '@/components/week/WeekOverview';
 import { isInOffice, personName } from '@/components/week/presence';
@@ -26,6 +27,7 @@ export const WeekOverviewWrapper = ({
   today: string;
   initialPlans: UpcomingStatus[];
 }) => {
+  const todayOnly = days.length === 1;
   const [profiles, setProfiles] = useState(initialProfiles);
   const [plans, setPlans] = useState(initialPlans);
   const [today, setToday] = useState(initialToday);
@@ -40,7 +42,7 @@ export const WeekOverviewWrapper = ({
     pending.current = true;
     try {
       const [users, upcoming] = await Promise.all([
-        getWeekOverviewAction(weekStart),
+        getWeekOverviewAction(todayOnly ? undefined : weekStart),
         getMyUpcomingStatusesAction(),
       ]);
       if (!mounted.current || !users) return;
@@ -65,7 +67,7 @@ export const WeekOverviewWrapper = ({
     } finally {
       pending.current = false;
     }
-  }, [weekStart]);
+  }, [weekStart, todayOnly]);
 
   // Synchronize server attendance with broadcasts, the clock, and browser visibility.
   useEffect(() => {
@@ -89,12 +91,13 @@ export const WeekOverviewWrapper = ({
   }, [refetchProfiles]);
   return (
     <WeekOverview
+      key={todayOnly ? today : weekStart}
       profiles={profiles}
       userId={userId}
-      days={days}
+      days={todayOnly ? [today] : days}
       today={today}
-      weekStart={weekStart}
-      currentWeekStart={currentWeekStart}
+      weekStart={todayOnly ? workWeekStart(today) : weekStart}
+      currentWeekStart={todayOnly ? workWeekStart(today) : currentWeekStart}
       arrival={arrival}
       syncError={syncError}
       plans={plans}

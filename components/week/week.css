@@ -140,8 +140,8 @@
 }
 
 .week-board {
-  --from: calc(var(--selected, 0) * 20%);
-  --to: calc((var(--selected, 0) + 1) * 20%);
+  --from: calc(var(--selected, 0) * 100% / var(--days, 5));
+  --to: calc((var(--selected, 0) + 1) * 100% / var(--days, 5));
   background: white;
   border: 1px solid #e3e3dc;
   border-radius: 10px;
@@ -153,7 +153,7 @@
 }
 .week-strip {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(var(--days, 5), minmax(0, 1fr));
   background: linear-gradient(
     90deg,
     transparent var(--from),

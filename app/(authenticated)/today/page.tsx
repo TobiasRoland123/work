@@ -15,7 +15,7 @@ export default async function WeekPage({
   const now = new Date();
   const today = copenhagenDate(now);
   const weekStart = parseWorkWeekStart(week, now);
-  const days = workWeekDays(weekStart);
+  const days = week ? workWeekDays(weekStart) : [today];
   const [users, plans] = await Promise.all([
     userService.getAllUsers(false, days),
     statusService.getUpcomingStatusesByUserUserId(userId),
@@ -23,7 +23,7 @@ export default async function WeekPage({
 
   return (
     <WeekOverviewWrapper
-      key={weekStart}
+      key={week ? weekStart : 'today'}
       initialProfiles={users}
       userId={userId}
       weekStart={weekStart}

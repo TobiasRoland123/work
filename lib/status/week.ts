@@ -54,7 +54,7 @@ export function isoWeekNumber(day: string): number {
 
 /**
  * Resolve each day with the same rules as today's presence. Other days are read at the start
- * of the workday (09:00 Copenhagen); today is read live once the workday has started, so
+ * of the workday (09:00 Copenhagen); today is read live, so
  * timed arrivals and departures move as the day goes on.
  */
 export function resolveWorkWeek(
@@ -66,7 +66,7 @@ export function resolveWorkWeek(
   const today = copenhagenDate(now);
   return days.map((date) => {
     const workdayStart = copenhagenWallClock(date, 9, 0);
-    const moment = date === today && now > workdayStart ? now : workdayStart;
+    const moment = date === today ? now : workdayStart;
     return { date, status: resolvePresenceStatus(statuses, userID, moment) };
   });
 }

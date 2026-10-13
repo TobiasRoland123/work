@@ -1,11 +1,13 @@
 import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import type { Status } from '@/db/types';
+import type { DayPresence, Status } from '@/db/types';
 import { WeekOverview } from '@/components/week/WeekOverview';
-import { workWeekDays } from '@/lib/status/week';
+import { resolveWorkWeek, workWeekDays } from '@/lib/status/week';
 
-vi.mock('@/components/layout/PageHeader', () => ({ PageHeader: () => null }));
+vi.mock('@/components/layout/PageHeader', () => ({
+  PageHeader: ({ title }: { title: string }) => React.createElement('h1', null, title),
+}));
 vi.mock('@/components/layout/StatusDialog', () => ({ StatusDialog: () => null }));
 vi.mock('@/app/actions/statusActions', () => ({ deleteStatusByIdAction: vi.fn() }));
 vi.mock('@/components/week/week.css', () => ({}));
@@ -64,6 +66,43 @@ function renderWeek(selectedStatus: Status | null) {
   };
 }
 
+function renderToday(
+  selectedStatus: Status | null,
+  profileStatus: Status | null = null,
+  profileWeek?: DayPresence[]
+) {
+  const today = days[1];
+  const html = renderToStaticMarkup(
+    React.createElement(WeekOverview, {
+      profiles: [
+        {
+          userId: 'anna',
+          email: 'anna@example.com',
+          firstName: 'Anna',
+          lastName: 'Attendee',
+          status: profileStatus,
+          week: profileWeek ?? [{ date: today, status: selectedStatus }],
+        },
+      ],
+      userId: 'anna',
+      days: [today],
+      today,
+      weekStart: days[0],
+      currentWeekStart: days[0],
+      arrival: null,
+      syncError: false,
+      plans: [],
+      onStatusSaved: vi.fn(),
+    })
+  );
+
+  return {
+    html,
+    grid: html.match(/<div class="week-board"[\s\S]*?<\/main>/)?.[0] ?? '',
+    sidebar: html.match(/<aside[\s\S]*?<\/aside>/)?.[0] ?? '',
+  };
+}
+
 describe('status labels in the week grid and selected-day sidebar', () => {
   it.each([
     ['IN_OFFICE', 'In office'],
@@ -112,5 +151,99 @@ describe('status labels in the week grid and selected-day sidebar', () => {
     const { grid, sidebar } = renderWeek(status({ status: null, details: 'At a workshop' }));
     expect(grid).toContain('<strong>Note</strong><small>At a workshop</small>');
     expect(sidebar).toContain('<small>Note · At a workshop</small>');
+  });
+});
+
+describe('today-only attendance', () => {
+  it('renders one day column and the Today heading', () => {
+    const { html, grid } = renderToday(status({ status: 'IN_LATE' }));
+    expect(html).toContain('<h1>Today</h1>');
+    expect(grid.match(/role="columnheader"/g) ?? []).toHaveLength(2); // colleague + today
+    expect(grid).toContain('<strong>In late</strong>');
+  });
+
+  it('excludes only exact IN_OFFICE from both the grid and sidebar, including assumed attendance', () => {
+    for (const office of [status({ status: 'IN_OFFICE' }), status({ id: 0 })]) {
+      const { grid, sidebar } = renderToday(office);
+      expect(grid).not.toContain('Anna Attendee');
+      expect(sidebar).not.toContain('Anna Attendee');
+    }
+  });
+
+  it.each([
+    status({ status: 'IN_LATE' }),
+    status({ status: 'LEAVING_EARLY' }),
+    status({ status: 'FROM_HOME' }),
+    status({ status: 'AT_CLIENT' }),
+    status({ status: 'SICK' }),
+    status({ status: 'CHILD_SICK' }),
+    null,
+    status({ status: null, details: 'At a workshop' }),
+    status({ status: 'VACATION' }),
+    status({ status: 'ON_LEAVE' }),
+    status({ status: 'AWAY' }),
+  ])('keeps non-IN_OFFICE attendance visible in both areas', (todayStatus) => {
+    const { grid, sidebar } = renderToday(todayStatus, status({ status: 'IN_OFFICE' }));
+    expect(grid).toContain('Anna Attendee');
+    expect(sidebar).toContain('Anna Attendee');
+  });
+
+  it('uses the selected date status rather than a different day or the profile status', () => {
+    const { grid, sidebar } = renderToday(
+      status({ status: 'VACATION' }),
+      status({ status: 'IN_OFFICE' })
+    );
+    expect(grid).toContain('Anna Attendee');
+    expect(grid).toContain('<strong>Vacation</strong>');
+    expect(sidebar).toContain('Anna Attendee');
+  });
+
+  it('looks up today by date when the profile still has a full week of statuses', () => {
+    const { grid, sidebar } = renderToday(status({ status: 'VACATION' }), null, [
+      {
+        date: days[0],
+        status: status({ status: 'IN_OFFICE', fromDate: days[0], toDate: days[0] }),
+      },
+      { date: days[1], status: status({ status: 'VACATION', fromDate: days[1], toDate: days[1] }) },
+      ...days.slice(2).map((date) => ({ date, status: null })),
+    ]);
+
+    expect(grid).toContain('Anna Attendee');
+    expect(grid).toContain('<strong>Vacation</strong>');
+    expect(grid).not.toContain('<strong>In office</strong>');
+    expect(sidebar).toContain('Vacation');
+  });
+
+  it.each([days[0], days[2]])(
+    'ignores an exception declared for %s when today defaults to office',
+    (date) => {
+      const resolved = resolveWorkWeek(
+        [status({ status: 'FROM_HOME', fromDate: date, toDate: date })],
+        'anna',
+        days,
+        new Date('2026-09-22T10:00:00Z')
+      );
+      const { grid, sidebar } = renderToday(null, null, resolved);
+
+      expect(resolved[1].status).toMatchObject({ id: 0, status: 'IN_OFFICE' });
+      expect(grid).not.toContain('Anna Attendee');
+      expect(sidebar).not.toContain('Anna Attendee');
+    }
+  );
+
+  it('shows only today’s note for a declaration spanning multiple days', () => {
+    const spanning = status({
+      status: 'IN_LATE',
+      time: new Date('2026-09-22T08:00:00Z'),
+      details: 'doctor',
+      fromDate: days[1],
+      toDate: days[3],
+    });
+    const { grid, sidebar } = renderToday(spanning);
+
+    expect(grid).toContain('<small>from 10:00 · doctor</small>');
+    expect(grid).not.toContain('until 24.09');
+    expect(sidebar).toContain('In late · from 10:00 · doctor');
+    expect(sidebar).not.toContain('until 24.09');
   });
 });

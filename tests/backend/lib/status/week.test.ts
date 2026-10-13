@@ -54,7 +54,7 @@ describe('work week', () => {
 
   it('applies declarations to their own days and the workday default elsewhere', () => {
     expect(statuses([row()], '2026-09-21T06:00:00Z')).toEqual([
-      'IN_OFFICE',
+      null,
       'VACATION',
       'VACATION',
       'IN_OFFICE',
@@ -78,5 +78,41 @@ describe('work week', () => {
     };
     expect(statuses([lateToday], '2026-09-21T07:30:00Z')[0]).toBe('IN_LATE');
     expect(statuses([lateToday], '2026-09-21T08:30:00Z')[0]).toBe('IN_OFFICE');
+  });
+
+  it('uses the Copenhagen calendar date for today, including the UTC date boundary', () => {
+    const monday = workWeekDays('2026-09-21');
+    const beforeCopenhagenMidnight = resolveWorkWeek(
+      [],
+      'person',
+      monday,
+      new Date('2026-09-21T21:59:00Z')
+    );
+    const afterCopenhagenMidnight = resolveWorkWeek(
+      [],
+      'person',
+      monday,
+      new Date('2026-09-21T22:01:00Z')
+    );
+
+    expect(beforeCopenhagenMidnight[0].status?.id).toBe(0);
+    expect(afterCopenhagenMidnight[1].status).toBeNull();
+  });
+
+  it('resolves today before 09:00 as absent and from 09:00 using the actual current time', () => {
+    const today = ['2026-09-21'];
+
+    expect(
+      resolveWorkWeek([], 'person', today, new Date('2026-09-21T06:59:00Z'))[0].status
+    ).toBeNull();
+    expect(
+      resolveWorkWeek([], 'person', today, new Date('2026-09-21T07:00:00Z'))[0].status
+    ).toMatchObject({ id: 0, status: 'IN_OFFICE' });
+  });
+
+  it('keeps weekend today on the weekend instead of resolving the coming Monday', () => {
+    const sunday = resolveWorkWeek([], 'person', ['2026-09-27'], new Date('2026-09-27T10:00:00Z'));
+
+    expect(sunday).toEqual([{ date: '2026-09-27', status: null }]);
   });
 });
