@@ -42,7 +42,7 @@ export function WeekOverviewSkeleton() {
               </span>
             </div>
             <div className="week-filters">
-              {['w-16', 'w-24', 'w-20'].map((width) => (
+              {['w-16', 'w-20'].map((width) => (
                 <div key={width} className="flex h-[33.5px] items-center px-3 max-[640px]:flex-1">
                   <Skeleton className={`h-[9px] ${width}`} />
                 </div>

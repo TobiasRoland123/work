@@ -122,14 +122,15 @@
   border-radius: 8px;
   background: #ebeae2;
 }
-.week-filters button {
+.week-filters a {
   padding: 7px 12px;
   border-radius: 6px;
   font-size: 13px;
+  text-align: center;
   color: #5e635f;
   white-space: nowrap;
 }
-.week-filters button[aria-pressed='true'] {
+.week-filters a[aria-current='page'] {
   background: white;
   color: #0b1014;
   box-shadow: 0 1px 2px #0000001a;
@@ -725,7 +726,7 @@
   .week-filters {
     width: 100%;
   }
-  .week-filters button {
+  .week-filters a {
     flex: 1;
     padding-inline: 6px;
   }

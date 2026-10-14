@@ -90,12 +90,17 @@ function render(days: string[], selectedDate = days[0]) {
   );
 }
 
+const navigationOf = (html: string) =>
+  html.match(/<nav class="week-nav"[\s\S]*?<\/nav>/)?.[0] ?? '';
+const viewLinksOf = (html: string) =>
+  html.match(/<div class="week-filters"[\s\S]*?<\/div>/)?.[0] ?? '';
+
 describe('date navigation in WeekOverview', () => {
   it('moves the reported Wednesday 14 October back to Tuesday 13 October and forward to Thursday', () => {
     const html = render([today]);
     expect(html).toContain('aria-label="Previous day" href="/today?day=2026-10-13"');
     expect(html).toContain('aria-label="Next day" href="/today?day=2026-10-15"');
-    expect(html).not.toContain('/today?week=');
+    expect(navigationOf(html)).not.toContain('/today?week=');
   });
 
   it('uses selected-day routes and labels for previous, today, and next', () => {
@@ -104,7 +109,8 @@ describe('date navigation in WeekOverview', () => {
     expect(html).toMatch(/<a aria-label="Previous day" href="\/today\?day=2026-10-12"/);
     expect(html).toContain('href="/today"');
     expect(html).toMatch(/<a aria-label="Next day" href="\/today\?day=2026-10-14"/);
-    expect(html).not.toContain('aria-current="page"');
+    expect(navigationOf(html)).not.toContain('aria-current="page"');
+    expect(viewLinksOf(html)).toContain('aria-current="page" href="/today">Today</a>');
   });
 
   it.each([
@@ -135,12 +141,11 @@ describe('date navigation in WeekOverview', () => {
     }
   });
 
-  it('uses the selected historical date for the title, subtitle, grid, filter, counts, and panel', () => {
+  it('uses the selected historical date for the title, subtitle, grid, counts, and panel', () => {
     const html = render(['2026-10-13']);
     expect(html).toContain('<h1>Tuesday</h1>');
     expect(html).toContain('Tuesday, 13 October 2026');
-    expect(html).toContain('Exceptions Tue');
-    expect(html).not.toContain('Exceptions today');
+    expect(viewLinksOf(html)).toContain('aria-current="page" href="/today">Today</a>');
     expect(html).not.toContain('<em>Today</em>');
     expect(html).toContain('<strong>1</strong> in office');
     expect(html).toContain('<strong>1</strong> of 2 in the office');
@@ -158,14 +163,16 @@ describe('date navigation in WeekOverview', () => {
     expect(html).toContain('aria-label="Previous week" href="/today?week=2026-10-05"');
     expect(html).toContain('aria-label="Next week" href="/today?week=2026-10-19"');
     expect(html).toContain('href="/today"');
-    expect(html).not.toContain('aria-current="page"');
+    expect(navigationOf(html)).not.toContain('aria-current="page"');
+    expect(viewLinksOf(html)).toContain(
+      'aria-current="page" href="/today?week=2026-10-12">Week</a>'
+    );
   });
 
   it('marks Today only when the single displayed date is the actual current date', () => {
     const html = render([today]);
     expect(html).toContain('<h1>Today</h1>');
-    expect(html).toContain('aria-current="page"');
-    expect(html).toContain('Exceptions today');
+    expect(navigationOf(html)).toContain('aria-current="page"');
     expect(html).toContain('<em>Today</em>');
   });
 });
