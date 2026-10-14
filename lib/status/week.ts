@@ -3,7 +3,7 @@ import { copenhagenDate, copenhagenWallClock, resolvePresenceStatus } from './ac
 
 const isoDay = /^\d{4}-\d{2}-\d{2}$/;
 
-function addDays(day: string, amount: number): string {
+export function addDays(day: string, amount: number): string {
   const date = new Date(`${day}T00:00:00Z`);
   date.setUTCDate(date.getUTCDate() + amount);
   return date.toISOString().slice(0, 10);
@@ -41,6 +41,11 @@ export function formatDay(day: string, options: Intl.DateTimeFormatOptions): str
 /** The requested week's Monday, or the current work week when the value is missing or invalid. */
 export function parseWorkWeekStart(value: unknown, now: Date = new Date()): string {
   return workWeekStart(isValidDay(value) ? value : copenhagenDate(now));
+}
+
+/** The requested calendar day, or Copenhagen today when the value is missing or invalid. */
+export function parseDay(value: unknown, now: Date = new Date()): string {
+  return isValidDay(value) ? value : copenhagenDate(now);
 }
 
 /** ISO 8601 week number of a YYYY-MM-DD date. */

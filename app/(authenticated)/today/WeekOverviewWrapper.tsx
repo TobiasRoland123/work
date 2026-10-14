@@ -16,6 +16,7 @@ export const WeekOverviewWrapper = ({
   weekStart,
   currentWeekStart,
   days,
+  day,
   today: initialToday,
   initialPlans,
 }: {
@@ -24,6 +25,7 @@ export const WeekOverviewWrapper = ({
   weekStart: string;
   currentWeekStart: string;
   days: string[];
+  day?: string;
   today: string;
   initialPlans: UpcomingStatus[];
 }) => {
@@ -42,7 +44,7 @@ export const WeekOverviewWrapper = ({
     pending.current = true;
     try {
       const [users, upcoming] = await Promise.all([
-        getWeekOverviewAction(todayOnly ? undefined : weekStart),
+        getWeekOverviewAction(todayOnly ? undefined : weekStart, day),
         getMyUpcomingStatusesAction(),
       ]);
       if (!mounted.current || !users) return;
@@ -67,7 +69,7 @@ export const WeekOverviewWrapper = ({
     } finally {
       pending.current = false;
     }
-  }, [weekStart, todayOnly]);
+  }, [weekStart, todayOnly, day]);
 
   // Synchronize server attendance with broadcasts, the clock, and browser visibility.
   useEffect(() => {
@@ -91,12 +93,12 @@ export const WeekOverviewWrapper = ({
   }, [refetchProfiles]);
   return (
     <WeekOverview
-      key={todayOnly ? today : weekStart}
+      key={todayOnly ? (day ?? today) : weekStart}
       profiles={profiles}
       userId={userId}
-      days={todayOnly ? [today] : days}
+      days={todayOnly ? [day ?? today] : days}
       today={today}
-      weekStart={todayOnly ? workWeekStart(today) : weekStart}
+      weekStart={todayOnly ? workWeekStart(day ?? today) : weekStart}
       currentWeekStart={todayOnly ? workWeekStart(today) : currentWeekStart}
       arrival={arrival}
       syncError={syncError}

@@ -13,7 +13,7 @@ import { ProfileListItem } from '@/components/ui/ProfileListItem/ProfileListItem
 import { deleteStatusByIdAction } from '@/app/actions/statusActions';
 import { getSlackImageUrl } from '@/lib/slack/image';
 import type { UpcomingStatus } from '@/lib/status/plan';
-import { formatDay, isoWeekNumber, shiftWorkWeek } from '@/lib/status/week';
+import { addDays, formatDay, isoWeekNumber, shiftWorkWeek } from '@/lib/status/week';
 import {
   dayGroups,
   dayNote,
@@ -27,8 +27,6 @@ import {
 } from './presence';
 import { WeekLegend } from './WeekLegend';
 import './week.css';
-
-type Filter = 'all' | 'office' | 'elsewhere';
 
 const shortDay = (day: string) =>
   formatDay(day, { weekday: 'short', day: 'numeric', month: 'short' });
@@ -68,22 +66,33 @@ function WeekCell({
   days,
   today,
   onPlan,
+  hideInOffice = false,
 }: {
   segment: Segment;
   days: readonly string[];
   today: string;
   /** Present in the signed-in person's row; receives the segment's days from today on. */
   onPlan?: (days: string[]) => void;
+  hideInOffice?: boolean;
 }) {
-  const { label, tone } = presenceOf(segment.status);
-  const assumed = isAssumed(segment.status);
-  const note = days.length === 1 ? dayNote(segment.status) : segmentNote(segment, days);
+  const hiddenOffice = hideInOffice && segment.status?.status === 'IN_OFFICE';
+  const { label, tone } = hiddenOffice
+    ? { label: 'No exception', tone: 'none' }
+    : presenceOf(segment.status);
+  const assumed = !hiddenOffice && isAssumed(segment.status);
+  const note = hiddenOffice
+    ? null
+    : days.length === 1
+      ? dayNote(segment.status)
+      : segmentNote(segment, days);
   const lastDay = days[segment.start + segment.span - 1];
   const title = [label, note, assumed && 'assumed, nothing announced'].filter(Boolean).join(' · ');
   const plannable = onPlan
     ? days.slice(segment.start, segment.start + segment.span).filter((day) => day >= today)
     : [];
-  const content = (
+  const content = hiddenOffice ? (
+    <span className="sr-only">No exception</span>
+  ) : (
     <>
       <strong>{label}</strong>
       {note && <small>{note}</small>}
@@ -295,7 +304,6 @@ export function WeekOverview({
 }) {
   const todayOnly = days.length === 1;
   const [query, setQuery] = useState('');
-  const [filter, setFilter] = useState<Filter>(todayOnly ? 'elsewhere' : 'all');
   const [selectedDay, setSelectedDay] = useState(days.includes(today) ? today : days[0]);
   const [openId, setOpenId] = useState<string | null>(null);
   const [planDays, setPlanDays] = useState<string[] | null>(null);
@@ -315,18 +323,20 @@ export function WeekOverview({
   }
 
   const dayIndex = Math.max(0, days.indexOf(selectedDay));
-  const title = todayOnly ? 'Today' : weekTitle(weekStart, currentWeekStart, days.includes(today));
+  const title = todayOnly
+    ? days[0] === today
+      ? 'Today'
+      : formatDay(days[0], { weekday: 'long' })
+    : weekTitle(weekStart, currentWeekStart, days.includes(today));
   const subtitle = todayOnly
-    ? formatDay(today, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
+    ? formatDay(days[0], { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
     : `Week ${isoWeekNumber(weekStart)} · ${weekRange(days)}`;
   const statusOn = (person: UserWithExtras, index: number) =>
     person.week?.find((day) => day.date === days[index])?.status ?? null;
   const groupOn = (person: UserWithExtras, index: number) =>
     presenceOf(statusOn(person, index)).group;
   const inOfficeOn = (person: UserWithExtras, index: number) =>
-    todayOnly
-      ? statusOn(person, index)?.status === 'IN_OFFICE'
-      : groupOn(person, index) === 'office';
+    statusOn(person, index)?.status === 'IN_OFFICE';
 
   // Keep the directory order, with the signed-in person pinned first.
   const people = [...profiles].sort(
@@ -340,22 +350,8 @@ export function WeekOverview({
     const searchable = [personName(person), ...(person.organisationRoles ?? [])]
       .join(' ')
       .toLocaleLowerCase();
-    const inOffice = inOfficeOn(person, dayIndex);
-    return (
-      searchable.includes(needle) &&
-      (filter === 'all' || (filter === 'office' ? inOffice : !inOffice))
-    );
+    return searchable.includes(needle) && days.some((_, index) => !inOfficeOn(person, index));
   });
-  const selectedWeekday = formatDay(selectedDay, { weekday: 'short' });
-  const filters: [Filter, string, number][] = [
-    ['all', 'Everyone', people.length],
-    ['office', `In office ${selectedWeekday}`, officeCounts[dayIndex]],
-    [
-      'elsewhere',
-      todayOnly ? 'Exceptions today' : `Not in ${selectedWeekday}`,
-      people.length - officeCounts[dayIndex],
-    ],
-  ];
 
   return (
     <div className="week-page">
@@ -366,18 +362,32 @@ export function WeekOverview({
         statusWeekStart={weekStart}
         onStatusSaved={onStatusSaved}
         actions={
-          <nav className="week-nav" aria-label="Choose week">
-            <Link href={`/today?week=${shiftWorkWeek(weekStart, -1)}`} aria-label="Previous week">
+          <nav className="week-nav" aria-label={todayOnly ? 'Choose day' : 'Choose week'}>
+            <Link
+              href={
+                todayOnly
+                  ? `/today?day=${addDays(days[0], -1)}`
+                  : `/today?week=${shiftWorkWeek(weekStart, -1)}`
+              }
+              aria-label={todayOnly ? 'Previous day' : 'Previous week'}
+            >
               <ChevronLeft size={18} />
             </Link>
             <Link
               href="/today"
-              aria-current={todayOnly ? 'page' : undefined}
+              aria-current={todayOnly && days[0] === today ? 'page' : undefined}
               className="week-nav-current"
             >
               Today
             </Link>
-            <Link href={`/today?week=${shiftWorkWeek(weekStart, 1)}`} aria-label="Next week">
+            <Link
+              href={
+                todayOnly
+                  ? `/today?day=${addDays(days[0], 1)}`
+                  : `/today?week=${shiftWorkWeek(weekStart, 1)}`
+              }
+              aria-label={todayOnly ? 'Next day' : 'Next week'}
+            >
               <ChevronRight size={18} />
             </Link>
           </nav>
@@ -400,16 +410,16 @@ export function WeekOverview({
                 </button>
               )}
             </label>
-            <div className="week-filters" role="group" aria-label="Filter colleagues">
-              {filters.map(([value, label, count]) => (
-                <button
-                  key={value}
-                  aria-pressed={filter === value}
-                  onClick={() => setFilter(value)}
-                >
-                  {label} <span>{count}</span>
-                </button>
-              ))}
+            <div className="week-filters" role="group" aria-label="Attendance view">
+              <Link href="/today" aria-current={todayOnly ? 'page' : undefined}>
+                Today
+              </Link>
+              <Link
+                href={`/today?week=${todayOnly ? currentWeekStart : weekStart}`}
+                aria-current={todayOnly ? undefined : 'page'}
+              >
+                Week
+              </Link>
             </div>
           </div>
           <div
@@ -491,6 +501,7 @@ export function WeekOverview({
                         segment={segment}
                         days={days}
                         today={today}
+                        hideInOffice
                         onPlan={person.userId === userId ? plan : undefined}
                       />
                     ))}
@@ -500,7 +511,11 @@ export function WeekOverview({
             </div>
             {!visible.length && (
               <p className="week-empty">
-                {people.length ? 'No colleagues match your search.' : 'No colleagues to show yet.'}
+                {!people.length
+                  ? 'No colleagues to show yet.'
+                  : needle
+                    ? 'No colleagues match your search.'
+                    : 'No attendance exceptions to show.'}
               </p>
             )}
           </div>
@@ -524,17 +539,16 @@ export function WeekOverview({
                 <strong>{officeCounts[dayIndex]}</strong> of {people.length} in the office
               </p>
             </header>
-            {arrival && (
+            {arrival && selectedDay === today && (
               <p className="day-panel-arrival" role="status">
                 <i aria-hidden="true" />
                 {arrival}
               </p>
             )}
             {dayGroups.map(({ id, label }) => {
-              const groupLabel =
-                todayOnly && filter === 'elsewhere' && id === 'office' ? 'Late / leaving early' : label;
-              const members = (todayOnly ? visible : people).filter(
-                (person) => groupOn(person, dayIndex) === id
+              const groupLabel = id === 'office' ? 'Late / leaving early' : label;
+              const members = visible.filter(
+                (person) => !inOfficeOn(person, dayIndex) && groupOn(person, dayIndex) === id
               );
               if (!members.length) return null;
               return (
