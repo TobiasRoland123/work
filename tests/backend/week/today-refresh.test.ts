@@ -46,4 +46,20 @@ describe('week overview refresh action', () => {
       '2026-09-25',
     ]);
   });
+
+  it('refreshes the requested single day without returning to today, including across midnight', async () => {
+    vi.setSystemTime(new Date('2026-10-14T10:00:00Z'));
+    await getWeekOverviewAction(undefined, '2026-10-13');
+    expect(mocked.getAllUsers).toHaveBeenLastCalledWith(false, ['2026-10-13']);
+
+    vi.setSystemTime(new Date('2026-10-14T22:01:00Z'));
+    await getWeekOverviewAction(undefined, '2026-10-13');
+    expect(mocked.getAllUsers).toHaveBeenLastCalledWith(false, ['2026-10-13']);
+  });
+
+  it('validates a requested day before loading attendance', async () => {
+    await getWeekOverviewAction(undefined, '2026-02-31');
+
+    expect(mocked.getAllUsers).toHaveBeenCalledWith(false, ['2026-09-26']);
+  });
 });
