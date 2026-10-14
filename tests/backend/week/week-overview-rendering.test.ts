@@ -61,6 +61,7 @@ function renderWeek(selectedStatus: Status | null) {
   );
 
   return {
+    html,
     grid: html.match(/<div class="week-board"[\s\S]*?<\/main>/)?.[0] ?? '',
     sidebar: html.match(/<aside[\s\S]*?<\/aside>/)?.[0] ?? '',
   };
@@ -105,7 +106,6 @@ function renderToday(
 
 describe('status labels in the week grid and selected-day sidebar', () => {
   it.each([
-    ['IN_OFFICE', 'In office'],
     ['IN_LATE', 'In late'],
     ['LEAVING_EARLY', 'Leaving early'],
     ['FROM_HOME', 'Home'],
@@ -121,12 +121,10 @@ describe('status labels in the week grid and selected-day sidebar', () => {
     expect(sidebar).toContain(`<small>${label}</small>`);
   });
 
-  it('displays assumed office attendance in both areas and retains its grid annotation', () => {
-    const { grid, sidebar } = renderWeek(status({ id: 0 }));
-    expect(grid).toContain('<strong>In office</strong>');
-    expect(grid).toContain('data-assumed="true"');
-    expect(grid).toContain('<span class="sr-only"> (assumed)</span>');
-    expect(sidebar).toContain('<small>In office</small>');
+  it.each([0, 7])('omits office attendance with id %s from both areas', (id) => {
+    const { grid, sidebar } = renderWeek(status({ id }));
+    expect(grid).not.toContain('Anna Attendee');
+    expect(sidebar).not.toContain('Anna Attendee');
   });
 
   it('visibly identifies missing status in both areas', () => {
@@ -135,22 +133,136 @@ describe('status labels in the week grid and selected-day sidebar', () => {
     expect(sidebar).toContain('<small>No status</small>');
   });
 
-  it.each(['IN_OFFICE', 'IN_LATE'] as const)(
+  it.each(['IN_LATE', 'LEAVING_EARLY'] as const)(
     'retains the %s label alongside its arrival time and details',
     (value) => {
       const { grid, sidebar } = renderWeek(
         status({ status: value, time: new Date('2026-09-22T08:30:00Z'), details: 'dentist' })
       );
-      const label = value === 'IN_OFFICE' ? 'In office' : 'In late';
-      expect(grid).toContain(`<strong>${label}</strong><small>from 10:30 · dentist</small>`);
-      expect(sidebar).toContain(`<small>${label} · from 10:30 · dentist</small>`);
+      const label = value === 'IN_LATE' ? 'In late' : 'Leaving early';
+      const note = value === 'IN_LATE' ? 'from 10:30' : 'until 10:30';
+      expect(grid).toContain(`<strong>${label}</strong><small>${note} · dentist</small>`);
+      expect(sidebar).toContain(`<small>${label} · ${note} · dentist</small>`);
     }
   );
+
+  it('leaves office cells blank while preserving the planning button', () => {
+    const mixedWeek = days.map((date, index) => ({
+      date,
+      status: status({
+        status: index === 2 ? 'IN_OFFICE' : 'VACATION',
+        fromDate: date,
+        toDate: date,
+      }),
+    }));
+    const html = renderToStaticMarkup(
+      React.createElement(WeekOverview, {
+        profiles: [
+          {
+            userId: 'anna',
+            email: 'anna@example.com',
+            firstName: 'Anna',
+            lastName: 'Attendee',
+            status: null,
+            week: mixedWeek,
+          },
+        ],
+        userId: 'anna',
+        days,
+        today: days[1],
+        weekStart: days[0],
+        currentWeekStart: days[0],
+        arrival: null,
+        syncError: false,
+        plans: [],
+        onStatusSaved: vi.fn(),
+      })
+    );
+    const grid = html.match(/<div class="week-board"[\s\S]*?<\/main>/)?.[0] ?? '';
+    expect(grid).toContain('<span class="sr-only">No exception</span>');
+    expect(grid).not.toContain('<strong>In office</strong>');
+    expect(grid).toMatch(/aria-label="Plan [^"]+\. Currently: No exception"/);
+  });
+
+  it('groups late and early departures under the shared heading', () => {
+    const { sidebar } = renderWeek(status({ status: 'IN_LATE' }));
+    expect(sidebar).toContain('aria-label="Late / leaving early"');
+  });
 
   it('retains description-only announcements in both areas', () => {
     const { grid, sidebar } = renderWeek(status({ status: null, details: 'At a workshop' }));
     expect(grid).toContain('<strong>Note</strong><small>At a workshop</small>');
     expect(sidebar).toContain('<small>Note · At a workshop</small>');
+  });
+});
+
+describe('attendance view links', () => {
+  it('offers only Today and Week and marks the current mode', () => {
+    const { html: weekHtml } = renderWeek(status({ status: 'VACATION' }));
+    const weekLinks = weekHtml.match(/<div class="week-filters"[\s\S]*?<\/div>/)?.[0] ?? '';
+    expect(weekLinks).toContain('aria-label="Attendance view"');
+    expect(weekLinks.match(/<a /g)).toHaveLength(2);
+    expect(weekLinks).toContain('href="/today">Today</a>');
+    expect(weekLinks).toContain(`aria-current="page" href="/today?week=${days[0]}">Week</a>`);
+    expect(weekLinks).not.toMatch(/Everyone|In office|Exceptions/);
+
+    const { html: todayHtml } = renderToday(status({ status: 'VACATION' }));
+    const todayLinks = todayHtml.match(/<div class="week-filters"[\s\S]*?<\/div>/)?.[0] ?? '';
+    expect(todayLinks.match(/<a /g)).toHaveLength(2);
+    expect(todayLinks).toContain('aria-current="page" href="/today">Today</a>');
+    expect(todayLinks).toContain(`href="/today?week=${days[0]}"`);
+  });
+
+  it('includes people with an exception on any week day but limits the sidebar to today', () => {
+    const tomorrow = days[2];
+    const profiles = [
+      {
+        userId: 'anna',
+        email: 'anna@example.com',
+        firstName: 'Anna',
+        lastName: 'Attendee',
+        status: null,
+        week: days.map((date) => ({
+          date,
+          status:
+            date === tomorrow
+              ? status({ status: 'VACATION', fromDate: tomorrow, toDate: tomorrow })
+              : status({ status: 'IN_OFFICE', fromDate: date, toDate: date }),
+        })),
+      },
+      {
+        userId: 'ben',
+        email: 'ben@example.com',
+        firstName: 'Ben',
+        lastName: 'Office',
+        status: null,
+        week: days.map((date) => ({
+          date,
+          status: status({ id: 0, fromDate: date, toDate: date }),
+        })),
+      },
+    ];
+    const html = renderToStaticMarkup(
+      React.createElement(WeekOverview, {
+        profiles,
+        userId: 'anna',
+        days,
+        today: days[1],
+        weekStart: days[0],
+        currentWeekStart: days[0],
+        arrival: null,
+        syncError: false,
+        plans: [],
+        onStatusSaved: vi.fn(),
+      })
+    );
+    const grid = html.match(/<div class="week-board"[\s\S]*?<\/main>/)?.[0] ?? '';
+    const sidebar = html.match(/<aside[\s\S]*?<\/aside>/)?.[0] ?? '';
+    expect(grid).toContain('Anna Attendee');
+    expect(grid).toContain('<strong>Vacation</strong>');
+    expect(grid).not.toContain('Ben Office');
+    expect(sidebar).not.toContain('Anna Attendee');
+    expect(sidebar).not.toContain('Ben Office');
   });
 });
 
