@@ -72,7 +72,7 @@ export async function missingDatabaseSchema(pool) {
   return missing;
 }
 
-async function ensureServiceRole(pool) {
+export async function ensureServiceRole(pool) {
   const result = await pool.query(
     "SELECT EXISTS (SELECT 1 FROM pg_roles WHERE rolname = 'service_role') AS present"
   );

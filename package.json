@@ -26,6 +26,7 @@
     "db:down": "docker compose --env-file .env.local down",
     "db:generate": "drizzle-kit generate",
     "db:push": "drizzle-kit push",
+    "db:prepare-test": "tsx scripts/prepare-test-database.ts",
     "db:studio": "drizzle-kit studio",
     "db:seed": "tsx scripts/seed.ts",
     "db:migrate": "tsx scripts/migrate.ts",

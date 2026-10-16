@@ -96,3 +96,25 @@ describe.each(['db/index.ts', 'drizzle.config.ts'])('%s database configuration',
     });
   });
 });
+
+describe('drizzle.config.ts SSL configuration', () => {
+  it.each(['development', undefined, 'test'])(
+    'disables SSL for nonproduction credentials with NODE_ENV=%s',
+    (nodeEnv) => {
+      expect(
+        readDatabaseConfig('drizzle.config.ts', nodeEnv, injectedCredentials.password)
+      ).toHaveProperty('ssl', false);
+    }
+  );
+
+  it('does not add SSL configuration to the production URL credentials', () => {
+    const config = readDatabaseConfig(
+      'drizzle.config.ts',
+      'production',
+      injectedCredentials.password
+    );
+
+    expect(config).toMatchObject({ url: injectedUrl });
+    expect(config).not.toHaveProperty('ssl');
+  });
+});

@@ -40,6 +40,10 @@ Do not use `pnpm db:migrate` to initialize a blank database. The historical migr
 chain starts from an introspected existing schema; fresh development databases use
 `pnpm local:db` for Docker or `pnpm db:push` for an existing PostgreSQL server.
 
+CI prepares its disposable database with `NODE_ENV=test pnpm db:prepare-test`, using the
+`PG*` connection settings. This creates the required policy role before applying the
+current schema and exits with an error if setup fails.
+
 ## Gating
 
 `NODE_ENV !== 'production'` is the only switch (`lib/sandbox/enabled.ts`). There is no
