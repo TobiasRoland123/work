@@ -1,6 +1,6 @@
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import { db } from '@/db';
-import { slackMessages, status, users } from '@/db/schema';
+import { slackMessages, status, statusCorrections, users } from '@/db/schema';
 import {
   enqueueSlackEvent,
   processQueuedSlackMessage,
@@ -400,6 +400,9 @@ export function sandboxResetStatements() {
     .from(users)
     .where(eq(users.slackTeamId, SANDBOX_TEAM_ID));
   return {
+    statusCorrections: db
+      .delete(statusCorrections)
+      .where(inArray(statusCorrections.userId, sandboxUsers)),
     status: db.delete(status).where(inArray(status.userID, sandboxUsers)),
     slackMessages: db.delete(slackMessages).where(eq(slackMessages.teamId, SANDBOX_TEAM_ID)),
   };
@@ -407,6 +410,7 @@ export function sandboxResetStatements() {
 
 export async function resetSandboxData() {
   const statements = sandboxResetStatements();
+  await statements.statusCorrections;
   const deletedStatus = await statements.status.returning({ id: status.id });
   const deletedMessages = await statements.slackMessages.returning({
     key: slackMessages.messageKey,

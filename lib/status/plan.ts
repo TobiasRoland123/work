@@ -121,6 +121,19 @@ function dayOf(value: Date | string | null | undefined): string | null {
 
 export type UpcomingStatus = Status & { firstDay: string; lastDay: string };
 
+/** The first and last Copenhagen day a Declaration covers, or null when it has no date. */
+export function declarationDays(
+  status: Pick<Status, 'fromDate' | 'toDate' | 'time' | 'startsAt' | 'endsAt' | 'createdAt'> & {
+    announcedAt?: Date | string | null;
+  }
+): { firstDay: string; lastDay: string } | null {
+  const firstDay =
+    status.fromDate ??
+    dayOf(status.time ?? status.startsAt ?? status.announcedAt ?? status.createdAt);
+  if (!firstDay) return null;
+  return { firstDay, lastDay: status.toDate ?? dayOf(status.endsAt) ?? firstDay };
+}
+
 /** A person's Declarations that still cover today or a later day, soonest first. */
 export function upcomingStatuses(
   statuses: readonly Status[],
@@ -129,12 +142,8 @@ export function upcomingStatuses(
   const today = copenhagenDate(now);
   return statuses
     .flatMap((status) => {
-      const firstDay =
-        status.fromDate ??
-        dayOf(status.time ?? status.startsAt ?? status.announcedAt ?? status.createdAt);
-      if (!firstDay) return [];
-      const lastDay = status.toDate ?? dayOf(status.endsAt) ?? firstDay;
-      return lastDay >= today ? [{ ...status, firstDay, lastDay }] : [];
+      const span = declarationDays(status);
+      return span && span.lastDay >= today ? [{ ...status, ...span }] : [];
     })
     .sort((a, b) => a.firstDay.localeCompare(b.firstDay) || b.id - a.id);
 }

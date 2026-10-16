@@ -2,7 +2,14 @@ import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { db, pool } from '@/db';
-import { slackAiUsage, slackMessageFeedback, slackMessages, status, users } from '@/db/schema';
+import {
+  slackAiUsage,
+  slackMessageFeedback,
+  slackMessages,
+  status,
+  statusCorrections,
+  users,
+} from '@/db/schema';
 import { getMessageQualityDashboard } from '@/lib/message-quality/service';
 import { requireMessageReviewer } from '@/lib/auth/message-review';
 
@@ -48,6 +55,7 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
     });
     beforeEach(async () => {
       await db.delete(slackAiUsage).where(eq(slackAiUsage.teamId, team));
+      await db.delete(statusCorrections).where(eq(statusCorrections.userId, userId));
       await db.delete(status).where(eq(status.userID, userId));
       await db.delete(slackMessages).where(eq(slackMessages.teamId, team));
       vi.mocked(requireMessageReviewer).mockReset().mockResolvedValue(userId);
@@ -140,6 +148,53 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
         expectedStatus: 'FROM_HOME',
         expectedStatusNote: 'work from home',
       });
+    });
+
+    it('lists the selected week of author corrections and their recurring patterns', async () => {
+      const entry = message(1, { convertedToStatus: true, outcome: { reason: 'clear' } });
+      await db.insert(slackMessages).values(entry);
+      const correction = (values: Partial<typeof statusCorrections.$inferInsert>) => ({
+        userId,
+        sourceMessageKey: entry.messageKey,
+        sourceRevision: entry.revision,
+        originalStatus: 'FROM_HOME' as const,
+        correctedStatus: 'SICK' as const,
+        fromDate: '2026-09-22',
+        toDate: '2026-09-22',
+        createdAt: new Date('2026-09-22T10:00:00Z'),
+        ...values,
+      });
+      await db.insert(statusCorrections).values([
+        correction({ originalDetails: 'hjemme' }),
+        // An earlier week counts toward the pattern but is not listed for this week.
+        correction({
+          fromDate: '2026-09-15',
+          toDate: '2026-09-15',
+          createdAt: new Date('2026-09-15T10:00:00Z'),
+        }),
+        correction({ sourceMessageKey: `${team}:OTHER_CHANNEL:1790000000.000001` }),
+      ]);
+
+      const result = await getMessageQualityDashboard({}, now);
+      expect(result.corrections).toHaveLength(1);
+      expect(result.corrections[0]).toMatchObject({
+        author: 'Quality Author',
+        originalStatus: 'FROM_HOME',
+        originalDetails: 'hjemme',
+        correctedStatus: 'SICK',
+        revision: entry.revision,
+        currentRevision: entry.revision,
+        messageState: 'applied',
+      });
+      expect(result.correctionPatterns).toEqual([
+        expect.objectContaining({
+          originalStatus: 'FROM_HOME',
+          correctedStatus: 'SICK',
+          corrections: 2,
+          people: 1,
+          lastCorrectedAt: '2026-09-22T10:00:00.000Z',
+        }),
+      ]);
     });
 
     it('handles legacy records without inventing missing original text', async () => {

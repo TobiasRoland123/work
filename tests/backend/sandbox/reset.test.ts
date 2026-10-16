@@ -14,4 +14,11 @@ describe('sandbox reset', () => {
     expect(sql).toBe('delete from "slack_messages" where "slack_messages"."team_id" = $1');
     expect(params).toEqual(['T_LOCAL']);
   });
+  it('deletes status corrections only for profiles of the sandbox workspace', () => {
+    const { sql, params } = sandboxResetStatements().statusCorrections.toSQL();
+    expect(sql).toMatch(
+      /^delete from "status_corrections" where "status_corrections"\."user_id" in \(select/
+    );
+    expect(params).toEqual(['T_LOCAL']);
+  });
 });

@@ -159,6 +159,30 @@ html.dark {
 .dark .person-sheet-day small {
   color: var(--office-muted);
 }
+.dark .status-correction-toggle {
+  color: var(--office-link);
+}
+.dark .status-correction {
+  border-color: var(--office-border-soft);
+  background: var(--office-raised);
+}
+.dark .status-correction p {
+  color: var(--office-muted);
+}
+.dark .status-correction select,
+.dark .status-correction-actions button {
+  border-color: var(--office-border);
+  background: var(--office-surface);
+  color: var(--office-ink);
+}
+.dark .status-correction-actions .status-correction-save {
+  border-color: var(--office-primary);
+  background: var(--office-primary);
+  color: var(--office-primary-ink);
+}
+.dark .status-correction-error {
+  border-color: #f2b8b5;
+}
 
 /* Week board and day panel */
 .dark .tone {

@@ -4,7 +4,14 @@ import { PageHeader } from '@/components/layout/PageHeader';
 import { requirePageUserId } from '@/lib/auth/require-user';
 import { requireMessageReviewer } from '@/lib/auth/message-review';
 import { getMessageQualityDashboard } from '@/lib/message-quality/service';
-import type { AiCostSummary, WeeklyConversion, ReviewMessage } from '@/lib/message-quality/service';
+import type {
+  AiCostSummary,
+  CorrectionPattern,
+  WeeklyConversion,
+  ReviewCorrection,
+  ReviewMessage,
+} from '@/lib/message-quality/service';
+import { importedStatusLabel, statusLabels } from '@/lib/message-quality/labels';
 import { ExpectedStatusForm } from './ExpectedStatusForm';
 import './message-quality.css';
 
@@ -74,6 +81,110 @@ function dateTime(value: string) {
 function reasonLabel(value: string) {
   if (value === 'not_recorded') return 'Not recorded';
   return value.replaceAll('_', ' ');
+}
+
+function dayRange(from: string, to: string) {
+  return from === to ? weekdayLabel(from) : `${weekdayLabel(from)} – ${weekdayLabel(to)}`;
+}
+
+function messageChange(correction: ReviewCorrection) {
+  if (correction.currentRevision === null) return 'Message removed from the inbox';
+  if (correction.messageState === 'deleted') return 'Message deleted in Slack';
+  if (correction.revision === null) return 'Produced by an earlier revision';
+  return correction.currentRevision === correction.revision
+    ? 'Unchanged since the correction'
+    : 'Edited since the correction';
+}
+
+function CorrectionPatterns({ patterns }: { patterns: CorrectionPattern[] }) {
+  if (!patterns.length) return null;
+  return (
+    <section className="quality-correction-patterns" aria-labelledby="quality-patterns-heading">
+      <h3 id="quality-patterns-heading">Most frequent corrections, all time</h3>
+      <ol>
+        {patterns.map((pattern) => (
+          <li key={`${pattern.originalStatus}-${pattern.correctedStatus}`}>
+            <span>
+              {importedStatusLabel(pattern.originalStatus)} →{' '}
+              <strong>{statusLabels[pattern.correctedStatus]}</strong>
+            </span>
+            <span className="quality-muted">
+              {pattern.corrections} {pattern.corrections === 1 ? 'correction' : 'corrections'} ·{' '}
+              {pattern.people} {pattern.people === 1 ? 'person' : 'people'} · last{' '}
+              {dateTime(pattern.lastCorrectedAt)}
+            </span>
+          </li>
+        ))}
+      </ol>
+    </section>
+  );
+}
+
+function CorrectionCard({ correction }: { correction: ReviewCorrection }) {
+  return (
+    <article className="quality-message">
+      <div className="quality-message-top">
+        <div>
+          <h3>{correction.author}</h3>
+        </div>
+        <time dateTime={correction.correctedAt}>{dateTime(correction.correctedAt)}</time>
+      </div>
+      <dl className="quality-message-facts">
+        <div>
+          <dt>Imported status</dt>
+          <dd>{importedStatusLabel(correction.originalStatus)}</dd>
+        </div>
+        <div>
+          <dt>Corrected to</dt>
+          <dd>{statusLabels[correction.correctedStatus]}</dd>
+        </div>
+        <div>
+          <dt>Days</dt>
+          <dd>{dayRange(correction.fromDate, correction.toDate)}</dd>
+        </div>
+        <div>
+          <dt>Message</dt>
+          <dd>{messageChange(correction)}</dd>
+        </div>
+      </dl>
+      {correction.originalDetails?.trim() && (
+        <p className="quality-message-text">{correction.originalDetails}</p>
+      )}
+      <a
+        className="quality-correction-link"
+        href={`/api/slack/message?key=${encodeURIComponent(correction.messageKey)}`}
+        target="_blank"
+        rel="noreferrer"
+      >
+        Open Slack message
+      </a>
+      <details className="quality-message-details">
+        <summary>Technical details</summary>
+        <dl>
+          <div>
+            <dt>Message key</dt>
+            <dd>{correction.messageKey}</dd>
+          </div>
+          <div>
+            <dt>Corrected revision</dt>
+            <dd>{correction.revision ?? 'Not recorded'}</dd>
+          </div>
+          <div>
+            <dt>Latest revision</dt>
+            <dd>{correction.currentRevision ?? 'Unavailable'}</dd>
+          </div>
+          <div>
+            <dt>Imported Declaration</dt>
+            <dd>{correction.originalStatusId ?? 'Replaced or removed'}</dd>
+          </div>
+          <div>
+            <dt>Correction Declaration</dt>
+            <dd>{correction.correctionStatusId ?? 'Removed'}</dd>
+          </div>
+        </dl>
+      </details>
+    </article>
+  );
 }
 
 function WeekTile({
@@ -337,6 +448,30 @@ export default async function MessageQualityPage({ searchParams }: { searchParam
                 <Link href={reviewUrl(data.selectedWeek, data.reason, data.page + 1)}>Next</Link>
               )}
             </nav>
+          )}
+        </section>
+
+        <section aria-labelledby="quality-corrections-heading" className="quality-section">
+          <div className="quality-heading-row">
+            <div>
+              <h2 id="quality-corrections-heading">Statuses corrected by their authors</h2>
+              <p>
+                Imported statuses people marked as wrong, by correction week. Week of{' '}
+                {weekLabel(data.selectedWeek)} · {data.corrections.length}
+                {data.corrections.length === data.correctionLimit ? ' most recent' : ''}{' '}
+                {data.corrections.length === 1 ? 'correction' : 'corrections'}
+              </p>
+            </div>
+          </div>
+          <CorrectionPatterns patterns={data.correctionPatterns} />
+          {data.corrections.length ? (
+            <div className="quality-messages">
+              {data.corrections.map((correction) => (
+                <CorrectionCard key={correction.id} correction={correction} />
+              ))}
+            </div>
+          ) : (
+            <p className="quality-empty">No imported statuses were corrected this week.</p>
           )}
         </section>
       </div>

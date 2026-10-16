@@ -5,6 +5,7 @@ import { statusService } from '@/lib/services/statusService';
 import { requireUserId } from '@/lib/auth/require-user';
 import { manualStatus } from '@/lib/status/manual';
 import { PlanError, planStatuses } from '@/lib/status/plan';
+import { CorrectionError } from '@/lib/status/correction';
 
 export async function getAllStatusesAction() {
   await requireUserId();
@@ -38,6 +39,21 @@ export async function planStatusAction(input: unknown) {
 export async function getMyUpcomingStatusesAction() {
   const userID = await requireUserId();
   return statusService.getUpcomingStatusesByUserUserId(userID);
+}
+
+/** Correct the signed-in person's own imported status and record the import error. */
+export async function correctImportedStatusAction(input: unknown) {
+  const userID = await requireUserId();
+  try {
+    const { duplicate } = await statusService.correctImportedStatus(userID, input);
+    return { ok: true as const, duplicate };
+  } catch (error) {
+    if (error instanceof CorrectionError) return { ok: false as const, error: error.message };
+    if (error instanceof ZodError)
+      return { ok: false as const, error: 'Check the correction and try again.' };
+    console.error(error);
+    return { ok: false as const, error: 'Something went wrong, your correction was not saved.' };
+  }
 }
 export async function updateStatusByUserUserIdAction(
   userID: string,
