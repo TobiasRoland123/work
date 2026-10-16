@@ -129,7 +129,7 @@ export const statusService = {
         // A repeat of a correction that still applies changes nothing. If the person removed
         // it or announced something newer since, saving it again re-applies the correction.
         if (applied && !isSuperseded(applied, own, correction.fromDate, correction.toDate))
-          return { duplicate: true, changed: false };
+          return { correctionId: recordId, duplicate: true, changed: false };
       }
 
       const [declaration] = await tx
@@ -140,7 +140,7 @@ export const statusService = {
         .update(statusCorrections)
         .set({ correctionStatusId: declaration.id })
         .where(eq(statusCorrections.id, recordId));
-      return { duplicate: !created, changed: true };
+      return { correctionId: recordId, duplicate: !created, changed: true };
     });
     if (result.changed && supabase) {
       await supabase.channel('status-sync').send({

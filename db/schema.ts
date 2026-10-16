@@ -213,6 +213,9 @@ export const statusCorrections = pgTable(
     sourceRevision: text('source_revision'),
     originalStatus: userStatus('original_status'),
     originalDetails: text('original_details'),
+    // The corrected revision's Slack text, fetched after the correction; null when Slack no
+    // longer shows that revision, in the Local Sandbox, or after the message was deleted.
+    sourceText: text('source_text'),
     correctedStatus: userStatus('corrected_status').notNull(),
     fromDate: date('from_date').notNull(),
     toDate: date('to_date').notNull(),

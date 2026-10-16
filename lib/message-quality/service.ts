@@ -43,6 +43,8 @@ export type ReviewCorrection = {
   correctedAt: string;
   originalStatus: UserStatus | null;
   originalDetails: string | null;
+  /** Slack text of the corrected revision, when it could be fetched. */
+  sourceText: string | null;
   correctedStatus: UserStatus;
   fromDate: string;
   toDate: string;
@@ -158,6 +160,7 @@ export async function getMessageQualityDashboard(
         correctedAt: statusCorrections.createdAt,
         originalStatus: statusCorrections.originalStatus,
         originalDetails: statusCorrections.originalDetails,
+        sourceText: statusCorrections.sourceText,
         correctedStatus: statusCorrections.correctedStatus,
         fromDate: statusCorrections.fromDate,
         toDate: statusCorrections.toDate,

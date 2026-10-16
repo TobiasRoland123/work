@@ -121,6 +121,37 @@ export async function getSlackUser(userId: string) {
     throw new SlackApiError('Invalid Slack user response');
   return result.user;
 }
+export type SlackMessage = {
+  ts: string;
+  text?: string;
+  user?: string;
+  thread_ts?: string;
+  edited?: { ts: string };
+};
+
+/** One channel message by its ts, including thread replies, or null if Slack no longer has it. */
+export async function getSlackMessage(channel: string, ts: string): Promise<SlackMessage | null> {
+  const range = { channel, oldest: ts, latest: ts, inclusive: 'true' };
+  const history = await slackRequest<{ messages?: SlackMessage[] }>('conversations.history', {
+    ...range,
+    limit: '1',
+  });
+  const found = history.messages?.find((message) => message.ts === ts);
+  if (found) return found;
+  // Replies that were not also sent to the channel only appear in their thread, which
+  // Slack returns with its parent first, so do not limit the result to one message.
+  try {
+    const thread = await slackRequest<{ messages?: SlackMessage[] }>('conversations.replies', {
+      ...range,
+      ts,
+    });
+    return thread.messages?.find((message) => message.ts === ts) ?? null;
+  } catch (error) {
+    if (error instanceof SlackApiError && error.errorCode === 'thread_not_found') return null;
+    throw error;
+  }
+}
+
 export async function getSlackPermalink(channel: string, ts: string) {
   const result = await slackRequest<{ permalink: string }>('chat.getPermalink', {
     channel,

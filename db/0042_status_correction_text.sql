@@ -1,0 +1,1 @@
+ALTER TABLE "status_corrections" ADD COLUMN "source_text" text;
