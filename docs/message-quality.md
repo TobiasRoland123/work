@@ -12,6 +12,12 @@ Use **Set expected status** on a message to record the attendance status you exp
 
 Feedback belongs to the exact message revision and records the reviewer and save time. A newer Slack edit starts with no feedback on its card; an explicit Slack deletion clears the message's feedback. Saving checks the current revision, workspace, channel and review permission. If the message has changed or is no longer eligible for review, refresh the page before trying again.
 
+## Author corrections
+
+**Statuses corrected by their authors** lists imported statuses that people marked as wrong from their own attendance sheet (see [Office presence](office-presence.md#correcting-an-imported-status)). These messages did produce a status, so they never appear in the list above. Corrections are grouped by the Copenhagen week in which they were saved, using the same week filter, and show the 50 most recent for that week. Each card shows the person, the imported status and its note, the corrected status, the affected days, whether the Slack message has changed since, and a link to the Slack message. Technical details include the message key, the corrected revision and the linked Declarations. **Most frequent corrections** counts imported-to-corrected status pairs across all weeks, to surface recurring misclassifications.
+
+The inbox still clears the text of converted messages, so corrections do not retain the original message text. Open the Slack message to read the phrase. Each correction keeps the message key and exact revision, so later shorthand learning can identify the phrase that was corrected. Corrections are scoped to the configured workspace and channel and use the same review permission as the rest of the page.
+
 ## Access
 
 In real workspaces, an authenticated Slack session alone does not grant review access. The server checks the live `users.can_review_messages` flag, an active Slack identity and `SLACK_TEAM_ID` for every request. The review service performs the same check before reading inbox data. People without access see neither the navigation link nor the page. There is no public review API. The flag is not editable through profile or user-update actions.

@@ -14,6 +14,14 @@ People announce days ahead from the same status form, in Slack, or straight from
 
 Planning a day again adds a newer Declaration, which wins. The signed-in person's sheet lists "Your upcoming announcements" across all weeks. App-made ones can be removed, which restores whatever the day showed before; Slack-made ones link to their message, since the Slack message is their source.
 
+## Correcting an imported status
+
+When Slack import got your attendance wrong, open your own sheet and choose **Wrong status?** under the day. Pick the status it should have been and save. For an announcement covering several days, choose whether the correction applies only to that day or to the whole announcement. Past days in the viewed week can be corrected too. The option appears only on your own days whose status came from Slack, and the server rejects corrections of anyone else's Declaration or of app-made ones.
+
+Saving adds a correction as a newer user Declaration for the chosen days, so it wins in every attendance view. The imported Declaration stays untouched and keeps its Slack link, and the correction appears under "Your upcoming announcements", where removing it brings back the imported status. A sick correction drops the imported note, as planning does, and the import's "time unspecified" notes are dropped because they describe the old reading. Editing the Slack message later replaces the import with a newer Declaration, which wins over the correction.
+
+Each distinct correction is also recorded in `status_corrections` for quality review: the imported status and note, the corrected status, the affected dates, the Slack message key, the exact message revision when the inbox still identifies it, the correcting person and the correction time. The record links to both the imported Declaration and the correction Declaration and outlives either of them. Saving the same correction again records nothing new. If the correction still applies, it changes nothing. If you removed it or announced something newer for those days since, it is applied again. A failed save keeps your selection in the form and shows the reason.
+
 ## Attendance rules
 
 All dates and clocks use Europe/Copenhagen, including daylight saving time.

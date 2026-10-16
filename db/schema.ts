@@ -190,3 +190,45 @@ export const slackMessageFeedback = pgTable(
   },
   (table) => [unique('slack_message_feedback_revision_unique').on(table.messageKey, table.revision)]
 ).enableRLS();
+
+// A person's own correction of an imported (AI-derived) Declaration. The original Declaration
+// stays untouched; the correction is a newer user Declaration linked here, and this row keeps
+// the error for quality review after either Declaration is removed or replaced.
+// No public RLS policies: only the server database role may access this table.
+export const statusCorrections = pgTable(
+  'status_corrections',
+  {
+    id: serial().primaryKey().notNull(),
+    userId: varchar('user_id', { length: 36 })
+      .notNull()
+      .references(() => users.userId, { onDelete: 'cascade' }),
+    originalStatusId: integer('original_status_id').references(() => status.id, {
+      onDelete: 'set null',
+    }),
+    correctionStatusId: integer('correction_status_id').references(() => status.id, {
+      onDelete: 'set null',
+    }),
+    sourceMessageKey: text('source_message_key').notNull(),
+    // Null when the inbox no longer identifies the revision that produced the Declaration.
+    sourceRevision: text('source_revision'),
+    originalStatus: userStatus('original_status'),
+    originalDetails: text('original_details'),
+    correctedStatus: userStatus('corrected_status').notNull(),
+    fromDate: date('from_date').notNull(),
+    toDate: date('to_date').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    unique('status_corrections_correction_unique')
+      .on(
+        table.userId,
+        table.sourceMessageKey,
+        table.sourceRevision,
+        table.correctedStatus,
+        table.fromDate,
+        table.toDate
+      )
+      .nullsNotDistinct(),
+    index('status_corrections_created_idx').on(table.createdAt),
+  ]
+).enableRLS();

@@ -34,6 +34,7 @@ import {
   type Segment,
 } from './presence';
 import { WeekLegend } from './WeekLegend';
+import { StatusCorrection } from './StatusCorrection';
 import './week.css';
 
 const shortDay = (day: string) =>
@@ -194,6 +195,7 @@ function PersonSheet({
   plans,
   onPlan,
   onRemove,
+  onCorrected,
 }: {
   person: UserWithExtras | undefined;
   days: readonly string[];
@@ -203,6 +205,8 @@ function PersonSheet({
   plans?: UpcomingStatus[];
   onPlan?: () => void;
   onRemove?: (id: number) => void;
+  /** Set only for the signed-in person, who may correct their own imported statuses. */
+  onCorrected?: () => void;
 }) {
   return (
     <Dialog.Root open={Boolean(person)} onOpenChange={(open) => !open && onClose()}>
@@ -253,6 +257,14 @@ function PersonSheet({
                               >
                                 View Slack message
                               </a>
+                            )}
+                            {status?.sourceMessageKey && onCorrected && (
+                              <StatusCorrection
+                                key={`${status.id}:${status.status}`}
+                                status={status}
+                                date={date}
+                                onSaved={onCorrected}
+                              />
                             )}
                           </span>
                         </li>
@@ -669,6 +681,7 @@ export function WeekOverview({
         plans={openId === userId ? plans : undefined}
         onPlan={() => plan(days.filter((day) => day >= today).slice(0, 1))}
         onRemove={removePlan}
+        onCorrected={openId === userId ? onStatusSaved : undefined}
       />
       <StatusDialog
         userId={userId}

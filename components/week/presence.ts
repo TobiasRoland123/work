@@ -39,6 +39,11 @@ export const initials = (person: UserWithExtras) =>
 
 export const isInOffice = (person: UserWithExtras) => person.status?.status === 'IN_OFFICE';
 
+/** Every attendance status, in display order. */
+export const statusTypes = Object.keys(presence) as StatusType[];
+
+export const statusLabel = (status: StatusType) => presence[status].label;
+
 /** A Workday Default: nobody announced anything, so the office is assumed. */
 export const isAssumed = (status: Status | null) => status?.id === 0;
 

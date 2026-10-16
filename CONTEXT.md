@@ -23,6 +23,12 @@ The attendance assumed for a person who has made no Declaration for today. Weekd
 only, from 09:00 Europe/Copenhagen.
 _Avoid_: Fallback, implicit status
 
+**Correction**:
+A Declaration a person makes to replace the status Slack import read from one of their
+own Declarations, for one day or the whole announcement. The imported Declaration is
+kept, and the error is recorded for quality review.
+_Avoid_: Override, fix, edit
+
 ### Local Sandbox
 
 The Local Sandbox replaces the Slack workspace during local development. It runs only

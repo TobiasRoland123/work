@@ -352,6 +352,35 @@
   border-radius: 7px;
   color: var(--quality-muted);
 }
+.quality-correction-patterns {
+  margin-bottom: 18px;
+  padding: 14px 16px;
+  background: var(--quality-surface);
+  border: 1px solid var(--quality-border);
+  border-radius: 7px;
+}
+.quality-correction-patterns h3 {
+  margin-bottom: 8px;
+  font-size: 14px;
+}
+.quality-correction-patterns ol {
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+}
+.quality-correction-patterns li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+}
+.quality-correction-link {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 13px;
+  color: var(--quality-link);
+  text-decoration: underline;
+}
 .quality-pagination {
   display: flex;
   justify-content: center;
