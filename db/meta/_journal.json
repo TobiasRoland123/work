@@ -295,6 +295,13 @@
       "when": 1792182632751,
       "tag": "0041_status_corrections",
       "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1792184911151,
+      "tag": "0042_learned_shorthands",
+      "breakpoints": true
     }
   ]
 }

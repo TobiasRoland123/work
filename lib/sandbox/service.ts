@@ -1,6 +1,6 @@
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import { db } from '@/db';
-import { slackMessages, status, statusCorrections, users } from '@/db/schema';
+import { learnedShorthands, slackMessages, status, statusCorrections, users } from '@/db/schema';
 import {
   enqueueSlackEvent,
   processQueuedSlackMessage,
@@ -9,6 +9,7 @@ import {
 } from '@/lib/slack/inbox';
 import { ATTENDANCE_TIME_ZONE, copenhagenDate, localInstant } from '@/lib/slack/extraction';
 import { extractShorthand } from '@/lib/slack/shorthand';
+import { readLearnedShorthand } from '@/lib/slack/learned-shorthand';
 import { SANDBOX_CHANNEL_ID, SANDBOX_TEAM_ID } from './enabled';
 import { deletedEnvelope, editedEnvelope, messageEnvelope, sandboxTs } from './envelope';
 
@@ -43,7 +44,7 @@ export type SandboxOutcome = {
   announcedAt: string;
   backdated: boolean;
   intake: { outcome: string; reason?: string };
-  handledBy: 'shorthand' | 'model' | null;
+  handledBy: 'shorthand' | 'learned' | 'model' | null;
   processing: SandboxProcessing;
   interpretation: { decision: string; reason: string | null; intervals: SandboxInterval[] } | null;
 };
@@ -156,10 +157,14 @@ async function activeAuthor(slackUserId: string) {
   return author ?? null;
 }
 
-function handledBy(text: string, instant: Date): 'shorthand' | 'model' {
-  return extractShorthand(text, copenhagenDate(instant), HHmm.format(instant))
-    ? 'shorthand'
-    : 'model';
+async function handledBy(text: string, instant: Date): Promise<'shorthand' | 'learned' | 'model'> {
+  if (extractShorthand(text, copenhagenDate(instant), HHmm.format(instant))) return 'shorthand';
+  const learned = await readLearnedShorthand(
+    { teamId: SANDBOX_TEAM_ID, channelId: SANDBOX_CHANNEL_ID },
+    text,
+    instant
+  );
+  return learned.extraction ? 'learned' : 'model';
 }
 
 function clockOrNull(value: Date | null, dayStart: boolean) {
@@ -269,7 +274,7 @@ export async function sendSandboxMessage(input: {
   const text = input.text.trim();
   if (!text) throw new SandboxInputError('Write a message first.');
   const instant = announcementInstant(input.announcedAt);
-  const handler = handledBy(text, instant);
+  const handler = await handledBy(text, instant);
   const author = await activeAuthor(input.slackUserId);
   // Fail up front instead of through five retries into review.
   if (author && handler === 'model' && !process.env.AI_GATEWAY_API_KEY?.trim())
@@ -301,7 +306,7 @@ export async function editSandboxMessage(input: {
     messageTs: input.messageTs,
     revision,
     announcedAt: instant,
-    handledBy: handledBy(text, instant),
+    handledBy: await handledBy(text, instant),
     slackUserId: input.slackUserId,
   });
 }
@@ -327,7 +332,7 @@ async function deliver(
     messageTs: string;
     revision: string;
     announcedAt: Date;
-    handledBy: 'shorthand' | 'model' | null;
+    handledBy: 'shorthand' | 'learned' | 'model' | null;
     slackUserId: string;
   }
 ): Promise<SandboxOutcome> {
@@ -405,6 +410,9 @@ export function sandboxResetStatements() {
       .where(inArray(statusCorrections.userId, sandboxUsers)),
     status: db.delete(status).where(inArray(status.userID, sandboxUsers)),
     slackMessages: db.delete(slackMessages).where(eq(slackMessages.teamId, SANDBOX_TEAM_ID)),
+    learnedShorthands: db
+      .delete(learnedShorthands)
+      .where(eq(learnedShorthands.teamId, SANDBOX_TEAM_ID)),
   };
 }
 
@@ -415,5 +423,7 @@ export async function resetSandboxData() {
   const deletedMessages = await statements.slackMessages.returning({
     key: slackMessages.messageKey,
   });
+  // Observations went with their inbox rows; learned phrases are scoped to the workspace.
+  await statements.learnedShorthands;
   return { status: deletedStatus.length, slackMessages: deletedMessages.length };
 }

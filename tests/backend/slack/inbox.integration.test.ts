@@ -1,8 +1,17 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
-import { eq } from 'drizzle-orm';
+import { eq, inArray } from 'drizzle-orm';
 import { randomUUID } from 'node:crypto';
 import { db, pool } from '@/db';
-import { slackAiUsage, slackMessageFeedback, slackMessages, status, users } from '@/db/schema';
+import {
+  learnedShorthands,
+  shorthandObservations,
+  slackAiUsage,
+  slackMessageFeedback,
+  slackMessages,
+  status,
+  statusCorrections,
+  users,
+} from '@/db/schema';
 import {
   cleanupExpiredSlackMessages,
   enqueueSlackEvent,
@@ -10,7 +19,8 @@ import {
   processQueuedSlackMessage,
   SlackMessagePendingError,
 } from '@/lib/slack/inbox';
-import { extractAttendance } from '@/lib/slack/extraction';
+import { copenhagenDate, extractAttendance, nextDate } from '@/lib/slack/extraction';
+import { statusService } from '@/lib/services/statusService';
 import { selectActiveStatus } from '@/lib/status/active';
 import { syncSlackUsers } from '@/scripts/seed';
 import { userService } from '@/lib/services/userService';
@@ -791,6 +801,209 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
         await db.update(users).set({ slackDeactivated: false }).where(eq(users.userId, userID));
         vi.unstubAllGlobals();
       }
+    });
+    describe('learned shorthands', () => {
+      const phrase = 'Hos kunden i dag og i morgen';
+      const learnedKeys: string[] = [];
+      // The AI reading of the phrase: at the client today and tomorrow, from the message's own day.
+      const reading =
+        (status: 'AT_CLIENT' | 'AWAY' = 'AT_CLIENT') =>
+        async (_text: string, instant: Date) => {
+          const day = copenhagenDate(instant);
+          return {
+            ...extraction,
+            intervals: [
+              { ...extraction.intervals[0], status, fromDate: day, toDate: nextDate(day) },
+            ],
+          };
+        };
+      let sequence = 0;
+      /** Slack ts for a Copenhagen morning, recorded for cleanup. */
+      const tsOn = (day: string) => {
+        const ts = `${Date.parse(`${day}T06:00:00Z`) / 1000}.${String(++sequence).padStart(6, '0')}`;
+        learnedKeys.push(`${team}:${channel}:${ts}`);
+        return ts;
+      };
+      const keyOf = (ts: string) => `${team}:${channel}:${ts}`;
+      const deliver = async (event: Record<string, unknown>, ts: string) => {
+        await enqueueSlackEvent({
+          type: 'event_callback',
+          team_id: team,
+          event_id: `Ev${ts}`,
+          event,
+        });
+        await makeQueuedMessageDue(keyOf(ts));
+        return processSlackInbox(1, keyOf(ts));
+      };
+      const send = (ts: string, text = phrase) =>
+        deliver({ type: 'message', channel, user: slackUser, ts, text }, ts);
+      const rule = async () => {
+        const [row] = await db
+          .select()
+          .from(learnedShorthands)
+          .where(eq(learnedShorthands.teamId, team));
+        return row;
+      };
+      const observation = async (ts: string) => {
+        const [row] = await db
+          .select()
+          .from(shorthandObservations)
+          .where(eq(shorthandObservations.messageKey, keyOf(ts)));
+        return row;
+      };
+      const statusesOf = (ts: string) =>
+        db
+          .select()
+          .from(status)
+          .where(eq(status.sourceMessageKey, keyOf(ts)));
+      const cleanup = async () => {
+        await db.delete(learnedShorthands).where(eq(learnedShorthands.teamId, team));
+        await db.delete(statusCorrections).where(eq(statusCorrections.userId, userID));
+        if (learnedKeys.length) {
+          await db.delete(slackMessages).where(inArray(slackMessages.messageKey, learnedKeys));
+          await db.delete(slackAiUsage).where(inArray(slackAiUsage.messageKey, learnedKeys));
+        }
+      };
+      beforeEach(async () => {
+        vi.stubEnv('SLACK_SHORTHAND_LEARNING_THRESHOLD', '2');
+        await cleanup();
+        vi.mocked(extractAttendance).mockImplementation(reading());
+      });
+      afterAll(cleanup);
+
+      it('learns a phrase at the threshold and answers later messages without AI', async () => {
+        const first = tsOn('2026-09-07');
+        await send(first);
+        // Reprocessing the same message through an edit replaces its evidence.
+        const revision = tsOn('2026-09-07');
+        await deliver(
+          {
+            type: 'message',
+            subtype: 'message_changed',
+            channel,
+            event_ts: revision,
+            message: { user: slackUser, text: phrase, ts: first, edited: { ts: revision } },
+            previous_message: { user: slackUser, ts: first },
+          },
+          first
+        );
+        expect(extractAttendance).toHaveBeenCalledTimes(2);
+        expect(await rule()).toBeUndefined();
+
+        await send(tsOn('2026-09-08'));
+        expect(await rule()).toMatchObject({
+          state: 'active',
+          occurrences: 2,
+          phrase: phrase.toLowerCase(),
+        });
+
+        const third = tsOn('2026-09-17');
+        expect(await send(third, '  HOS KUNDEN i dag og i morgen. ')).toMatchObject({ applied: 1 });
+        expect(extractAttendance).toHaveBeenCalledTimes(3);
+        // Dates come from the new message, never from the messages the rule was learned from.
+        expect(await statusesOf(third)).toMatchObject([
+          { status: 'AT_CLIENT', fromDate: '2026-09-17', toDate: '2026-09-18', details: null },
+        ]);
+        expect(await observation(third)).toMatchObject({
+          source: 'learned',
+          learnedShorthandId: (await rule()).id,
+        });
+
+        // Anything beyond the learned phrase still reaches AI.
+        await send(tsOn('2026-09-18'), `${phrase}, men syg i morgen`);
+        expect(extractAttendance).toHaveBeenCalledTimes(4);
+      });
+
+      it('neither records nor learns without a configured threshold', async () => {
+        vi.stubEnv('SLACK_SHORTHAND_LEARNING_THRESHOLD', '');
+        for (const day of ['2026-09-07', '2026-09-08', '2026-09-09']) await send(tsOn(day));
+        expect(extractAttendance).toHaveBeenCalledTimes(3);
+        expect(await rule()).toBeUndefined();
+        expect(
+          await db
+            .select()
+            .from(shorthandObservations)
+            .where(eq(shorthandObservations.teamId, team))
+        ).toHaveLength(0);
+      });
+
+      it('blocks a phrase whose readings conflict', async () => {
+        await send(tsOn('2026-09-07'));
+        vi.mocked(extractAttendance).mockImplementation(reading('AWAY'));
+        await send(tsOn('2026-09-08'));
+        await send(tsOn('2026-09-09'));
+        expect(await rule()).toMatchObject({ state: 'blocked', blockedReason: 'conflict' });
+        await send(tsOn('2026-09-10'));
+        expect(extractAttendance).toHaveBeenCalledTimes(4);
+      });
+
+      it('blocks a learned phrase once its result is corrected', async () => {
+        vi.stubEnv('SLACK_SHORTHAND_LEARNING_THRESHOLD', '1');
+        await send(tsOn('2026-09-07'));
+        const learned = tsOn('2026-09-08');
+        await send(learned);
+        expect(extractAttendance).toHaveBeenCalledTimes(1);
+        const [imported] = await statusesOf(learned);
+
+        await statusService.correctImportedStatus(userID, {
+          statusId: imported.id,
+          day: '2026-09-08',
+          scope: 'day',
+          status: 'FROM_HOME',
+        });
+        const [correction] = await db
+          .select()
+          .from(statusCorrections)
+          .where(eq(statusCorrections.userId, userID));
+        expect(await rule()).toMatchObject({
+          state: 'blocked',
+          blockedReason: 'correction',
+          blockedByCorrectionId: correction.id,
+          occurrences: 1,
+          promotedAt: expect.any(Date),
+        });
+        expect(await observation(learned)).toMatchObject({ correctionId: correction.id });
+
+        await send(tsOn('2026-09-09'));
+        expect(extractAttendance).toHaveBeenCalledTimes(2);
+        expect((await rule()).state).toBe('blocked');
+      });
+
+      it('never learns a phrase whose AI reading was corrected', async () => {
+        const first = tsOn('2026-09-07');
+        await send(first);
+        const [imported] = await statusesOf(first);
+        await statusService.correctImportedStatus(userID, {
+          statusId: imported.id,
+          day: '2026-09-07',
+          scope: 'declaration',
+          status: 'AWAY',
+        });
+        await send(tsOn('2026-09-08'));
+        await send(tsOn('2026-09-09'));
+        expect(await rule()).toMatchObject({ state: 'blocked', promotedAt: null });
+      });
+
+      it('drops the evidence of a deleted message', async () => {
+        const first = tsOn('2026-09-07');
+        await send(first);
+        await enqueueSlackEvent({
+          type: 'event_callback',
+          team_id: team,
+          event_id: `EvDeleted${first}`,
+          event: {
+            type: 'message',
+            subtype: 'message_deleted',
+            channel,
+            deleted_ts: first,
+            event_ts: tsOn('2026-09-07'),
+            previous_message: { user: slackUser, ts: first },
+          },
+        });
+        expect(await observation(first)).toBeUndefined();
+        await send(tsOn('2026-09-08'));
+        expect(await rule()).toBeUndefined();
+      });
     });
   }
 );

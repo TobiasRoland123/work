@@ -232,3 +232,77 @@ export const statusCorrections = pgTable(
     index('status_corrections_created_idx').on(table.createdAt),
   ]
 ).enableRLS();
+
+/** Attendance read from a phrase, with dates as day offsets from the message's Copenhagen date. */
+export type ShorthandTemplate = {
+  intervals: {
+    status: (typeof userStatus.enumValues)[number];
+    fromOffset: number;
+    toOffset: number;
+    startTime: string | null;
+    endTime: string | null;
+    startApproximate: boolean;
+    endApproximate: boolean;
+    /** Case-folded verbatim excerpt; matched case-insensitively in each new message. */
+    comment: string | null;
+  }[];
+};
+
+// One row per learned phrase in a workspace channel. An active row answers matching messages
+// without AI; a blocked row keeps a phrase whose readings conflicted or were corrected from
+// being learned again. Rows are kept for investigation.
+// No public RLS policies: only the server database role may access this table.
+export const learnedShorthands = pgTable(
+  'learned_shorthands',
+  {
+    id: serial().primaryKey().notNull(),
+    teamId: text('team_id').notNull(),
+    channelId: text('channel_id').notNull(),
+    phrase: text('phrase').notNull(),
+    template: jsonb('template').$type<ShorthandTemplate>().notNull(),
+    state: text('state').$type<'active' | 'blocked'>().notNull(),
+    // AI readings of the phrase that agreed with the template when it was promoted or blocked.
+    occurrences: integer('occurrences').notNull(),
+    promotedAt: timestamp('promoted_at', { withTimezone: true }),
+    blockedAt: timestamp('blocked_at', { withTimezone: true }),
+    blockedReason: text('blocked_reason').$type<'conflict' | 'correction'>(),
+    blockedByCorrectionId: integer('blocked_by_correction_id').references(
+      () => statusCorrections.id,
+      { onDelete: 'set null' }
+    ),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    unique('learned_shorthands_phrase_unique').on(table.teamId, table.channelId, table.phrase),
+  ]
+).enableRLS();
+
+// Evidence for learned shorthands: how the latest processed revision of a Slack message was read
+// when its whole text is a learnable phrase. Keyed by message, so retries, reprocessing and edits
+// replace the evidence instead of adding to it.
+// No public RLS policies: only the server database role may access this table.
+export const shorthandObservations = pgTable(
+  'shorthand_observations',
+  {
+    messageKey: text('message_key')
+      .primaryKey()
+      .references(() => slackMessages.messageKey, { onDelete: 'cascade' }),
+    revision: text('revision').notNull(),
+    teamId: text('team_id').notNull(),
+    channelId: text('channel_id').notNull(),
+    phrase: text('phrase').notNull(),
+    template: jsonb('template').$type<ShorthandTemplate>().notNull(),
+    source: text('source').$type<'model' | 'learned'>().notNull(),
+    learnedShorthandId: integer('learned_shorthand_id').references(() => learnedShorthands.id, {
+      onDelete: 'set null',
+    }),
+    correctedAt: timestamp('corrected_at', { withTimezone: true }),
+    correctionId: integer('correction_id').references(() => statusCorrections.id, {
+      onDelete: 'set null',
+    }),
+    observedAt: timestamp('observed_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index('shorthand_observations_phrase_idx').on(table.teamId, table.channelId, table.phrase),
+  ]
+).enableRLS();

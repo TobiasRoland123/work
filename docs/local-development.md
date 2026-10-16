@@ -77,9 +77,9 @@ format (`&amp;`, `<@U…>`, `<url|label>`, which nothing unescapes), are one cli
 **Result panel.** After sending you see the intake outcome (`queued`,
 `duplicate_or_stale`, …), the processing outcome (terminal state and reason, or "retry
 scheduled in N s" with the likely reason, which is a normal inbox outcome rather than a
-crash), whether the deterministic shorthand parser or the model handled the text, and the
-committed interpretation: decision, reason and every interval with both approximation
-flags. The interpretation is reconstructed from the committed `status` rows because the
+crash), whether the deterministic shorthand parser, a learned shorthand or the model handled
+the text, and the committed interpretation: decision, reason and every interval with both
+approximation flags. The interpretation is reconstructed from the committed `status` rows because the
 inbox does not persist raw model output. A missing `AI_GATEWAY_API_KEY` is reported up
 front instead of through five retries into `review`.
 
