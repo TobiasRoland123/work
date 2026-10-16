@@ -4,7 +4,15 @@ import { useState, type CSSProperties } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import * as Dialog from '@radix-ui/react-dialog';
-import { CalendarPlus, ChevronLeft, ChevronRight, Pencil, Search, X } from 'lucide-react';
+import {
+  CalendarPlus,
+  ChevronDown,
+  ChevronLeft,
+  ChevronRight,
+  Pencil,
+  Search,
+  X,
+} from 'lucide-react';
 import { toast } from 'sonner';
 import type { DayPresence, UserWithExtras } from '@/db/types';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -15,8 +23,8 @@ import { getSlackImageUrl } from '@/lib/slack/image';
 import type { UpcomingStatus } from '@/lib/status/plan';
 import { addDays, formatDay, isoWeekNumber, shiftWorkWeek } from '@/lib/status/week';
 import {
-  dayGroups,
   dayNote,
+  groupAttendance,
   initials,
   isAssumed,
   personName,
@@ -307,6 +315,24 @@ export function WeekOverview({
   const [selectedDay, setSelectedDay] = useState(days.includes(today) ? today : days[0]);
   const [openId, setOpenId] = useState<string | null>(null);
   const [planDays, setPlanDays] = useState<string[] | null>(null);
+  const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => new Set());
+
+  // A triple click applies the clicked group's toggled state to every group in that list.
+  const toggleGroup = (list: 'table' | 'sidebar', key: string, clicks: number) => {
+    const id = `${list}-${key}`;
+    setCollapsedGroups((current) => {
+      const next = new Set(current);
+      if (clicks === 3) {
+        const collapse = !current.has(id);
+        for (const group of groups) {
+          if (collapse) next.add(`${list}-${group.key}`);
+          else next.delete(`${list}-${group.key}`);
+        }
+      } else if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
 
   const plan = (planned: string[]) => {
     setOpenId(null);
@@ -333,8 +359,6 @@ export function WeekOverview({
     : `Week ${isoWeekNumber(weekStart)} · ${weekRange(days)}`;
   const statusOn = (person: UserWithExtras, index: number) =>
     person.week?.find((day) => day.date === days[index])?.status ?? null;
-  const groupOn = (person: UserWithExtras, index: number) =>
-    presenceOf(statusOn(person, index)).group;
   const inOfficeOn = (person: UserWithExtras, index: number) =>
     statusOn(person, index)?.status === 'IN_OFFICE';
   const hasExceptionOn = (person: UserWithExtras, index: number) => {
@@ -356,6 +380,7 @@ export function WeekOverview({
       .toLocaleLowerCase();
     return searchable.includes(needle) && days.some((_, index) => hasExceptionOn(person, index));
   });
+  const groups = groupAttendance(visible, days[dayIndex]);
 
   return (
     <div className="week-page">
@@ -426,10 +451,18 @@ export function WeekOverview({
               </Link>
             </div>
           </div>
+          {!todayOnly && (
+            <p className="week-grouping-note" id="week-grouping-note">
+              Grouped by{' '}
+              {formatDay(days[dayIndex], { weekday: 'long', day: 'numeric', month: 'long' })}.{' '}
+              Showing colleagues with an attendance exception this week.
+            </p>
+          )}
           <div
             className="week-board"
             role="table"
             aria-label={`Attendance, ${subtitle}`}
+            aria-describedby={todayOnly ? undefined : 'week-grouping-note'}
             style={{ '--selected': dayIndex, '--days': days.length } as CSSProperties}
           >
             <div role="rowgroup" className="week-head">
@@ -473,46 +506,79 @@ export function WeekOverview({
                 </div>
               </div>
             </div>
-            <div role="rowgroup">
-              {visible.map((person) => (
-                <div role="row" className="week-row week-person-row" key={person.userId}>
-                  <div role="rowheader" className="week-person-cell">
-                    <button className="week-person" onClick={() => setOpenId(person.userId)}>
-                      <Avatar person={person} />
-                      <span className="week-person-name">
+            {groups.map(({ key, label, tone, members }) => (
+              <div role="rowgroup" className="week-status-group" aria-label={label} key={key}>
+                <div role="row" className="week-status-heading">
+                  <div role="cell" aria-colspan={days.length + 1}>
+                    <h2>
+                      <button
+                        type="button"
+                        className="week-group-toggle"
+                        aria-expanded={!collapsedGroups.has(`table-${key}`)}
+                        onClick={(event) => toggleGroup('table', key, event.detail)}
+                      >
+                        <ChevronDown size={16} className="group-chevron" aria-hidden="true" />
+                        <i className="tone-dot tone" data-tone={tone} aria-hidden="true" />
+                        {label}{' '}
                         <span>
-                          {personName(person)}
-                          {person.userId === userId && <em>You</em>}
+                          {members.length}{' '}
+                          {collapsedGroups.has(`table-${key}`) ? 'hidden' : 'shown'}
                         </span>
-                        {person.userId === userId ? (
-                          <small>Click a day to plan it</small>
-                        ) : (
-                          person.organisationRoles?.[0] && (
-                            <small>{person.organisationRoles[0]}</small>
-                          )
-                        )}
-                      </span>
-                    </button>
+                      </button>
+                    </h2>
                   </div>
-                  <div className="week-strip">
-                    {segmentWeek(
-                      days.map(
-                        (date, index): DayPresence => ({ date, status: statusOn(person, index) })
-                      )
-                    ).map((segment) => (
-                      <WeekCell
-                        key={segment.start}
-                        segment={segment}
-                        days={days}
-                        today={today}
-                        hideInOffice
-                        onPlan={person.userId === userId ? plan : undefined}
-                      />
+                </div>
+                <div
+                  role="none"
+                  className="group-collapse"
+                  data-collapsed={collapsedGroups.has(`table-${key}`) || undefined}
+                >
+                  <div role="none">
+                    {members.map((person) => (
+                      <div role="row" className="week-row week-person-row" key={person.userId}>
+                        <div role="rowheader" className="week-person-cell">
+                          <button className="week-person" onClick={() => setOpenId(person.userId)}>
+                            <Avatar person={person} />
+                            <span className="week-person-name">
+                              <span>
+                                {personName(person)}
+                                {person.userId === userId && <em>You</em>}
+                              </span>
+                              {person.userId === userId ? (
+                                <small>Click a day to plan it</small>
+                              ) : (
+                                person.organisationRoles?.[0] && (
+                                  <small>{person.organisationRoles[0]}</small>
+                                )
+                              )}
+                            </span>
+                          </button>
+                        </div>
+                        <div className="week-strip">
+                          {segmentWeek(
+                            days.map(
+                              (date, index): DayPresence => ({
+                                date,
+                                status: statusOn(person, index),
+                              })
+                            )
+                          ).map((segment) => (
+                            <WeekCell
+                              key={segment.start}
+                              segment={segment}
+                              days={days}
+                              today={today}
+                              hideInOffice
+                              onPlan={person.userId === userId ? plan : undefined}
+                            />
+                          ))}
+                        </div>
+                      </div>
                     ))}
                   </div>
                 </div>
-              ))}
-            </div>
+              </div>
+            ))}
             {!visible.length && (
               <p className="week-empty">
                 {!people.length
@@ -549,37 +615,46 @@ export function WeekOverview({
                 {arrival}
               </p>
             )}
-            {dayGroups.map(({ id, label }) => {
-              const groupLabel = id === 'office' ? 'Late / leaving early' : label;
-              const members = visible.filter(
-                (person) => hasExceptionOn(person, dayIndex) && groupOn(person, dayIndex) === id
-              );
+            {groups.map(({ key, label, members: groupMembers }) => {
+              const members = groupMembers.filter((person) => hasExceptionOn(person, dayIndex));
               if (!members.length) return null;
               return (
-                <section key={id} className="day-panel-group" aria-label={groupLabel}>
+                <section key={key} className="day-panel-group" aria-label={label}>
                   <h3>
-                    {groupLabel} <span>{members.length}</span>
+                    <button
+                      type="button"
+                      aria-expanded={!collapsedGroups.has(`sidebar-${key}`)}
+                      onClick={(event) => toggleGroup('sidebar', key, event.detail)}
+                    >
+                      <ChevronDown size={16} className="group-chevron" aria-hidden="true" />
+                      {label} <span>{members.length}</span>
+                    </button>
                   </h3>
-                  <ul>
-                    {members.map((person) => {
-                      const status = statusOn(person, dayIndex);
-                      const { label: statusLabel, tone } = presenceOf(status);
-                      const note = dayNote(status);
-                      const detail = [statusLabel, note].filter(Boolean).join(' · ');
-                      return (
-                        <li key={person.userId}>
-                          <button onClick={() => setOpenId(person.userId)}>
-                            <Avatar person={person} size={28} />
-                            <span className="day-panel-person">
-                              <span>{personName(person)}</span>
-                              {detail && <small>{detail}</small>}
-                            </span>
-                            <i className="tone-dot tone" data-tone={tone} aria-hidden="true" />
-                          </button>
-                        </li>
-                      );
-                    })}
-                  </ul>
+                  <div
+                    className="group-collapse"
+                    data-collapsed={collapsedGroups.has(`sidebar-${key}`) || undefined}
+                  >
+                    <ul>
+                      {members.map((person) => {
+                        const status = statusOn(person, dayIndex);
+                        const { label: statusLabel, tone } = presenceOf(status);
+                        const note = dayNote(status);
+                        const detail = [statusLabel, note].filter(Boolean).join(' · ');
+                        return (
+                          <li key={person.userId}>
+                            <button onClick={() => setOpenId(person.userId)}>
+                              <Avatar person={person} size={28} />
+                              <span className="day-panel-person">
+                                <span>{personName(person)}</span>
+                                {detail && <small>{detail}</small>}
+                              </span>
+                              <i className="tone-dot tone" data-tone={tone} aria-hidden="true" />
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </div>
                 </section>
               );
             })}

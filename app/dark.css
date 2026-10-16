@@ -266,6 +266,7 @@ html.dark {
   );
 }
 .dark .week-head,
+.dark .week-status-group + .week-status-group,
 .dark .week-person-row + .week-person-row,
 .dark .day-panel-header {
   border-color: var(--office-border-soft);

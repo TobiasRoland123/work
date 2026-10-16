@@ -184,9 +184,14 @@ describe('status labels in the week grid and selected-day sidebar', () => {
     expect(grid).toMatch(/aria-label="Plan [^"]+\. Currently: No exception"/);
   });
 
-  it('groups late and early departures under the shared heading', () => {
-    const { sidebar } = renderWeek(status({ status: 'IN_LATE' }));
-    expect(sidebar).toContain('aria-label="Late / leaving early"');
+  it('groups late arrivals and early departures separately', () => {
+    const late = renderWeek(status({ status: 'IN_LATE' }));
+    expect(late.sidebar).toContain('aria-label="In late"');
+    expect(late.sidebar).not.toContain('aria-label="Leaving early"');
+
+    const early = renderWeek(status({ status: 'LEAVING_EARLY' }));
+    expect(early.sidebar).toContain('aria-label="Leaving early"');
+    expect(early.sidebar).not.toContain('aria-label="In late"');
   });
 
   it('retains description-only announcements in both areas', () => {
