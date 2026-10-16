@@ -317,11 +317,19 @@ export function WeekOverview({
   const [planDays, setPlanDays] = useState<string[] | null>(null);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => new Set());
 
-  const toggleGroup = (key: string) => {
+  // A triple click applies the clicked group's toggled state to every group in that list.
+  const toggleGroup = (list: 'table' | 'sidebar', key: string, clicks: number) => {
+    const id = `${list}-${key}`;
     setCollapsedGroups((current) => {
       const next = new Set(current);
-      if (next.has(key)) next.delete(key);
-      else next.add(key);
+      if (clicks === 3) {
+        const collapse = !current.has(id);
+        for (const group of groups) {
+          if (collapse) next.add(`${list}-${group.key}`);
+          else next.delete(`${list}-${group.key}`);
+        }
+      } else if (next.has(id)) next.delete(id);
+      else next.add(id);
       return next;
     });
   };
@@ -507,7 +515,7 @@ export function WeekOverview({
                         type="button"
                         className="week-group-toggle"
                         aria-expanded={!collapsedGroups.has(`table-${key}`)}
-                        onClick={() => toggleGroup(`table-${key}`)}
+                        onClick={(event) => toggleGroup('table', key, event.detail)}
                       >
                         <ChevronDown size={16} className="group-chevron" aria-hidden="true" />
                         <i className="tone-dot tone" data-tone={tone} aria-hidden="true" />
@@ -616,7 +624,7 @@ export function WeekOverview({
                     <button
                       type="button"
                       aria-expanded={!collapsedGroups.has(`sidebar-${key}`)}
-                      onClick={() => toggleGroup(`sidebar-${key}`)}
+                      onClick={(event) => toggleGroup('sidebar', key, event.detail)}
                     >
                       <ChevronDown size={16} className="group-chevron" aria-hidden="true" />
                       {label} <span>{members.length}</span>

@@ -268,6 +268,7 @@
   min-height: 44px;
   padding: 9px 16px;
   text-align: left;
+  user-select: none;
 }
 .week-group-toggle:hover {
   background: var(--office-hover, #ecefeb);
@@ -540,6 +541,7 @@
 .day-panel-group h3 button {
   min-height: 44px;
   gap: 6px;
+  user-select: none;
 }
 .day-panel-group h3 span {
   margin-left: 6px;
