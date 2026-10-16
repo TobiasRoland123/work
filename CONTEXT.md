@@ -29,6 +29,12 @@ own Declarations, for one day or the whole announcement. The imported Declaratio
 kept, and the error is recorded for quality review.
 _Avoid_: Override, fix, edit
 
+**Learned Shorthand**:
+A whole-message phrase that Slack import reads without AI because enough earlier
+Declarations with exactly that wording were read the same way. Its dates resolve from each
+new Declaration's own time. A correction or a conflicting reading blocks it for good.
+_Avoid_: Learned rule, cached answer, alias
+
 ### Local Sandbox
 
 The Local Sandbox replaces the Slack workspace during local development. It runs only

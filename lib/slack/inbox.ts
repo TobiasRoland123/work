@@ -1,9 +1,22 @@
 import { and, eq, lte, sql } from 'drizzle-orm';
 import { db } from '@/db';
-import { slackMessageFeedback, slackMessages, status, users } from '@/db/schema';
+import {
+  shorthandObservations,
+  slackMessageFeedback,
+  slackMessages,
+  status,
+  users,
+} from '@/db/schema';
 import { inspectSlackEvent } from './events';
 import { descriptionRows, extractAttendance, statusRows } from './extraction';
 import { createSlackAiUsageRecorder } from './ai-usage';
+import {
+  forgetShorthandObservation,
+  learningThreshold,
+  readLearnedShorthand,
+  recordShorthandObservation,
+  templateFromExtraction,
+} from './learned-shorthand';
 import { supabase } from '@/lib/supabaseClient';
 
 const MAX_REVIEW_TEXT_LENGTH = 12000;
@@ -55,6 +68,9 @@ export async function enqueueSlackEvent(input: unknown) {
         await tx
           .delete(slackMessageFeedback)
           .where(eq(slackMessageFeedback.messageKey, event.messageKey));
+        await tx
+          .delete(shorthandObservations)
+          .where(eq(shorthandObservations.messageKey, event.messageKey));
       }
       if (event.text && event.text.length > 12000) {
         await tx
@@ -173,20 +189,28 @@ export async function processSlackInbox(limit = 2, messageKey?: string, revision
       failureReason = process.env.AI_GATEWAY_API_KEY?.trim()
         ? 'extraction_failed'
         : 'gateway_key_missing';
-      const extraction = await extractAttendance(
-        job.text ?? '',
-        new Date(Number(job.messageTs) * 1000),
-        createSlackAiUsageRecorder({
-          messageKey: job.messageKey,
-          revision: job.revision,
-          teamId: job.teamId,
-          channelId: job.channelId,
-        })
-      );
+      const messageInstant = new Date(Number(job.messageTs) * 1000);
+      // A learned shorthand answers its whole phrase without an AI request.
+      const learned = await readLearnedShorthand(job, job.text ?? '', messageInstant);
+      const extraction =
+        learned.extraction ??
+        (await extractAttendance(
+          job.text ?? '',
+          messageInstant,
+          createSlackAiUsageRecorder({
+            messageKey: job.messageKey,
+            revision: job.revision,
+            teamId: job.teamId,
+            channelId: job.channelId,
+          })
+        ));
+      const template =
+        learned.template ??
+        (learned.phrase ? templateFromExtraction(extraction, messageInstant) : null);
       const rows =
         extraction.decision === 'apply'
           ? statusRows(extraction)
-          : descriptionRows(extraction, job.text ?? '', new Date(Number(job.messageTs) * 1000));
+          : descriptionRows(extraction, job.text ?? '', messageInstant);
       const hasRows = rows.length > 0;
       failureReason = 'status_write_failed';
       const applied = await db.transaction(async (tx) => {
@@ -220,6 +244,22 @@ export async function processSlackInbox(limit = 2, messageKey?: string, revision
             outcome: { reason: extraction.reason },
           })
           .where(eq(slackMessages.messageKey, job.messageKey));
+        // Recorded with the committed revision, so retries and reprocessing replace the evidence.
+        if (learned.phrase && template)
+          await recordShorthandObservation(
+            tx,
+            {
+              messageKey: job.messageKey,
+              revision: job.revision,
+              teamId: job.teamId,
+              channelId: job.channelId,
+              phrase: learned.phrase,
+              template,
+              learnedShorthandId: learned.learnedShorthandId,
+            },
+            learningThreshold()
+          );
+        else await forgetShorthandObservation(tx, job.messageKey);
         return true;
       });
       if (!applied) counts.superseded++;

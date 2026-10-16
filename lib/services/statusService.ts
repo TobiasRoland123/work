@@ -13,6 +13,7 @@ import {
   isSuperseded,
   planCorrection,
 } from '@/lib/status/correction';
+import { blockCorrectedShorthand } from '@/lib/slack/learned-shorthand';
 
 export const statusService = {
   // GET METHODS
@@ -101,6 +102,13 @@ export const statusService = {
         })
         .onConflictDoNothing()
         .returning({ id: statusCorrections.id });
+      // The message's reading was wrong, so its phrase must not be learned or keep matching.
+      if (created)
+        await blockCorrectedShorthand(
+          tx,
+          { messageKey: sourceMessageKey, revision: sourceRevision, correctionId: created.id },
+          now
+        );
       let recordId = created?.id;
       if (!recordId) {
         const [existing] = await tx

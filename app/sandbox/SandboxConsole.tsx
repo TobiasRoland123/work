@@ -594,6 +594,7 @@ function Outcome({ outcome }: { outcome: SandboxOutcome }) {
         <dt>Handled by</dt>
         <dd>
           {outcome.handledBy === 'shorthand' && 'Deterministic shorthand parser, no model call'}
+          {outcome.handledBy === 'learned' && 'Learned shorthand, no model call'}
           {outcome.handledBy === 'model' && 'AI Gateway model'}
           {outcome.handledBy === null && '–'}
         </dd>

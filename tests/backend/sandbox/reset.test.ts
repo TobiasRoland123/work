@@ -21,4 +21,9 @@ describe('sandbox reset', () => {
     );
     expect(params).toEqual(['T_LOCAL']);
   });
+  it('deletes learned shorthands only for the sandbox workspace', () => {
+    const { sql, params } = sandboxResetStatements().learnedShorthands.toSQL();
+    expect(sql).toBe('delete from "learned_shorthands" where "learned_shorthands"."team_id" = $1');
+    expect(params).toEqual(['T_LOCAL']);
+  });
 });

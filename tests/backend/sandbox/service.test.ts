@@ -86,6 +86,37 @@ describe('sendSandboxMessage', () => {
       handledBy: 'shorthand',
     });
   });
+  it('sends a learned shorthand without an AI key', async () => {
+    vi.stubEnv('AI_GATEWAY_API_KEY', '');
+    vi.stubEnv('SLACK_SHORTHAND_LEARNING_THRESHOLD', '3');
+    queue('learned_shorthands', [
+      {
+        id: 1,
+        template: {
+          intervals: [
+            {
+              status: 'AT_CLIENT',
+              fromOffset: 0,
+              toOffset: 0,
+              startTime: null,
+              endTime: null,
+              startApproximate: false,
+              endApproximate: false,
+              comment: null,
+            },
+          ],
+        },
+      },
+    ]);
+    queue('users', [{ id: 'sandbox-anna' }], [{ id: 'sandbox-anna' }]);
+    queue('slack_messages', [{ state: 'applied', outcome: { reason: 'clear' }, attempts: 1 }]);
+    queue('slack_messages', [{ state: 'applied', outcome: { reason: 'clear' } }]);
+    queue('status', []);
+    enqueue.mockResolvedValue({ outcome: 'queued', messageKey: 'k', revision: 'r' });
+    await expect(
+      sendSandboxMessage({ slackUserId: author, text: 'hos kunden' })
+    ).resolves.toMatchObject({ handledBy: 'learned' });
+  });
   it('feeds a genuine envelope through the intake and reports the committed interpretation', async () => {
     queue('users', [{ id: 'sandbox-anna' }], [{ id: 'sandbox-anna' }]);
     queue('slack_messages', [{ state: 'applied', outcome: { reason: 'clear' }, attempts: 1 }]);
