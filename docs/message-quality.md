@@ -18,6 +18,12 @@ Feedback belongs to the exact message revision and records the reviewer and save
 
 The inbox still clears the text of converted messages, so corrections do not retain the original message text. Open the Slack message to read the phrase. Each correction keeps the message key and exact revision, so later shorthand learning can identify the phrase that was corrected. Corrections are scoped to the configured workspace and channel and use the same review permission as the rest of the page.
 
+## AI cost dashboard
+
+`/ai-cost` gives reviewers a separate overview of AI spending. It appears as **AI cost** in the navigation next to **Review** (under **More** on mobile) and uses the same access rules. Choose the last 7, 30 or 90 days; 30 days is the default. The page shows the period's reported cost, AI calls, average cost per priced call, input and output tokens, failed calls and calls without a reported cost. A daily chart covers every day in the period, including days without calls; striped bars mark days that include unpriced calls. Below it, the current month to date sits next to the full previous month, and a table breaks the period down by model.
+
+The dashboard reads the same `slack_ai_usage` records as the cost figures above, so the same rules apply. Days and months follow the request start time in Copenhagen, retries and calls for edited or deleted messages count, and missing costs are not estimated. A total shown with `+ unknown` leaves out calls without a reported cost. The average uses only priced calls. Figures cover the configured `SLACK_TEAM_ID` and `SLACK_CHANNEL_ID`.
+
 ## Access
 
 In real workspaces, an authenticated Slack session alone does not grant review access. The server checks the live `users.can_review_messages` flag, an active Slack identity and `SLACK_TEAM_ID` for every request. The review service performs the same check before reading inbox data. People without access see neither the navigation link nor the page. There is no public review API. The flag is not editable through profile or user-update actions.

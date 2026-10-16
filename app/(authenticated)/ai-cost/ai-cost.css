@@ -1,0 +1,295 @@
+.ai-cost-page {
+  --ai-cost-surface: var(--office-surface, #fff);
+  --ai-cost-ink: var(--office-ink, #0b1014);
+  --ai-cost-muted: var(--office-muted, #656c6a);
+  --ai-cost-border: var(--office-border, #deded8);
+  --ai-cost-border-soft: var(--office-border-soft, #e7e8e4);
+  --ai-cost-link: var(--office-link, #2d6ea8);
+  --ai-cost-raised: var(--office-raised, #e7e8e4);
+}
+.ai-cost-body {
+  display: grid;
+  gap: 24px;
+}
+.ai-cost-section {
+  min-width: 0;
+}
+.ai-cost-heading-row {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 18px;
+}
+.ai-cost-heading-row h2 {
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: -0.04em;
+}
+.ai-cost-heading-row p,
+.ai-cost-note {
+  color: var(--ai-cost-muted);
+  font-size: 13px;
+}
+.ai-cost-note a {
+  color: var(--ai-cost-link);
+  text-decoration: underline;
+}
+.ai-cost-periods {
+  display: flex;
+  padding: 3px;
+  gap: 3px;
+  background: var(--ai-cost-raised);
+  border-radius: 7px;
+  font-size: 13px;
+}
+.ai-cost-periods a {
+  padding: 6px 12px;
+  border-radius: 5px;
+  color: var(--ai-cost-muted);
+  white-space: nowrap;
+}
+.ai-cost-periods a:hover {
+  color: var(--ai-cost-ink);
+}
+.ai-cost-periods a[aria-current] {
+  background: var(--ai-cost-surface);
+  color: var(--ai-cost-ink);
+  font-weight: 600;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 8%);
+}
+.ai-cost-periods a:focus-visible {
+  outline: 2px solid var(--ai-cost-link);
+  outline-offset: 1px;
+}
+.ai-cost-summary {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  background: var(--ai-cost-surface);
+  border: 1px solid var(--ai-cost-border);
+  color: var(--ai-cost-ink);
+  border-radius: 7px;
+}
+.ai-cost-summary > div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  padding: 15px 18px;
+  border-right: 1px solid var(--ai-cost-border);
+}
+.ai-cost-summary > div:last-child {
+  border-right: 0;
+}
+.ai-cost-summary span,
+.ai-cost-summary small {
+  color: var(--ai-cost-muted);
+  font-size: 12px;
+}
+.ai-cost-summary strong {
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+  overflow-wrap: anywhere;
+}
+.ai-cost-panel {
+  padding: 16px;
+  background: var(--ai-cost-surface);
+  border: 1px solid var(--ai-cost-border);
+  border-radius: 7px;
+  color: var(--ai-cost-ink);
+}
+.ai-cost-panel h2 {
+  font-size: 15px;
+  font-weight: 600;
+}
+.ai-cost-panel-heading {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 14px;
+}
+.ai-cost-legend {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--ai-cost-muted);
+  font-size: 12px;
+}
+.ai-cost-legend-unpriced {
+  width: 10px;
+  height: 10px;
+  border-radius: 2px;
+}
+.ai-cost-legend-unpriced,
+.ai-cost-bar[data-unpriced] {
+  background: repeating-linear-gradient(
+    -45deg,
+    var(--ai-cost-link) 0 3px,
+    color-mix(in srgb, var(--ai-cost-link) 45%, transparent) 3px 6px
+  );
+}
+.ai-cost-chart {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+  height: 200px;
+}
+.ai-cost-chart[data-days='90'] {
+  gap: 1px;
+}
+.ai-cost-chart > li {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  min-width: 0;
+}
+.ai-cost-bar-area {
+  display: flex;
+  flex: 1;
+  align-items: end;
+  border-bottom: 1px solid var(--ai-cost-border);
+}
+.ai-cost-bar {
+  display: block;
+  width: 100%;
+  min-height: 2px;
+  border-radius: 3px 3px 0 0;
+  background: var(--ai-cost-link);
+}
+.ai-cost-bar[data-empty] {
+  min-height: 0;
+}
+.ai-cost-chart > li:hover .ai-cost-bar {
+  filter: brightness(1.2);
+}
+.ai-cost-axis {
+  display: flex;
+  justify-content: center;
+  height: 20px;
+  padding-top: 5px;
+  color: var(--ai-cost-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+/* Narrow bars: end-aligned labels overflow leftward so they never run past the chart edge. */
+.ai-cost-chart:not([data-days='7']) .ai-cost-axis {
+  justify-content: flex-end;
+}
+.ai-cost-columns {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  gap: 24px;
+}
+.ai-cost-months {
+  display: grid;
+  gap: 10px;
+  margin-top: 14px;
+}
+.ai-cost-months > div {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  background: var(--ai-cost-raised);
+  border-radius: 5px;
+}
+.ai-cost-months dt {
+  color: var(--ai-cost-muted);
+  font-size: 12px;
+}
+.ai-cost-months dd {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.ai-cost-months strong {
+  font-size: 18px;
+  font-variant-numeric: tabular-nums;
+}
+.ai-cost-months small {
+  color: var(--ai-cost-muted);
+  font-size: 12px;
+}
+.ai-cost-table-scroll {
+  margin-top: 10px;
+  overflow-x: auto;
+}
+.ai-cost-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.ai-cost-table th,
+.ai-cost-table td {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--ai-cost-border-soft);
+  text-align: right;
+  white-space: nowrap;
+}
+.ai-cost-table th:first-child {
+  text-align: left;
+  padding-left: 0;
+}
+.ai-cost-table td:last-child,
+.ai-cost-table th:last-child {
+  padding-right: 0;
+}
+.ai-cost-table thead th {
+  color: var(--ai-cost-muted);
+  font-size: 12px;
+  font-weight: 500;
+}
+.ai-cost-table tbody th {
+  font-weight: 600;
+}
+.ai-cost-table tbody tr:last-child > * {
+  border-bottom: 0;
+}
+.ai-cost-empty {
+  padding: 24px 0;
+  color: var(--ai-cost-muted);
+  font-size: 13px;
+  text-align: center;
+}
+@media (max-width: 1200px) {
+  .ai-cost-summary {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .ai-cost-summary > div:nth-child(3n) {
+    border-right: 0;
+  }
+  .ai-cost-summary > div:nth-child(-n + 3) {
+    border-bottom: 1px solid var(--ai-cost-border);
+  }
+  .ai-cost-columns {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 760px) {
+  .ai-cost-heading-row,
+  .ai-cost-panel-heading {
+    align-items: start;
+    flex-direction: column;
+  }
+  .ai-cost-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .ai-cost-summary > div {
+    border-right: 1px solid var(--ai-cost-border);
+    border-bottom: 1px solid var(--ai-cost-border);
+  }
+  .ai-cost-summary > div:nth-child(2n) {
+    border-right: 0;
+  }
+  .ai-cost-summary > div:nth-last-child(-n + 2) {
+    border-bottom: 0;
+  }
+  .ai-cost-chart {
+    height: 160px;
+  }
+  .ai-cost-chart[data-days='30'] {
+    gap: 2px;
+  }
+}
