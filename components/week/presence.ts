@@ -17,13 +17,6 @@ const presence: Record<StatusType, { label: string; tone: Tone; group: DayGroup 
   AWAY: { label: 'Away', tone: 'away', group: 'out' },
 };
 
-export const dayGroups: { id: DayGroup; label: string }[] = [
-  { id: 'office', label: 'In office' },
-  { id: 'elsewhere', label: 'Working elsewhere' },
-  { id: 'out', label: 'Out' },
-  { id: 'unknown', label: 'No status yet' },
-];
-
 export const legend: { tone: Tone; label: string }[] = [
   { tone: 'office', label: 'In office' },
   { tone: 'partial', label: 'Late / leaving early' },
@@ -53,6 +46,30 @@ export function presenceOf(status: Status | null): { label: string; tone: Tone; 
   if (!status) return { label: 'No status', tone: 'none', group: 'unknown' };
   if (!status.status) return { label: 'Note', tone: 'note', group: 'unknown' };
   return presence[status.status];
+}
+
+type AttendanceGroup = {
+  key: StatusType | 'note' | 'unknown';
+  label: string;
+  tone: Tone;
+  members: UserWithExtras[];
+};
+
+/** Group the supplied colleagues by one day's status, preserving their order within each group. */
+export function groupAttendance(people: readonly UserWithExtras[], day: string): AttendanceGroup[] {
+  const groups = new Map<string, AttendanceGroup>();
+  for (const person of people) {
+    const status = person.week?.find((entry) => entry.date === day)?.status ?? null;
+    const key = status ? (status.status ?? 'note') : 'unknown';
+    const { label, tone } = presenceOf(status);
+    const group = groups.get(key) ?? { key, label, tone, members: [] };
+    group.members.push(person);
+    groups.set(key, group);
+  }
+  return [...Object.keys(presence), 'note', 'unknown'].flatMap((key) => {
+    const group = groups.get(key);
+    return group ? [group] : [];
+  });
 }
 
 function clock(value: Date | string | null | undefined, approximate?: boolean | null) {

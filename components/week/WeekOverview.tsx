@@ -15,8 +15,8 @@ import { getSlackImageUrl } from '@/lib/slack/image';
 import type { UpcomingStatus } from '@/lib/status/plan';
 import { addDays, formatDay, isoWeekNumber, shiftWorkWeek } from '@/lib/status/week';
 import {
-  dayGroups,
   dayNote,
+  groupAttendance,
   initials,
   isAssumed,
   personName,
@@ -333,8 +333,6 @@ export function WeekOverview({
     : `Week ${isoWeekNumber(weekStart)} · ${weekRange(days)}`;
   const statusOn = (person: UserWithExtras, index: number) =>
     person.week?.find((day) => day.date === days[index])?.status ?? null;
-  const groupOn = (person: UserWithExtras, index: number) =>
-    presenceOf(statusOn(person, index)).group;
   const inOfficeOn = (person: UserWithExtras, index: number) =>
     statusOn(person, index)?.status === 'IN_OFFICE';
   const hasExceptionOn = (person: UserWithExtras, index: number) => {
@@ -356,6 +354,7 @@ export function WeekOverview({
       .toLocaleLowerCase();
     return searchable.includes(needle) && days.some((_, index) => hasExceptionOn(person, index));
   });
+  const groups = groupAttendance(visible, days[dayIndex]);
 
   return (
     <div className="week-page">
@@ -473,46 +472,56 @@ export function WeekOverview({
                 </div>
               </div>
             </div>
-            <div role="rowgroup">
-              {visible.map((person) => (
-                <div role="row" className="week-row week-person-row" key={person.userId}>
-                  <div role="rowheader" className="week-person-cell">
-                    <button className="week-person" onClick={() => setOpenId(person.userId)}>
-                      <Avatar person={person} />
-                      <span className="week-person-name">
-                        <span>
-                          {personName(person)}
-                          {person.userId === userId && <em>You</em>}
-                        </span>
-                        {person.userId === userId ? (
-                          <small>Click a day to plan it</small>
-                        ) : (
-                          person.organisationRoles?.[0] && (
-                            <small>{person.organisationRoles[0]}</small>
-                          )
-                        )}
-                      </span>
-                    </button>
-                  </div>
-                  <div className="week-strip">
-                    {segmentWeek(
-                      days.map(
-                        (date, index): DayPresence => ({ date, status: statusOn(person, index) })
-                      )
-                    ).map((segment) => (
-                      <WeekCell
-                        key={segment.start}
-                        segment={segment}
-                        days={days}
-                        today={today}
-                        hideInOffice
-                        onPlan={person.userId === userId ? plan : undefined}
-                      />
-                    ))}
+            {groups.map(({ key, label, tone, members }) => (
+              <div role="rowgroup" className="week-status-group" aria-label={label} key={key}>
+                <div role="row" className="week-status-heading">
+                  <div role="cell" aria-colspan={days.length + 1}>
+                    <h2>
+                      <i className="tone-dot tone" data-tone={tone} aria-hidden="true" />
+                      {label} <span>{members.length}</span>
+                    </h2>
                   </div>
                 </div>
-              ))}
-            </div>
+                {members.map((person) => (
+                  <div role="row" className="week-row week-person-row" key={person.userId}>
+                    <div role="rowheader" className="week-person-cell">
+                      <button className="week-person" onClick={() => setOpenId(person.userId)}>
+                        <Avatar person={person} />
+                        <span className="week-person-name">
+                          <span>
+                            {personName(person)}
+                            {person.userId === userId && <em>You</em>}
+                          </span>
+                          {person.userId === userId ? (
+                            <small>Click a day to plan it</small>
+                          ) : (
+                            person.organisationRoles?.[0] && (
+                              <small>{person.organisationRoles[0]}</small>
+                            )
+                          )}
+                        </span>
+                      </button>
+                    </div>
+                    <div className="week-strip">
+                      {segmentWeek(
+                        days.map(
+                          (date, index): DayPresence => ({ date, status: statusOn(person, index) })
+                        )
+                      ).map((segment) => (
+                        <WeekCell
+                          key={segment.start}
+                          segment={segment}
+                          days={days}
+                          today={today}
+                          hideInOffice
+                          onPlan={person.userId === userId ? plan : undefined}
+                        />
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ))}
             {!visible.length && (
               <p className="week-empty">
                 {!people.length
@@ -549,16 +558,13 @@ export function WeekOverview({
                 {arrival}
               </p>
             )}
-            {dayGroups.map(({ id, label }) => {
-              const groupLabel = id === 'office' ? 'Late / leaving early' : label;
-              const members = visible.filter(
-                (person) => hasExceptionOn(person, dayIndex) && groupOn(person, dayIndex) === id
-              );
+            {groups.map(({ key, label, members: groupMembers }) => {
+              const members = groupMembers.filter((person) => hasExceptionOn(person, dayIndex));
               if (!members.length) return null;
               return (
-                <section key={id} className="day-panel-group" aria-label={groupLabel}>
+                <section key={key} className="day-panel-group" aria-label={label}>
                   <h3>
-                    {groupLabel} <span>{members.length}</span>
+                    {label} <span>{members.length}</span>
                   </h3>
                   <ul>
                     {members.map((person) => {

@@ -244,8 +244,24 @@
   border-radius: inherit;
 }
 
+.week-status-group + .week-status-group,
 .week-person-row + .week-person-row {
   border-top: 1px solid #efefea;
+}
+.week-status-heading {
+  padding: 9px 16px;
+  background: var(--office-raised, #f4f5f3);
+}
+.week-status-heading h2 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.week-status-heading h2 span {
+  color: var(--office-subtle, #747972);
+  font-weight: 400;
 }
 .week-person-row:hover .week-person-cell {
   background: #fafaf6;
@@ -697,6 +713,9 @@
   }
   .week-person-head {
     display: none;
+  }
+  .week-status-heading {
+    padding-inline: 12px;
   }
   .week-person {
     padding: 10px 12px 2px;
