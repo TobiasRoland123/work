@@ -1,6 +1,6 @@
 import { and, eq, lte, sql } from 'drizzle-orm';
 import { db } from '@/db';
-import { slackMessageFeedback, slackMessages, status, users } from '@/db/schema';
+import { slackMessageFeedback, slackMessages, status, statusCorrections, users } from '@/db/schema';
 import { inspectSlackEvent } from './events';
 import { descriptionRows, extractAttendance, statusRows } from './extraction';
 import { createSlackAiUsageRecorder } from './ai-usage';
@@ -55,6 +55,11 @@ export async function enqueueSlackEvent(input: unknown) {
         await tx
           .delete(slackMessageFeedback)
           .where(eq(slackMessageFeedback.messageKey, event.messageKey));
+        // Keep the correction record, but not the text of a message its author deleted.
+        await tx
+          .update(statusCorrections)
+          .set({ sourceText: null })
+          .where(eq(statusCorrections.sourceMessageKey, event.messageKey));
       }
       if (event.text && event.text.length > 12000) {
         await tx

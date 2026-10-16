@@ -147,9 +147,17 @@ function CorrectionCard({ correction }: { correction: ReviewCorrection }) {
           <dd>{messageChange(correction)}</dd>
         </div>
       </dl>
-      {correction.originalDetails?.trim() && (
-        <p className="quality-message-text">{correction.originalDetails}</p>
-      )}
+      <p className="quality-message-text">
+        {correction.sourceText?.trim() ? (
+          correction.sourceText
+        ) : (
+          <em>Slack message text unavailable</em>
+        )}
+      </p>
+      {correction.originalDetails?.trim() &&
+        correction.originalDetails.trim() !== correction.sourceText?.trim() && (
+          <p className="quality-muted">Imported note: {correction.originalDetails}</p>
+        )}
       <a
         className="quality-correction-link"
         href={`/api/slack/message?key=${encodeURIComponent(correction.messageKey)}`}

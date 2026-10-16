@@ -8,6 +8,11 @@ import { resolveWorkWeek } from '@/lib/status/week';
 
 const auth = vi.hoisted(() => ({ requireUserId: vi.fn() }));
 vi.mock('@/lib/auth/require-user', () => ({ requireUserId: auth.requireUserId }));
+const background = vi.hoisted(() => ({ after: vi.fn(), record: vi.fn() }));
+vi.mock('next/server', () => ({ after: background.after }));
+vi.mock('@/lib/status/correction-text', () => ({
+  recordCorrectionSourceText: background.record,
+}));
 
 import { correctImportedStatusAction } from '@/app/actions/statusActions';
 
@@ -85,6 +90,8 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
         .returning({ id: status.id });
       importedId = row.id;
       auth.requireUserId.mockReset().mockResolvedValue(owner);
+      background.after.mockReset();
+      background.record.mockReset();
     });
 
     afterAll(async () => {
@@ -95,6 +102,9 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
 
     it('applies a day correction and records the error without touching the import', async () => {
       await expect(correct()).resolves.toEqual({ ok: true, duplicate: false });
+      // The Slack text is fetched after the response, for the stored correction.
+      expect(background.after).toHaveBeenCalledTimes(1);
+      await background.after.mock.calls[0][0]();
 
       const [original] = await db.select().from(status).where(eq(status.id, importedId));
       expect(original).toMatchObject({
@@ -110,6 +120,7 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
         toDate: '2026-09-22',
       });
       const [record] = await corrections();
+      expect(background.record).toHaveBeenCalledWith(record.id);
       expect(record).toMatchObject({
         userId: owner,
         originalStatusId: importedId,

@@ -1,4 +1,5 @@
 'use server';
+import { after } from 'next/server';
 import { ZodError } from 'zod';
 import { NewStatus } from '@/db/types';
 import { statusService } from '@/lib/services/statusService';
@@ -6,6 +7,7 @@ import { requireUserId } from '@/lib/auth/require-user';
 import { manualStatus } from '@/lib/status/manual';
 import { PlanError, planStatuses } from '@/lib/status/plan';
 import { CorrectionError } from '@/lib/status/correction';
+import { recordCorrectionSourceText } from '@/lib/status/correction-text';
 
 export async function getAllStatusesAction() {
   await requireUserId();
@@ -45,7 +47,9 @@ export async function getMyUpcomingStatusesAction() {
 export async function correctImportedStatusAction(input: unknown) {
   const userID = await requireUserId();
   try {
-    const { duplicate } = await statusService.correctImportedStatus(userID, input);
+    const { correctionId, duplicate } = await statusService.correctImportedStatus(userID, input);
+    // Fetching the Slack text must not delay or fail the correction. A repeat retries it.
+    after(() => recordCorrectionSourceText(correctionId));
     return { ok: true as const, duplicate };
   } catch (error) {
     if (error instanceof CorrectionError) return { ok: false as const, error: error.message };
