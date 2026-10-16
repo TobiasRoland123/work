@@ -797,6 +797,237 @@
   cursor: not-allowed;
 }
 
+/* Phone day list: replaces the board rows and the day panel groups at narrow widths. */
+.week-list {
+  display: none;
+  flex-direction: column;
+  gap: 10px;
+}
+.week-list-filters {
+  display: flex;
+  gap: 6px;
+  margin: 0 -12px;
+  padding: 0 12px 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.week-list-filters button {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 6px;
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--office-border, #deded8);
+  border-radius: 99px;
+  background: var(--office-surface, white);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.week-list-filters span {
+  color: var(--office-subtle, #747972);
+}
+.week-list-filters button[aria-pressed='true'] {
+  border-color: var(--office-primary, #0b1014);
+  background: var(--office-primary, #0b1014);
+  color: var(--office-primary-ink, white);
+}
+.week-list-filters button[aria-pressed='true'] span {
+  color: inherit;
+  opacity: 0.8;
+}
+.week-list .tone-dot {
+  width: 8px;
+  height: 8px;
+}
+.week-mine,
+.week-list-card {
+  border: 1px solid var(--office-border, #e3e3dc);
+  border-radius: 12px;
+  background: var(--office-surface, white);
+  overflow: hidden;
+}
+.week-mine {
+  padding: 10px;
+}
+.week-mine-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+.week-mine-header h2 {
+  flex: 1;
+  font-size: 14px;
+  font-weight: 600;
+}
+.week-mine-link {
+  min-height: 32px;
+  color: var(--office-link, #2d6ea8);
+  font-size: 13px;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.week-mine-days {
+  display: grid;
+  grid-template-columns: repeat(var(--days, 5), minmax(0, 1fr));
+  gap: 4px;
+}
+.week-mine-day {
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 3px;
+  width: 100%;
+  height: 100%;
+  min-height: 64px;
+  padding: 6px 2px;
+  border: 1px solid var(--tone-border);
+  border-radius: 8px;
+  background: var(--tone-bg);
+  color: var(--tone-ink);
+  font-size: 11px;
+  line-height: 1.2;
+  text-align: center;
+}
+.week-mine-day[data-empty] {
+  border: 1px dashed var(--office-border, #c9ccc6);
+  color: var(--office-subtle, #747972);
+}
+.week-mine-day[data-selected] {
+  box-shadow: 0 0 0 1.5px var(--office-ink, #0b1014);
+}
+.week-mine-day[data-past] {
+  opacity: 0.55;
+}
+.week-mine-day strong {
+  color: var(--office-ink, #0b1014);
+  font-size: 12px;
+  font-weight: 600;
+}
+.week-mine-day > span {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.week-list-group {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.week-list-group h2 {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 4px 0;
+  color: var(--office-muted, #5e635f);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+}
+.week-list-group h2 span {
+  color: var(--office-subtle, #747972);
+  font-weight: 400;
+}
+.week-list-card li + li,
+.week-list-card .group-collapse li {
+  border-top: 1px solid var(--office-border-soft, #efefea);
+}
+.week-list-row,
+.week-list-more {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 56px;
+  padding: 8px 12px;
+  text-align: left;
+}
+.week-list-text {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+.week-list-name {
+  overflow: hidden;
+  font-size: 14px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.week-list-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.week-list-status .week-chip {
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 7px 1px 5px;
+}
+.week-list-status small,
+.week-list-more small {
+  overflow: hidden;
+  color: var(--office-subtle, #747972);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.week-ticks {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 2px;
+}
+.week-ticks i {
+  width: 6px;
+  height: 16px;
+  border-radius: 2px;
+  background: var(--tone-border);
+}
+.week-ticks i[data-tone='none'] {
+  background: var(--office-raised, #ecebe3);
+}
+.week-ticks i[data-selected] {
+  height: 24px;
+  box-shadow: 0 0 0 1.5px var(--office-ink, #0b1014);
+}
+.week-list-more small {
+  flex: 1;
+  min-width: 0;
+  color: var(--office-muted, #5e635f);
+}
+.week-list-stack {
+  display: flex;
+  padding-left: 6px;
+}
+.week-list-stack .week-avatar {
+  margin-left: -6px;
+  box-shadow: 0 0 0 2px var(--office-surface, white);
+}
+.week-list-more[aria-expanded='false'] > .group-chevron {
+  transform: none;
+}
+.week-list-more[aria-expanded='true'] > .group-chevron {
+  transform: rotate(180deg);
+}
+.week-list-row:focus-visible,
+.week-list-more:focus-visible {
+  outline: 2px solid var(--office-link, #28749a);
+  outline-offset: -2px;
+}
+.week-list .week-empty {
+  padding: 14px;
+  border: 1px dashed var(--office-border, #deded8);
+  border-radius: 12px;
+  text-align: center;
+}
+
 @media (max-width: 1100px) {
   .week-main {
     padding: 18px 20px 32px;
@@ -868,5 +1099,13 @@
   .week-filters a {
     flex: 1;
     padding-inline: 6px;
+  }
+  .week-list {
+    display: flex;
+  }
+  .week-board .week-status-group,
+  .week-board > .week-empty,
+  .day-panel-group {
+    display: none;
   }
 }
