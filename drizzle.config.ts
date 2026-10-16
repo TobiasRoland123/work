@@ -22,5 +22,6 @@ export default {
           user: process.env.PGUSER,
           password: process.env.PGPASSWORD,
           database: process.env.PGDATABASE!,
+          ssl: false,
         },
 } satisfies Config;
