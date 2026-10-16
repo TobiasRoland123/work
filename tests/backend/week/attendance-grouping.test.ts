@@ -111,10 +111,12 @@ describe('attendance groups', () => {
     for (const [userId, , label] of values) {
       const group = gridGroup(grid, label);
       expect(group).toContain(`<h2>`);
-      expect(group).toContain(`${label} <span>1</span>`);
+      expect(group).toContain('aria-expanded="true"');
+      expect(group).toContain(`${label} <span>1 shown</span>`);
       expect(group).toContain(`${userId[0].toUpperCase()}${userId.slice(1)} Person`);
       const sidebarGroup = sidebarGroups(sidebar).find((match) => match[1] === label)?.[2] ?? '';
-      expect(sidebarGroup).toContain(`<h3>${label} <span>1</span></h3>`);
+      expect(sidebarGroup).toContain('aria-expanded="true"');
+      expect(sidebarGroup).toContain(`${label} <span>1</span></button></h3>`);
       expect(sidebarGroup).toContain(`${userId[0].toUpperCase()}${userId.slice(1)} Person`);
     }
     expect(gridGroups(grid)).toHaveLength(4);
@@ -130,7 +132,7 @@ describe('attendance groups', () => {
       }))
     );
     const home = gridGroup(grid, 'Home');
-    expect(home).toContain('Home <span>4</span>');
+    expect(home).toContain('Home <span>4 shown</span>');
     expect(home.indexOf('Anna Person')).toBeLessThan(home.indexOf('Zoe Person'));
     expect(home.indexOf('Zoe Person')).toBeLessThan(home.indexOf('Ben Person'));
     expect(home.indexOf('Ben Person')).toBeLessThan(home.indexOf('Cara Person'));
@@ -159,8 +161,8 @@ describe('attendance groups', () => {
     expect(sidebar).toContain('aria-label="Note"');
     expect(sidebar).not.toContain('aria-label="No status"');
     expect(sidebar).not.toContain('aria-label="Home"');
-    expect(grid).toContain('Note <span>1</span>');
-    expect(grid).toContain('No status <span>1</span>');
+    expect(grid).toContain('Note <span>1 shown</span>');
+    expect(grid).toContain('No status <span>1 shown</span>');
   });
 
   it('groups by the selected day status, not profile status or another day', () => {
@@ -185,7 +187,7 @@ describe('attendance groups', () => {
   });
 
   it('keeps week-wide exceptions visible in the selected-day In office or No status group', () => {
-    const { grid, sidebar } = renderAttendance([
+    const { html, grid, sidebar } = renderAttendance([
       {
         userId: 'office',
         status: null,
@@ -199,8 +201,19 @@ describe('attendance groups', () => {
         status: null,
         week: [{ date: days[1], status: null }, daily('unknown', 'ON_LEAVE', days[2])],
       },
+      {
+        userId: 'alloffice',
+        status: null,
+        week: days.map((date) => daily('alloffice', 'IN_OFFICE', date)),
+      },
     ]);
     expect(gridGroup(grid, 'In office')).toContain('Office Person');
+    expect(gridGroup(grid, 'In office')).toContain('In office <span>1 shown</span>');
+    expect(grid).not.toContain('Alloffice Person');
+    expect(html).toContain('Grouped by Tuesday 22 September.');
+    expect(html).toContain('Showing colleagues with an attendance exception this week.');
+    expect(grid).toContain('aria-describedby="week-grouping-note"');
+    expect(sidebar).toContain('<strong>2</strong> of 3 in the office');
     expect(gridGroup(grid, 'No status')).toContain('Unknown Person');
     expect(sidebar).not.toContain('Office Person');
     expect(sidebar).not.toContain('Unknown Person');
