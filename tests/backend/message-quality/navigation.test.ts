@@ -25,10 +25,12 @@ describe('message review navigation', () => {
     const html = renderShell();
     expect(html).not.toContain('/message-quality');
     expect(html).not.toContain('Review');
+    expect(html).not.toContain('/ai-cost');
   });
 
   it('shows the link only when the server passed reviewer access', () => {
     const html = renderShell(true);
     expect(html).toContain('href="/message-quality"');
+    expect(html).toContain('href="/ai-cost"');
   });
 });

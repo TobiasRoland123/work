@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   CalendarDays,
+  Coins,
   FlaskConical,
   Menu,
   MessageSquareWarning,
@@ -36,6 +37,8 @@ const reviewLink = {
   prefetch: null,
 };
 
+const aiCostLink = { href: '/ai-cost', label: 'AI cost', Icon: Coins, prefetch: null };
+
 export function AppShell({
   children,
   firstName,
@@ -47,7 +50,7 @@ export function AppShell({
 }) {
   const pathname = usePathname();
   const moreMenuRef = useRef<HTMLDivElement>(null);
-  const special = [...(showMessageQuality ? [reviewLink] : []), ...specialLinks];
+  const special = [...(showMessageQuality ? [reviewLink, aiCostLink] : []), ...specialLinks];
   const specialIsCurrent = special.some(({ href }) => pathname === href);
 
   const renderLink = (
