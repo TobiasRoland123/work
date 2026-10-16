@@ -88,6 +88,14 @@
   background: #263541;
   color: white;
 }
+/* Desktop: special items sit inline with the other links. */
+.office-nav-special {
+  display: contents;
+  color: inherit;
+}
+.office-nav-more {
+  display: none;
+}
 .office-me {
   margin-top: auto;
   display: grid;
@@ -347,33 +355,82 @@
   .app-shell {
     grid-template-columns: minmax(0, 1fr);
   }
+  /* Mobile: the rail becomes a fixed tab bar at the bottom of the screen. */
   .app-shell > .office-rail {
-    position: static;
+    position: fixed;
+    top: auto;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 30;
     height: auto;
     flex-direction: row;
-    justify-content: space-between;
-    padding: 10px 16px;
-    gap: 20px;
+    padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
+    gap: 0;
+  }
+  .app-shell-content {
+    padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  }
+  .office-wordmark {
+    display: none;
   }
   .office-nav-links {
-    flex-direction: row;
-    width: auto;
-    gap: 8px;
+    display: grid;
+    grid-auto-columns: minmax(0, 1fr);
+    grid-auto-flow: column;
+    gap: 4px;
+    width: 100%;
   }
-  .office-nav-links a {
-    flex-direction: row;
-    padding: 9px 10px;
-    gap: 7px;
+  .office-nav-links > a,
+  .office-nav-more {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    min-height: 52px;
+    padding: 6px 4px;
+    border-radius: 5px;
     font-size: 12px;
   }
   .office-nav-links svg {
-    width: 15px;
+    width: 20px;
+    height: 20px;
+  }
+  .office-nav-more:hover {
+    background: #263541;
+  }
+  .office-nav-more[data-current],
+  .office-nav-more:has(+ .office-nav-special:popover-open) {
+    background: #a5cdf0;
+    color: #0b1014;
+  }
+  .office-nav-special {
+    display: none;
+  }
+  .office-nav-special:popover-open {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    inset: auto 8px calc(70px + env(safe-area-inset-bottom, 0px)) auto;
+    min-width: 180px;
+    margin: 0;
+    padding: 6px;
+    border: 1px solid #263541;
+    border-radius: 7px;
+    background: #090b0c;
+    color: white;
+    box-shadow: 0 -8px 30px #0000004d;
+  }
+  .office-nav-special a {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: 10px;
+    padding: 12px;
+    font-size: 14px;
   }
   .office-me {
     display: none;
-  }
-  .office-wordmark {
-    font-size: 15px;
   }
   .office-header {
     padding: 18px;
@@ -385,17 +442,9 @@
     font-size: 14px;
   }
   .content-page {
-    min-height: calc(100dvh - 54px);
+    min-height: calc(100dvh - 64px);
   }
   .content-page-body {
     padding: 20px 16px;
-  }
-}
-@media (max-width: 390px) {
-  .office-nav-links a {
-    padding: 8px;
-  }
-  .office-nav-links svg {
-    display: none;
   }
 }
