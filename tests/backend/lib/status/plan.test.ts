@@ -156,6 +156,7 @@ describe('planning ahead', () => {
       startsAtApproximate: false,
       endsAtApproximate: false,
       sourceMessageKey: null,
+      origin: null,
       announcedAt: now,
       createdAt: now.toISOString(),
     }));

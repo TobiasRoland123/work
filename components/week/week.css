@@ -434,6 +434,15 @@
   font-size: 11px;
   opacity: 0.85;
 }
+.week-cell-label {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+}
+.week-cell-label strong {
+  min-width: 0;
+}
 .week-empty {
   padding: 28px 16px;
   color: #747972;
@@ -577,6 +586,16 @@
   font-size: 11px;
   color: #747972;
 }
+.day-panel-detail {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.day-panel-detail > span:first-child {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 .tone-dot {
   flex-shrink: 0;
   width: 9px;
@@ -654,6 +673,11 @@
 .person-sheet-status small {
   max-width: 100%;
   color: #5e635f;
+}
+.person-sheet-chip-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 .person-sheet-status a {
   color: #2d6ea8;

@@ -18,6 +18,7 @@ import type { DayPresence, UserWithExtras } from '@/db/types';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatusDialog } from '@/components/layout/StatusDialog';
 import { ProfileListItem } from '@/components/ui/ProfileListItem/ProfileListItem';
+import { AI_INDICATOR_LABEL, AiIndicator } from '@/components/ui/AiIndicator/AiIndicator';
 import { deleteStatusByIdAction } from '@/app/actions/statusActions';
 import { getSlackImageUrl } from '@/lib/slack/image';
 import type { UpcomingStatus } from '@/lib/status/plan';
@@ -27,6 +28,7 @@ import {
   groupAttendance,
   initials,
   isAssumed,
+  isSetByAi,
   personName,
   presenceOf,
   segmentNote,
@@ -88,21 +90,29 @@ function WeekCell({
     ? { label: 'No exception', tone: 'none' }
     : presenceOf(segment.status);
   const assumed = !hiddenOffice && isAssumed(segment.status);
+  const ai = !hiddenOffice && isSetByAi(segment.status);
   const note = hiddenOffice
     ? null
     : days.length === 1
       ? dayNote(segment.status)
       : segmentNote(segment, days);
   const lastDay = days[segment.start + segment.span - 1];
-  const title = [label, note, assumed && 'assumed, nothing announced'].filter(Boolean).join(' · ');
+  const title = [label, note, assumed && 'assumed, nothing announced', ai && AI_INDICATOR_LABEL]
+    .filter(Boolean)
+    .join(' · ');
   const plannable = onPlan
     ? days.slice(segment.start, segment.start + segment.span).filter((day) => day >= today)
     : [];
+  const planning = Boolean(onPlan && plannable.length);
   const content = hiddenOffice ? (
     <span className="sr-only">No exception</span>
   ) : (
     <>
-      <strong>{label}</strong>
+      <span className="week-cell-label">
+        <strong>{label}</strong>
+        {/* The plan button's label already includes the explanation. */}
+        {ai && <AiIndicator interactive={!planning} />}
+      </span>
       {note && <small>{note}</small>}
       {assumed && <span className="sr-only"> (assumed)</span>}
     </>
@@ -115,11 +125,11 @@ function WeekCell({
       data-tone={tone}
       data-assumed={assumed || undefined}
       data-past={lastDay < today || undefined}
-      data-plannable={plannable.length > 0 || undefined}
+      data-plannable={planning || undefined}
       style={{ gridColumn: `${segment.start + 1} / span ${segment.span}` }}
       title={title}
     >
-      {onPlan && plannable.length ? (
+      {onPlan && planning ? (
         <button
           className="week-cell-plan"
           onClick={() => onPlan(plannable)}
@@ -156,8 +166,11 @@ function UpcomingPlans({
                 : `${shortDay(plan.firstDay)} – ${shortDay(plan.lastDay)}`}
             </span>
             <span className="person-sheet-status">
-              <span className="week-chip tone" data-tone={tone}>
-                {label}
+              <span className="person-sheet-chip-row">
+                <span className="week-chip tone" data-tone={tone}>
+                  {label}
+                </span>
+                {isSetByAi(plan) && <AiIndicator />}
               </span>
               {note && <small>{note}</small>}
             </span>
@@ -236,13 +249,16 @@ function PersonSheet({
                             <small>{formatDay(date, { day: 'numeric', month: 'short' })}</small>
                           </span>
                           <span className="person-sheet-status">
-                            <span
-                              className="week-chip tone"
-                              data-tone={tone}
-                              data-assumed={isAssumed(status) || undefined}
-                            >
-                              {label}
-                              {isAssumed(status) && ' (assumed)'}
+                            <span className="person-sheet-chip-row">
+                              <span
+                                className="week-chip tone"
+                                data-tone={tone}
+                                data-assumed={isAssumed(status) || undefined}
+                              >
+                                {label}
+                                {isAssumed(status) && ' (assumed)'}
+                              </span>
+                              {isSetByAi(status) && <AiIndicator />}
                             </span>
                             {note && <small>{note}</small>}
                             {status?.sourceMessageKey && (
@@ -646,7 +662,17 @@ export function WeekOverview({
                               <Avatar person={person} size={28} />
                               <span className="day-panel-person">
                                 <span>{personName(person)}</span>
-                                {detail && <small>{detail}</small>}
+                                {detail && (
+                                  <small className="day-panel-detail">
+                                    <span>{detail}</span>
+                                    {isSetByAi(status) && (
+                                      <>
+                                        <AiIndicator interactive={false} />
+                                        <span className="sr-only"> ({AI_INDICATOR_LABEL})</span>
+                                      </>
+                                    )}
+                                  </small>
+                                )}
                               </span>
                               <i className="tone-dot tone" data-tone={tone} aria-hidden="true" />
                             </button>

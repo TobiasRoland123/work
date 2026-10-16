@@ -66,6 +66,7 @@ describe('common Slack shorthand', () => {
     await expect(extractAttendance(text, sent)).resolves.toEqual({
       decision: 'apply',
       reason: 'clear',
+      origin: 'SHORTHAND',
       intervals: [expected],
     });
     expect(request).not.toHaveBeenCalled();
@@ -135,6 +136,7 @@ describe('common Slack shorthand', () => {
     await expect(extractAttendance(text, sent)).resolves.toEqual({
       decision: 'apply',
       reason: 'clear',
+      origin: 'SHORTHAND',
       intervals: [expected],
     });
     expect(request).not.toHaveBeenCalled();
@@ -198,6 +200,7 @@ describe('common Slack shorthand', () => {
     await expect(extractAttendance('in at lunch', sent)).resolves.toEqual({
       decision: 'apply',
       reason: 'clear',
+      origin: 'SHORTHAND',
       intervals: [interval({ status: 'IN_LATE', endTime: '11:00', endApproximate: true })],
     });
   });
@@ -208,6 +211,7 @@ describe('common Slack shorthand', () => {
       await expect(extractAttendance(text, sent)).resolves.toEqual({
         decision: 'apply',
         reason: 'clear',
+        origin: 'SHORTHAND',
         intervals: [
           interval({
             endTime: '11:00',
@@ -223,6 +227,7 @@ describe('common Slack shorthand', () => {
     await expect(extractAttendance('wfh rest of day', sent)).resolves.toEqual({
       decision: 'apply',
       reason: 'clear',
+      origin: 'SHORTHAND',
       intervals: [interval({ startTime: '07:26' })],
     });
   });

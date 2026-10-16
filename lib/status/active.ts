@@ -115,6 +115,7 @@ function defaultOfficeStatus(userID: string, now: Date): Status | null {
     startsAtApproximate: false,
     endsAtApproximate: false,
     sourceMessageKey: null,
+    origin: null,
     time: null,
     createdAt: `${day} 09:00:00`,
     announcedAt: startsAt,

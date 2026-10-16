@@ -17,6 +17,7 @@ const row = (values: Partial<Status> = {}): Status => ({
   startsAtApproximate: false,
   endsAtApproximate: false,
   sourceMessageKey: null,
+  origin: null,
   announcedAt: new Date(`${day}T04:00:00Z`),
   createdAt: `${day} 06:00:00`,
   ...values,

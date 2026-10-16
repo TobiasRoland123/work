@@ -42,6 +42,10 @@ export const isInOffice = (person: UserWithExtras) => person.status?.status === 
 /** A Workday Default: nobody announced anything, so the office is assumed. */
 export const isAssumed = (status: Status | null) => status?.id === 0;
 
+/** The Declaration behind this status was interpreted by the model. */
+export const isSetByAi = (status: Pick<Status, 'origin' | 'status'> | null | undefined) =>
+  status?.origin === 'AI' && status.status !== null;
+
 export function presenceOf(status: Status | null): { label: string; tone: Tone; group: DayGroup } {
   if (!status) return { label: 'No status', tone: 'none', group: 'unknown' };
   if (!status.status) return { label: 'Note', tone: 'note', group: 'unknown' };

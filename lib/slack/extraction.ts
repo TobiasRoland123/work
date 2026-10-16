@@ -59,6 +59,8 @@ export const extractionSchema = z
   })
   .strict();
 export type Extraction = z.infer<typeof extractionSchema>;
+/** Which interpreter produced an extraction; null when neither ran. */
+export type Interpretation = Extraction & { origin: 'SHORTHAND' | 'AI' | null };
 
 export function copenhagenDate(instant: Date): string {
   return new Intl.DateTimeFormat('en-CA', {
@@ -203,8 +205,9 @@ export async function extractAttendance(
   text: string,
   messageInstant: Date,
   usageObserver?: ExtractionUsageObserver
-): Promise<Extraction> {
-  if (text.length > 12000) return { decision: 'review', reason: 'unsupported', intervals: [] };
+): Promise<Interpretation> {
+  if (text.length > 12000)
+    return { decision: 'review', reason: 'unsupported', intervals: [], origin: null };
   const localTime = new Intl.DateTimeFormat('en-GB', {
     timeZone: ATTENDANCE_TIME_ZONE,
     hour: '2-digit',
@@ -214,9 +217,9 @@ export async function extractAttendance(
   const shorthand = extractShorthand(text, copenhagenDate(messageInstant), localTime);
   if (shorthand) {
     try {
-      return validateExtraction(shorthand, messageInstant, text);
+      return { ...validateExtraction(shorthand, messageInstant, text), origin: 'SHORTHAND' };
     } catch {
-      return { decision: 'review', reason: 'unsupported', intervals: [] };
+      return { decision: 'review', reason: 'unsupported', intervals: [], origin: 'SHORTHAND' };
     }
   }
   const apiKey = process.env.AI_GATEWAY_API_KEY?.trim();
@@ -256,7 +259,7 @@ export async function extractAttendance(
     const usage = parseGatewayUsage(error.response?.body, undefined, error.response?.id);
     await usageObserver?.onFinish({ state: 'completed', ...usage });
     if (error.finishReason !== 'stop' || !error.text) throw new Error('Incomplete extraction');
-    return { decision: 'review', reason: 'unsupported', intervals: [] };
+    return { decision: 'review', reason: 'unsupported', intervals: [], origin: 'AI' };
   }
   const usage = parseGatewayUsage(
     result.finalStep.response?.body,
@@ -266,9 +269,9 @@ export async function extractAttendance(
   await usageObserver?.onFinish({ state: 'completed', ...usage });
   if (result.finishReason !== 'stop') throw new Error('Incomplete extraction');
   try {
-    return validateExtraction(result.output, messageInstant, text);
+    return { ...validateExtraction(result.output, messageInstant, text), origin: 'AI' };
   } catch {
     // Invalid or invented model output cannot replace an existing valid status/comment.
-    return { decision: 'review', reason: 'unsupported', intervals: [] };
+    return { decision: 'review', reason: 'unsupported', intervals: [], origin: 'AI' };
   }
 }

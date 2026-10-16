@@ -204,6 +204,7 @@ export async function processSlackInbox(limit = 2, messageKey?: string, revision
               ...row,
               userID: user.id,
               sourceMessageKey: job.messageKey,
+              origin: extraction.origin,
               createdAt: new Date(Number(job.revision) * 1000).toISOString(),
               announcedAt: new Date(Number(job.revision) * 1000),
             }))

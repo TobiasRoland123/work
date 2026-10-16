@@ -30,10 +30,11 @@ export const statusService = {
   },
 
   // POST METHODS
+  // Every write through this service comes from the person's own form or API request.
   async createNewStatus(newStatus: NewStatus) {
     const createdStatus = await db
       .insert(status)
-      .values({ ...newStatus, announcedAt: new Date() })
+      .values({ ...newStatus, origin: 'MANUAL', announcedAt: new Date() })
       .returning();
     if (supabase) {
       await supabase.channel('status-sync').send({

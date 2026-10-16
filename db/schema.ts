@@ -29,6 +29,8 @@ export const userStatus = pgEnum('user_status', [
   'ON_LEAVE',
   'AWAY',
 ]);
+// How a Declaration was interpreted. Null on rows written before origin was recorded.
+export const declarationOrigin = pgEnum('declaration_origin', ['MANUAL', 'SHORTHAND', 'AI']);
 
 export const organisations = pgTable('organisations', {
   id: serial().primaryKey().notNull(),
@@ -105,6 +107,7 @@ export const status = pgTable(
     fromDate: date('from_date'),
     toDate: date('to_date'),
     sourceMessageKey: text('source_message_key'),
+    origin: declarationOrigin('origin'),
     startsAt: timestamp('starts_at', { withTimezone: true }),
     endsAt: timestamp('ends_at', { withTimezone: true }),
     startsAtApproximate: boolean('starts_at_approximate').default(false).notNull(),

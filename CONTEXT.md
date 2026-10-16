@@ -18,6 +18,12 @@ What a person's attendance is judged to be at a given moment, derived from their
 Declarations plus the workday defaults. Never stored; computed when attendance is read.
 _Avoid_: Current status, state
 
+**Declaration Origin**:
+How a Declaration was interpreted: entered manually, parsed by the deterministic shorthand
+rules, or interpreted by AI. Recorded when the Declaration is written. A Resolved Status
+shows the "Set by AI" mark only when the Declaration behind it has the AI origin.
+_Avoid_: Source (a Slack message is processed by both shorthand and AI)
+
 **Workday Default**:
 The attendance assumed for a person who has made no Declaration for today. Weekdays
 only, from 09:00 Europe/Copenhagen.

@@ -46,6 +46,7 @@ const status = (userID: string, date: string, value: Status['status']): Status =
   createdAt: `${date}T08:00:00Z`,
   announcedAt: new Date(`${date}T08:00:00Z`),
   sourceMessageKey: null,
+  origin: null,
 });
 
 function person(

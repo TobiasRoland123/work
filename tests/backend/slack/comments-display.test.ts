@@ -54,6 +54,7 @@ function render(
           createdAt: '2026-09-07T07:00:00Z',
           announcedAt: new Date('2026-09-07T07:00:00Z'),
           sourceMessageKey: 'T:C:1788766200.000001',
+          origin: null,
         },
       },
     })
@@ -147,6 +148,7 @@ describe('unclassified attendance descriptions', () => {
             createdAt: sent.toISOString(),
             announcedAt: sent,
             sourceMessageKey: 'T:C:1788810600.000001',
+            origin: null,
           },
         },
       })
@@ -181,6 +183,7 @@ describe('unclassified attendance descriptions', () => {
             createdAt: '2026-09-19T07:00:00Z',
             announcedAt: new Date('2026-09-19T07:00:00Z'),
             sourceMessageKey: 'T:C:1788810600.000001',
+            origin: null,
           },
         },
       })

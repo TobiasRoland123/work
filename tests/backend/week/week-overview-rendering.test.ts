@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DayPresence, Status } from '@/db/types';
 import { WeekOverview } from '@/components/week/WeekOverview';
+import { ProfileListItem } from '@/components/ui/ProfileListItem/ProfileListItem';
 import { resolveWorkWeek, workWeekDays } from '@/lib/status/week';
 
 vi.mock('@/components/layout/PageHeader', () => ({
@@ -32,6 +33,7 @@ const status = (values: Partial<Status>): Status => ({
   createdAt: '2026-09-19T07:00:00Z',
   announcedAt: new Date('2026-09-19T07:00:00Z'),
   sourceMessageKey: null,
+  origin: null,
   ...values,
 });
 
@@ -118,7 +120,7 @@ describe('status labels in the week grid and selected-day sidebar', () => {
   ] as const)('displays %s in both areas', (value, label) => {
     const { grid, sidebar } = renderWeek(status({ status: value }));
     expect(grid).toContain(`<strong>${label}</strong>`);
-    expect(sidebar).toContain(`<small>${label}</small>`);
+    expect(sidebar).toContain(`<small class="day-panel-detail"><span>${label}</span></small>`);
   });
 
   it.each([0, 7])('omits office attendance with id %s from both areas', (id) => {
@@ -141,8 +143,10 @@ describe('status labels in the week grid and selected-day sidebar', () => {
       );
       const label = value === 'IN_LATE' ? 'In late' : 'Leaving early';
       const note = value === 'IN_LATE' ? 'from 10:30' : 'until 10:30';
-      expect(grid).toContain(`<strong>${label}</strong><small>${note} · dentist</small>`);
-      expect(sidebar).toContain(`<small>${label} · ${note} · dentist</small>`);
+      expect(grid).toContain(`<strong>${label}</strong></span><small>${note} · dentist</small>`);
+      expect(sidebar).toContain(
+        `<small class="day-panel-detail"><span>${label} · ${note} · dentist</span></small>`
+      );
     }
   );
 
@@ -196,8 +200,10 @@ describe('status labels in the week grid and selected-day sidebar', () => {
 
   it('retains description-only announcements in both areas', () => {
     const { grid, sidebar } = renderWeek(status({ status: null, details: 'At a workshop' }));
-    expect(grid).toContain('<strong>Note</strong><small>At a workshop</small>');
-    expect(sidebar).toContain('<small>Note · At a workshop</small>');
+    expect(grid).toContain('<strong>Note</strong></span><small>At a workshop</small>');
+    expect(sidebar).toContain(
+      '<small class="day-panel-detail"><span>Note · At a workshop</span></small>'
+    );
   });
 });
 
@@ -490,5 +496,109 @@ describe('today-only attendance', () => {
     expect(grid).not.toContain('until 24.09');
     expect(sidebar).toContain('In late · from 10:00 · doctor');
     expect(sidebar).not.toContain('until 24.09');
+  });
+});
+
+describe('AI indicator', () => {
+  function renderColleague(week: DayPresence[]) {
+    const html = renderToStaticMarkup(
+      React.createElement(WeekOverview, {
+        profiles: [
+          {
+            userId: 'anna',
+            email: 'anna@example.com',
+            firstName: 'Anna',
+            lastName: 'Attendee',
+            status: null,
+            week,
+          },
+        ],
+        userId: 'someone-else',
+        days,
+        today: days[1],
+        weekStart: days[0],
+        currentWeekStart: days[0],
+        arrival: null,
+        syncError: false,
+        plans: [],
+        onStatusSaved: vi.fn(),
+      })
+    );
+    const grid = html.match(/<div class="week-board"[\s\S]*?<\/main>/)?.[0] ?? '';
+    return {
+      grid,
+      sidebar: html.match(/<aside[\s\S]*?<\/aside>/)?.[0] ?? '',
+      cells: grid.match(/<div role="cell"[^>]*class="week-cell[\s\S]*?<\/div>/g) ?? [],
+    };
+  }
+
+  it('marks a colleague status interpreted by AI in the grid and the sidebar', () => {
+    const { grid, sidebar } = renderColleague(
+      days.map((date) => ({ date, status: status({ status: 'VACATION', origin: 'AI' }) }))
+    );
+    expect(grid).toContain('aria-label="Set by AI"');
+    expect(grid).toMatch(/title="Vacation[^"]* · Set by AI"/);
+    expect(sidebar).toContain('<span class="sr-only"> (Set by AI)</span>');
+  });
+
+  it('announces the indicator through the plan button instead of nesting a control', () => {
+    const { grid } = renderWeek(status({ status: 'VACATION', origin: 'AI' }));
+    expect(grid).toMatch(/aria-label="Plan [^"]+\. Currently: Vacation · Set by AI"/);
+    expect(grid).not.toContain('aria-label="Set by AI"');
+  });
+
+  it.each(['MANUAL', 'SHORTHAND', null] as const)('does not mark %s statuses', (origin) => {
+    const { grid, sidebar } = renderColleague(
+      days.map((date) => ({ date, status: status({ status: 'VACATION', origin }) }))
+    );
+    expect(grid + sidebar).not.toContain('Set by AI');
+  });
+
+  it('follows the Declaration that determines each day, so a manual correction drops the mark', () => {
+    const declared = status({
+      id: 1,
+      status: 'VACATION',
+      origin: 'AI',
+      sourceMessageKey: 'T:C:1790000000.000001',
+    });
+    const correction = status({
+      id: 2,
+      status: 'FROM_HOME',
+      origin: 'MANUAL',
+      fromDate: days[2],
+      toDate: days[2],
+      announcedAt: new Date('2026-09-20T07:00:00Z'),
+    });
+    const week = resolveWorkWeek(
+      [declared, correction],
+      'anna',
+      days,
+      new Date('2026-09-22T10:00:00Z')
+    );
+    const { cells } = renderColleague(week);
+
+    expect(cells).toHaveLength(3);
+    expect(cells[0]).toContain('aria-label="Set by AI"');
+    expect(cells[1]).toContain('<strong>Home</strong>');
+    expect(cells[1]).not.toContain('Set by AI');
+    expect(cells[2]).toContain('aria-label="Set by AI"');
+  });
+
+  it('marks only an AI status in the colleague details', () => {
+    const render = (origin: Status['origin']) =>
+      renderToStaticMarkup(
+        React.createElement(ProfileListItem, {
+          user: {
+            userId: 'anna',
+            email: 'anna@example.com',
+            firstName: 'Anna',
+            lastName: 'Attendee',
+            status: status({ status: 'SICK', origin }),
+          },
+          showStatus: true,
+        })
+      );
+    expect(render('AI')).toContain('aria-label="Set by AI"');
+    expect(render('MANUAL')).not.toContain('Set by AI');
   });
 });

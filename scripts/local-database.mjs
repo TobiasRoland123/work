@@ -8,7 +8,7 @@ import pg from 'pg';
 const required = ['PGHOST', 'PGPORT', 'PGUSER', 'PGPASSWORD', 'PGDATABASE'];
 const requiredSchema = {
   users: ['slack_user_id', 'slack_team_id', 'slack_deactivated', 'can_review_messages'],
-  status: [],
+  status: ['origin'],
   slack_messages: ['review_text', 'converted_to_status', 'processed_at'],
   slack_ai_usage: ['cost_usd'],
   slack_message_feedback: ['preferred_status', 'revision', 'note'],

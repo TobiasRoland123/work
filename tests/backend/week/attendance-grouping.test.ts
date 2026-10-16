@@ -29,6 +29,7 @@ const makeStatus = (userID: string, value: Status['status'], date = days[1]): St
   createdAt: '2026-09-19T07:00:00Z',
   announcedAt: new Date('2026-09-19T07:00:00Z'),
   sourceMessageKey: null,
+  origin: null,
 });
 
 type PersonInput = {

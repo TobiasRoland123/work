@@ -203,6 +203,7 @@ describe('AI Gateway transport', () => {
       await expect(extractAttendance('wfh', sent, usageObserver)).resolves.toMatchObject({
         decision: 'apply',
         reason: 'clear',
+        origin: 'SHORTHAND',
       });
       expect(usageObserver.onStart).not.toHaveBeenCalled();
       expect(usageObserver.onFinish).not.toHaveBeenCalled();
@@ -251,6 +252,7 @@ describe('AI Gateway transport', () => {
         decision: 'ignore',
         reason: 'not_attendance',
         intervals: [],
+        origin: 'AI',
       });
       expect(usageObserver.onStart).toHaveBeenCalledOnce();
       expect(usageObserver.onStart).toHaveBeenCalledWith(DEFAULT_SLACK_EXTRACTION_MODEL);

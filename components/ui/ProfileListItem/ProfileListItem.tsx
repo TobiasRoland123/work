@@ -1,6 +1,8 @@
 import { getSlackImageUrl } from '@/lib/slack/image';
 import Image from 'next/image';
 import { Status } from '../Status/Status';
+import { AiIndicator } from '../AiIndicator/AiIndicator';
+import { isSetByAi } from '@/components/week/presence';
 import { UserWithExtras } from '@/db/types';
 import { formatDateRange } from '@/utils/FormatDate';
 
@@ -110,6 +112,7 @@ export function ProfileListItem({ user, showStatus = false }: ProfileListItemPro
             ))}
 
           {showStatus && user.status && <Status status={user.status.status} />}
+          {showStatus && isSetByAi(user.status) && <AiIndicator />}
           {formattedActionTime && user.status && !formattedInterval ? (
             <Status status={user.status.status}>{formattedActionTime}</Status>
           ) : null}

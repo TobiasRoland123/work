@@ -47,6 +47,7 @@ const original = {
 const extraction = {
   decision: 'apply' as const,
   reason: 'clear' as const,
+  origin: 'AI' as const,
   intervals: [
     {
       status: 'FROM_HOME' as const,
@@ -109,12 +110,21 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
       const rows = await db.select().from(status).where(eq(status.userID, userID));
       expect(rows).toHaveLength(1);
       expect(rows[0].details).toBeNull();
+      expect(rows[0].origin).toBe('AI');
       const [job] = await db.select().from(slackMessages).where(eq(slackMessages.messageKey, key));
       expect(job.text).toBeNull();
       expect(job.state).toBe('applied');
       expect(job.reviewText).toBeNull();
       expect(job.convertedToStatus).toBe(true);
       expect(job.processedAt).toBeInstanceOf(Date);
+    });
+    it('records deterministic shorthand as the origin of its status', async () => {
+      vi.mocked(extractAttendance).mockResolvedValue({ ...extraction, origin: 'SHORTHAND' });
+      await enqueueSlackEvent(original);
+      await makeQueuedMessageDue();
+      expect(await processSlackInbox(1, key)).toMatchObject({ applied: 1 });
+      const rows = await db.select().from(status).where(eq(status.userID, userID));
+      expect(rows.map((row) => row.origin)).toEqual(['SHORTHAND']);
     });
     it('retains a recorded AI charge after the Slack message is deleted', async () => {
       vi.mocked(extractAttendance).mockImplementationOnce(async (_text, _date, usage) => {
@@ -190,6 +200,7 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
         decision: 'review',
         reason: 'uncertain_status',
         intervals: [],
+        origin: 'AI',
       });
       try {
         await enqueueSlackEvent(uncertainMessage);
@@ -242,6 +253,7 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
         decision: 'review',
         reason: 'uncertain_status',
         intervals: [],
+        origin: 'AI',
       });
       try {
         await enqueueSlackEvent(uncertainMessage);
@@ -313,6 +325,7 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
         decision: 'review',
         reason,
         intervals: [],
+        origin: 'AI',
       });
       await enqueueSlackEvent(original);
       expect(await processSlackInbox(1, key)).toMatchObject({ review: 1, applied: 0 });
@@ -612,6 +625,7 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
           decision,
           reason: decision === 'review' ? 'uncertain_date' : 'not_attendance',
           intervals: [],
+          origin: 'AI',
         });
         await enqueueSlackEvent(edited);
         await makeQueuedMessageDue();

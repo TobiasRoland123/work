@@ -114,6 +114,7 @@ export async function seedSandboxProfiles() {
       toDate: day,
       startsAt: localInstant(day, '00:00'),
       endsAt: localInstant(nextDay, '00:00'),
+      origin: 'MANUAL',
       announcedAt: new Date(),
     });
     seededStatuses.push(profile.userId);

@@ -20,6 +20,7 @@ const status = (values: Partial<Status>): Status => ({
   createdAt: '2026-09-19T07:00:00Z',
   announcedAt: new Date('2026-09-19T07:00:00Z'),
   sourceMessageKey: null,
+  origin: null,
   ...values,
 });
 
