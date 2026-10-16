@@ -337,6 +337,10 @@ export function WeekOverview({
     presenceOf(statusOn(person, index)).group;
   const inOfficeOn = (person: UserWithExtras, index: number) =>
     statusOn(person, index)?.status === 'IN_OFFICE';
+  const hasExceptionOn = (person: UserWithExtras, index: number) => {
+    const status = statusOn(person, index);
+    return status !== null && status.status !== 'IN_OFFICE';
+  };
 
   // Keep the directory order, with the signed-in person pinned first.
   const people = [...profiles].sort(
@@ -350,7 +354,7 @@ export function WeekOverview({
     const searchable = [personName(person), ...(person.organisationRoles ?? [])]
       .join(' ')
       .toLocaleLowerCase();
-    return searchable.includes(needle) && days.some((_, index) => !inOfficeOn(person, index));
+    return searchable.includes(needle) && days.some((_, index) => hasExceptionOn(person, index));
   });
 
   return (
@@ -548,7 +552,7 @@ export function WeekOverview({
             {dayGroups.map(({ id, label }) => {
               const groupLabel = id === 'office' ? 'Late / leaving early' : label;
               const members = visible.filter(
-                (person) => !inOfficeOn(person, dayIndex) && groupOn(person, dayIndex) === id
+                (person) => hasExceptionOn(person, dayIndex) && groupOn(person, dayIndex) === id
               );
               if (!members.length) return null;
               return (
