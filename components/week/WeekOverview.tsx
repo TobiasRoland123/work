@@ -5,18 +5,33 @@ import Image from 'next/image';
 import Link from 'next/link';
 import * as Dialog from '@radix-ui/react-dialog';
 import {
+  Baby,
+  Briefcase,
+  Building2,
   CalendarPlus,
+  CalendarOff,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  CircleDashed,
+  Clock,
+  House,
+  LogOut,
   Pencil,
+  Plane,
+  Plus,
   Search,
+  StickyNote,
+  Sun,
+  Thermometer,
   X,
+  type LucideIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
-import type { DayPresence, UserWithExtras } from '@/db/types';
+import type { DayPresence, Status, UserWithExtras } from '@/db/types';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatusDialog } from '@/components/layout/StatusDialog';
+import type { StatusType } from '@/components/ui/Status/Status';
 import { ProfileListItem } from '@/components/ui/ProfileListItem/ProfileListItem';
 import { deleteStatusByIdAction } from '@/app/actions/statusActions';
 import { getSlackImageUrl } from '@/lib/slack/image';
@@ -25,12 +40,15 @@ import { addDays, formatDay, isoWeekNumber, shiftWorkWeek } from '@/lib/status/w
 import {
   dayNote,
   groupAttendance,
+  groupExceptions,
   initials,
   isAssumed,
   personName,
   presenceOf,
   segmentNote,
   segmentWeek,
+  timeNote,
+  type ExceptionGroupKey,
   type Segment,
 } from './presence';
 import { WeekLegend } from './WeekLegend';
@@ -133,6 +151,157 @@ function WeekCell({
         content
       )}
     </div>
+  );
+}
+
+const statusIcons: Record<StatusType, LucideIcon> = {
+  IN_OFFICE: Building2,
+  IN_LATE: Clock,
+  LEAVING_EARLY: LogOut,
+  FROM_HOME: House,
+  AT_CLIENT: Briefcase,
+  SICK: Thermometer,
+  CHILD_SICK: Baby,
+  VACATION: Sun,
+  ON_LEAVE: CalendarOff,
+  AWAY: Plane,
+};
+
+function StatusIcon({ status, size = 12 }: { status: Status | null; size?: number }) {
+  const Icon = !status ? CircleDashed : status.status ? statusIcons[status.status] : StickyNote;
+  return <Icon size={size} aria-hidden="true" />;
+}
+
+/** True when a day carries something other than being in the office. */
+const isException = (status: Status | null): status is Status =>
+  status !== null && status.status !== 'IN_OFFICE';
+
+function DayListRow({
+  person,
+  days,
+  week,
+  dayIndex,
+  detail,
+  onOpen,
+}: {
+  person: UserWithExtras;
+  days: readonly string[];
+  /** The person's status on each of the visible days. */
+  week: (Status | null)[];
+  dayIndex: number;
+  /** Replaces the selected day's status, for rows without an exception that day. */
+  detail?: string;
+  onOpen: () => void;
+}) {
+  const status = week[dayIndex];
+  const { label, tone } = presenceOf(status);
+  const segment = segmentWeek(days.map((date, index) => ({ date, status: week[index] }))).find(
+    ({ start, span }) => dayIndex >= start && dayIndex < start + span
+  );
+  const note = detail ?? (segment ? segmentNote(segment, days) : null);
+  return (
+    <li>
+      <button className="week-list-row" onClick={onOpen}>
+        <Avatar person={person} />
+        <span className="week-list-text">
+          <span className="week-list-name">{personName(person)}</span>
+          <span className="week-list-status">
+            {detail === undefined && (
+              <span className="week-chip tone" data-tone={tone}>
+                <StatusIcon status={status} />
+                {label}
+              </span>
+            )}
+            {note && <small>{note}</small>}
+          </span>
+        </span>
+        {days.length > 1 && (
+          <span className="week-ticks" aria-hidden="true">
+            {week.map((day, index) => (
+              <i
+                key={days[index]}
+                className="tone"
+                data-tone={isException(day) ? presenceOf(day).tone : 'none'}
+                data-selected={index === dayIndex || undefined}
+              />
+            ))}
+          </span>
+        )}
+      </button>
+    </li>
+  );
+}
+
+function YourWeek({
+  person,
+  days,
+  week,
+  dayIndex,
+  today,
+  title,
+  onPlan,
+  onOpen,
+}: {
+  person: UserWithExtras;
+  days: readonly string[];
+  week: (Status | null)[];
+  dayIndex: number;
+  today: string;
+  title: string;
+  onPlan: (days: string[]) => void;
+  onOpen: () => void;
+}) {
+  return (
+    <section className="week-mine" aria-labelledby="week-mine-title">
+      <div className="week-mine-header">
+        <Avatar person={person} size={24} />
+        <h2 id="week-mine-title">{title}</h2>
+        <button className="week-mine-link" onClick={onOpen}>
+          Announcements
+        </button>
+      </div>
+      <ol className="week-mine-days" style={{ '--days': days.length } as CSSProperties}>
+        {days.map((day, index) => {
+          const status = week[index];
+          const exception = isException(status);
+          const { label, tone } = exception ? presenceOf(status) : { label: '', tone: 'none' };
+          const current = exception ? [label, dayNote(status)].filter(Boolean).join(' · ') : null;
+          const props = {
+            className: 'week-mine-day tone',
+            'data-tone': tone,
+            'data-empty': !exception || undefined,
+            'data-selected': index === dayIndex || undefined,
+          };
+          const name = <strong>{formatDay(day, { weekday: 'short' })}</strong>;
+          return (
+            <li key={day}>
+              {day >= today ? (
+                <button
+                  {...props}
+                  onClick={() => onPlan([day])}
+                  aria-label={`Plan ${shortDay(day)}. Currently: ${current ?? 'no exception'}`}
+                >
+                  {name}
+                  {exception ? (
+                    <StatusIcon status={status} size={15} />
+                  ) : (
+                    <Plus size={15} aria-hidden="true" />
+                  )}
+                  <span>{exception ? (timeNote(status) ?? label) : 'Plan'}</span>
+                </button>
+              ) : (
+                <span {...props} data-past>
+                  {name}
+                  {exception && <StatusIcon status={status} size={15} />}
+                  <span aria-hidden="true">{exception ? (timeNote(status) ?? label) : '–'}</span>
+                  <span className="sr-only">{current ?? 'No exception'}</span>
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+    </section>
   );
 }
 
@@ -328,6 +497,8 @@ export function WeekOverview({
   const [openId, setOpenId] = useState<string | null>(null);
   const [planDays, setPlanDays] = useState<string[] | null>(null);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => new Set());
+  const [listFilter, setListFilter] = useState<'all' | ExceptionGroupKey>('all');
+  const [showInOffice, setShowInOffice] = useState(false);
 
   // A triple click applies the clicked group's toggled state to every group in that list.
   const toggleGroup = (list: 'table' | 'sidebar', key: string, clicks: number) => {
@@ -393,6 +564,27 @@ export function WeekOverview({
     return searchable.includes(needle) && days.some((_, index) => hasExceptionOn(person, index));
   });
   const groups = groupAttendance(visible, days[dayIndex]);
+  const emptyMessage = !people.length
+    ? 'No colleagues to show yet.'
+    : needle
+      ? 'No colleagues match your search.'
+      : 'No attendance exceptions to show.';
+
+  // The phone layout lists one day: the signed-in person gets their own card above it.
+  const me = people.find((person) => person.userId === userId);
+  const colleagues = visible.filter((person) => person.userId !== userId);
+  const dayList = groupExceptions(colleagues, days[dayIndex]);
+  const weekOf = (person: UserWithExtras) => days.map((_, index) => statusOn(person, index));
+  const listed = dayList.groups.reduce((total, group) => total + group.members.length, 0);
+  const weekday = formatDay(days[dayIndex], { weekday: 'long' });
+  const shownGroups = dayList.groups.filter((group) =>
+    listFilter === 'all' ? group.members.length > 0 : group.key === listFilter
+  );
+  const nextException = (person: UserWithExtras) => {
+    const later = days.findIndex((_, index) => index > dayIndex && hasExceptionOn(person, index));
+    const index = later >= 0 ? later : days.findIndex((_, i) => hasExceptionOn(person, i));
+    return `${later >= 0 ? 'Next' : 'Earlier'}: ${formatDay(days[index], { weekday: 'long' })} · ${presenceOf(statusOn(person, index)).label}`;
+  };
 
   return (
     <div className="week-page">
@@ -591,16 +783,142 @@ export function WeekOverview({
                 </div>
               </div>
             ))}
-            {!visible.length && (
-              <p className="week-empty">
-                {!people.length
-                  ? 'No colleagues to show yet.'
-                  : needle
-                    ? 'No colleagues match your search.'
-                    : 'No attendance exceptions to show.'}
-              </p>
-            )}
+            {!visible.length && <p className="week-empty">{emptyMessage}</p>}
           </div>
+          <section
+            className="week-list"
+            aria-label={`Exceptions on ${formatDay(days[dayIndex], { weekday: 'long', day: 'numeric', month: 'long' })}`}
+          >
+            <div className="week-list-filters" role="group" aria-label="Show">
+              {[
+                {
+                  key: 'all' as const,
+                  label: 'All',
+                  tone: null,
+                  count: listed + dayList.other.length,
+                },
+                ...dayList.groups.map(({ key, label, tone, members }) => ({
+                  key,
+                  label: key === 'elsewhere' ? 'Elsewhere' : label,
+                  tone,
+                  count: members.length,
+                })),
+              ].map(({ key, label, tone, count }) => (
+                <button
+                  key={key}
+                  aria-pressed={listFilter === key}
+                  onClick={() => setListFilter(key)}
+                >
+                  {tone && <i className="tone-dot tone" data-tone={tone} aria-hidden="true" />}
+                  {label} <span>{count}</span>
+                </button>
+              ))}
+            </div>
+            {!todayOnly && me && (
+              <YourWeek
+                person={me}
+                days={days}
+                week={weekOf(me)}
+                dayIndex={dayIndex}
+                today={today}
+                title="Your week"
+                onPlan={plan}
+                onOpen={() => setOpenId(userId)}
+              />
+            )}
+            {shownGroups.map(({ key, label, tone, members }) => (
+              <section className="week-list-group" aria-label={label} key={key}>
+                <h2>
+                  <i className="tone-dot tone" data-tone={tone} aria-hidden="true" />
+                  {label} <span>{members.length}</span>
+                </h2>
+                {members.length ? (
+                  <ul className="week-list-card">
+                    {members.map((person) => (
+                      <DayListRow
+                        key={person.userId}
+                        person={person}
+                        days={days}
+                        week={weekOf(person)}
+                        dayIndex={dayIndex}
+                        onOpen={() => setOpenId(person.userId)}
+                      />
+                    ))}
+                  </ul>
+                ) : (
+                  <p className="week-empty">Nobody on {weekday}.</p>
+                )}
+              </section>
+            ))}
+            {listFilter === 'all' && dayList.other.length > 0 && (
+              <section className="week-list-group" aria-label="Other">
+                <h2>
+                  <i className="tone-dot tone" data-tone="note" aria-hidden="true" />
+                  Other <span>{dayList.other.length}</span>
+                </h2>
+                <ul className="week-list-card">
+                  {dayList.other.map((person) => (
+                    <DayListRow
+                      key={person.userId}
+                      person={person}
+                      days={days}
+                      week={weekOf(person)}
+                      dayIndex={dayIndex}
+                      onOpen={() => setOpenId(person.userId)}
+                    />
+                  ))}
+                </ul>
+              </section>
+            )}
+            {listFilter === 'all' && dayList.inOffice.length > 0 && (
+              <section
+                className="week-list-group"
+                aria-label={`In office ${weekday}, away other days`}
+              >
+                <h2>
+                  <i className="tone-dot tone" data-tone="office" aria-hidden="true" />
+                  In office {weekday}, away other days <span>{dayList.inOffice.length}</span>
+                </h2>
+                <div className="week-list-card">
+                  <button
+                    className="week-list-more"
+                    aria-expanded={showInOffice}
+                    onClick={() => setShowInOffice((shown) => !shown)}
+                  >
+                    <span className="week-list-stack" aria-hidden="true">
+                      {dayList.inOffice.slice(0, 4).map((person) => (
+                        <Avatar key={person.userId} person={person} size={26} />
+                      ))}
+                    </span>
+                    <small>
+                      {dayList.inOffice
+                        .slice(0, 3)
+                        .map((person) => person.firstName || personName(person))
+                        .join(', ')}
+                      {dayList.inOffice.length > 3 && ` +${dayList.inOffice.length - 3}`}
+                    </small>
+                    <ChevronDown size={16} className="group-chevron" aria-hidden="true" />
+                  </button>
+                  <div className="group-collapse" data-collapsed={!showInOffice || undefined}>
+                    <ul>
+                      {dayList.inOffice.map((person) => (
+                        <DayListRow
+                          key={person.userId}
+                          person={person}
+                          days={days}
+                          week={weekOf(person)}
+                          dayIndex={dayIndex}
+                          detail={nextException(person)}
+                          onOpen={() => setOpenId(person.userId)}
+                        />
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+              </section>
+            )}
+            {!colleagues.length && <p className="week-empty">{emptyMessage}</p>}
+          </section>
           <WeekLegend />
         </main>
         <aside
