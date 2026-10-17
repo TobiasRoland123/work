@@ -664,6 +664,7 @@ export function WeekOverview({
           )}
           <div
             className="week-board"
+            data-today-only={todayOnly || undefined}
             role="table"
             aria-label={`Attendance, ${subtitle}`}
             aria-describedby={todayOnly ? undefined : 'week-grouping-note'}
@@ -814,14 +815,14 @@ export function WeekOverview({
                 </button>
               ))}
             </div>
-            {me && (
+            {!todayOnly && me && (
               <YourWeek
                 person={me}
                 days={days}
                 week={weekOf(me)}
                 dayIndex={dayIndex}
                 today={today}
-                title={todayOnly ? 'Your day' : 'Your week'}
+                title="Your week"
                 onPlan={plan}
                 onOpen={() => setOpenId(userId)}
               />

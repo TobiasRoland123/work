@@ -1104,6 +1104,7 @@
     display: flex;
   }
   .week-board .week-status-group,
+  .week-board[data-today-only],
   .week-board > .week-empty,
   .day-panel-group {
     display: none;
