@@ -664,7 +664,6 @@ export function WeekOverview({
           )}
           <div
             className="week-board"
-            data-today-only={todayOnly || undefined}
             role="table"
             aria-label={`Attendance, ${subtitle}`}
             aria-describedby={todayOnly ? undefined : 'week-grouping-note'}

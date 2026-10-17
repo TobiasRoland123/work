@@ -1103,9 +1103,7 @@
   .week-list {
     display: flex;
   }
-  .week-board .week-status-group,
-  .week-board[data-today-only],
-  .week-board > .week-empty,
+  .week-board,
   .day-panel-group {
     display: none;
   }
