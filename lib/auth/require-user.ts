@@ -1,10 +1,12 @@
 import { auth } from '@/auth';
 import { cache } from 'react';
-export async function requireUserId() {
+// Share the session and live membership lookup within a server render. React's
+// cache is request-scoped, so deactivation is still checked on the next request.
+export const requireUserId = cache(async () => {
   const session = await auth();
   if (session?.provider !== 'slack' || !session.userId) throw new Error('Unauthorized');
   return session.userId;
-}
+});
 
 // Layouts and pages share one membership check per server render, never across requests.
 export const requirePageUserId = cache(async () => {
