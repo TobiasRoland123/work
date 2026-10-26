@@ -64,7 +64,7 @@ describe('sender comment display', () => {
     'shows a comment without inventing a midnight action for %s',
     (status) => {
       const html = render('going to dentist', null, false, status);
-      expect(html).toContain('going to dentist');
+      expect(html).toContain('in later, going to dentist');
       expect(html).not.toContain('00:00');
       expect(html).not.toContain('>00.00<');
       expect(html).toContain('View Slack message');
@@ -73,7 +73,7 @@ describe('sender comment display', () => {
   it('keeps approximate timing separate from comment wording', () => {
     const html = render('going to dentist', '10:00', true);
     expect(html).toContain('Until ca. 10:00');
-    expect(html).toContain('going to dentist');
+    expect(html).toContain('in later, going to dentist');
   });
   it('escapes sender-provided markup instead of rendering it', () => {
     const html = render('<script>alert("test")</script>');

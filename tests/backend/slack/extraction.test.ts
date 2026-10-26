@@ -94,6 +94,35 @@ describe('attendance extraction boundary', () => {
     ).toThrow();
     expect(() => validateExtraction(extract([interval, interval]), sent)).toThrow();
   });
+  it('uses the complete original message for every non-null comment and preserves null comments', () => {
+    const message = '  In Aarhus for a meeting with Daniel. See you tomorrow. 👋\n  ';
+    const parsed = validateExtraction(
+      extract([
+        { ...interval, status: 'AWAY', comment: 'In Aarhus for a meeting' },
+        { ...interval, status: 'IN_OFFICE', fromDate: '2026-09-08', toDate: '2026-09-08' },
+      ]),
+      sent,
+      message
+    );
+    expect(parsed.intervals.map(({ comment }) => comment)).toEqual([message, null]);
+  });
+  it('accepts a full comment up to 12000 characters and rejects longer comments', () => {
+    const comment = 'x'.repeat(12000);
+    const oversizedMessage = `valid excerpt${'x'.repeat(12001 - 'valid excerpt'.length)}`;
+    expect(
+      validateExtraction(extract([{ ...interval, comment }]), sent, comment).intervals[0].comment
+    ).toBe(comment);
+    expect(() =>
+      validateExtraction(
+        extract([{ ...interval, comment: 'valid excerpt' }]),
+        sent,
+        oversizedMessage
+      )
+    ).toThrow();
+    expect(() =>
+      validateExtraction(extract([{ ...interval, comment: 'x'.repeat(12001) }]), sent, comment)
+    ).toThrow();
+  });
   it('cannot apply uncertain output', () => {
     expect(() => validateExtraction({ ...extract(), decision: 'review' }, sent)).toThrow();
     expect(
@@ -140,7 +169,7 @@ describe('multi-day out-of-office status extraction', () => {
       status: 'AWAY',
       fromDate: '2026-09-07',
       toDate: '2026-09-08',
-      comment: 'at conference',
+      comment: 'at conference today and tomorrow',
     };
     const parsed = validateExtraction(
       extract([awayInterval]),
@@ -151,7 +180,7 @@ describe('multi-day out-of-office status extraction', () => {
     expect(row.status).toBe('AWAY');
     expect(row.fromDate).toBe('2026-09-07');
     expect(row.toDate).toBe('2026-09-08');
-    expect(row.details).toBe('at conference');
+    expect(row.details).toBe('at conference today and tomorrow');
     expect(row.startsAt.toISOString()).toBe('2026-09-06T22:00:00.000Z');
     expect(row.endsAt.toISOString()).toBe('2026-09-08T22:00:00.000Z');
 
@@ -167,15 +196,15 @@ describe('multi-day out-of-office status extraction', () => {
   });
 
   it.each([
-    ['at conference today and tomorow', 'at conference'],
-    ['at conference today and tomorrow', 'at conference'],
-    ['At conference today and tomorow', 'At conference'],
-    ['på konference i dag og i morgen', 'på konference'],
-    ['til konference i dag og i morgen', 'til konference'],
-    ['today and tomorrow at conference', 'at conference'],
+    'at conference today and tomorow',
+    'at conference today and tomorrow',
+    'At conference today and tomorow',
+    'på konference i dag og i morgen',
+    'til konference i dag og i morgen',
+    'today and tomorrow at conference',
   ])(
-    'extracts multi-day AWAY status with typo tolerance and verbatim comment for "%s"',
-    async (text, expectedComment) => {
+    'extracts multi-day AWAY status with typo tolerance and complete comment for "%s"',
+    async (text) => {
       const result = await extractAttendance(text, sent);
       expect(result.decision).toBe('apply');
       expect(result.reason).toBe('clear');
@@ -188,7 +217,7 @@ describe('multi-day out-of-office status extraction', () => {
           endTime: null,
           startApproximate: false,
           endApproximate: false,
-          comment: expectedComment,
+          comment: text,
         },
       ]);
     }

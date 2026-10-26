@@ -81,8 +81,20 @@ describe('learned templates', () => {
     // Sent late on 30 September in Copenhagen, which is already 1 October in some zones.
     const later = new Date('2026-09-30T21:30:00Z');
     expect(extractionFromTemplate(template!, 'HOS KUNDEN i dag og i morgen', later)).toEqual(
-      apply(interval({ fromDate: '2026-09-30', toDate: '2026-10-01', comment: 'HOS KUNDEN' }))
+      apply(
+        interval({
+          fromDate: '2026-09-30',
+          toDate: '2026-10-01',
+          comment: 'HOS KUNDEN i dag og i morgen',
+        })
+      )
     );
+  });
+  it('round trips the complete learned source message as its comment', () => {
+    const message = 'In Aarhus for a meeting with Daniel. See you tomorrow.';
+    const template = templateFromExtraction(apply(interval({ comment: message })), sent)!;
+    expect(template.intervals[0].comment).toBe(message.toLowerCase());
+    expect(extractionFromTemplate(template, message, sent)?.intervals[0].comment).toBe(message);
   });
   it('keeps clocks across a daylight saving change', () => {
     const template = templateFromExtraction(

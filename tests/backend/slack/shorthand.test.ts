@@ -74,31 +74,59 @@ describe('common Slack shorthand', () => {
   it.each([
     [
       'at conference today and tomorrow',
-      interval({ status: 'AWAY', toDate: '2026-09-08', comment: 'at conference' }),
+      interval({
+        status: 'AWAY',
+        toDate: '2026-09-08',
+        comment: 'at conference today and tomorrow',
+      }),
     ],
     [
       'at conference today and tomorow',
-      interval({ status: 'AWAY', toDate: '2026-09-08', comment: 'at conference' }),
+      interval({
+        status: 'AWAY',
+        toDate: '2026-09-08',
+        comment: 'at conference today and tomorow',
+      }),
     ],
     [
       'At conference today and tomorow',
-      interval({ status: 'AWAY', toDate: '2026-09-08', comment: 'At conference' }),
+      interval({
+        status: 'AWAY',
+        toDate: '2026-09-08',
+        comment: 'At conference today and tomorow',
+      }),
     ],
     [
       '  :stadium:  at conference today and tomorow  ',
-      interval({ status: 'AWAY', toDate: '2026-09-08', comment: 'at conference' }),
+      interval({
+        status: 'AWAY',
+        toDate: '2026-09-08',
+        comment: '  :stadium:  at conference today and tomorow  ',
+      }),
     ],
     [
       'på konference i dag og i morgen',
-      interval({ status: 'AWAY', toDate: '2026-09-08', comment: 'på konference' }),
+      interval({
+        status: 'AWAY',
+        toDate: '2026-09-08',
+        comment: 'på konference i dag og i morgen',
+      }),
     ],
     [
       'til konference i dag og i morgen',
-      interval({ status: 'AWAY', toDate: '2026-09-08', comment: 'til konference' }),
+      interval({
+        status: 'AWAY',
+        toDate: '2026-09-08',
+        comment: 'til konference i dag og i morgen',
+      }),
     ],
     [
       'today and tomorrow at conference',
-      interval({ status: 'AWAY', toDate: '2026-09-08', comment: 'at conference' }),
+      interval({
+        status: 'AWAY',
+        toDate: '2026-09-08',
+        comment: 'today and tomorrow at conference',
+      }),
     ],
     [
       'at conference tomorrow',
@@ -106,7 +134,7 @@ describe('common Slack shorthand', () => {
         status: 'AWAY',
         fromDate: '2026-09-08',
         toDate: '2026-09-08',
-        comment: 'at conference',
+        comment: 'at conference tomorrow',
       }),
     ],
     [
@@ -115,7 +143,7 @@ describe('common Slack shorthand', () => {
         status: 'AWAY',
         fromDate: '2026-09-08',
         toDate: '2026-09-08',
-        comment: 'at conference',
+        comment: 'at conference tomorow',
       }),
     ],
     [
@@ -124,10 +152,10 @@ describe('common Slack shorthand', () => {
         status: 'AWAY',
         fromDate: '2026-09-08',
         toDate: '2026-09-08',
-        comment: 'til konference',
+        comment: 'til konference i morgen',
       }),
     ],
-    ['at conference today', interval({ status: 'AWAY', comment: 'at conference' })],
+    ['at conference today', interval({ status: 'AWAY', comment: 'at conference today' })],
   ])('resolves conference pattern "%s" without an AI configuration', async (text, expected) => {
     const request = vi.fn();
     vi.stubGlobal('fetch', request);
@@ -227,18 +255,20 @@ describe('common Slack shorthand', () => {
     });
   });
 
-  it('leaves an unconfirmed bare clock for the AI fallback', async () => {
-    const request = vi
-      .fn()
-      .mockResolvedValue(reply({ decision: 'review', reason: 'uncertain_status', intervals: [] }));
+  it('passes a bare clock to AI and accepts its office-arrival interpretation', async () => {
+    const arrival = {
+      decision: 'apply',
+      reason: 'clear',
+      intervals: [
+        interval({ status: 'IN_LATE', endTime: '09:30' }),
+        interval({ status: 'IN_OFFICE', startTime: '09:30' }),
+      ],
+    };
+    const request = vi.fn().mockResolvedValue(reply(arrival));
     vi.stubEnv('AI_GATEWAY_API_KEY', 'synthetic-test-key');
     vi.stubGlobal('fetch', request);
 
-    await expect(extractAttendance('9:30', sent)).resolves.toMatchObject({
-      decision: 'review',
-      reason: 'uncertain_status',
-      intervals: [],
-    });
+    await expect(extractAttendance('9:30', sent)).resolves.toEqual(arrival);
     expect(request).toHaveBeenCalledOnce();
   });
 
