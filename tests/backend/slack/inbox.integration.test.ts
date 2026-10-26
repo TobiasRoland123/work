@@ -553,7 +553,7 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
           {
             userID,
             status: 'IN_LATE',
-            details: 'going to dentist',
+            details: 'in later, going to dentist',
             time: null,
             sourceMessageKey: key,
           },
@@ -567,13 +567,15 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
           edited('in later, waiting for a repair technician', '1788766500.000001')
         );
         // Keep the old status/comment until the replacement is validated and committed.
-        expect((await read())[0].details).toBe('going to dentist');
+        expect((await read())[0].details).toBe('in later, going to dentist');
         await processSlackInbox();
-        expect(await read()).toMatchObject([{ details: 'waiting for a repair technician' }]);
+        expect(await read()).toMatchObject([
+          { details: 'in later, waiting for a repair technician' },
+        ]);
         expect(await read()).toHaveLength(1);
         await enqueueSlackEvent(edited('in later, going to dentist', '1788766600.000001'));
         await processSlackInbox();
-        expect((await read())[0].details).toBe('waiting for a repair technician');
+        expect((await read())[0].details).toBe('in later, waiting for a repair technician');
         await enqueueSlackEvent(edited('maybe later', '1788766700.000001'));
         await processSlackInbox();
         expect((await read())[0].details).toBe('maybe later');

@@ -67,38 +67,41 @@ describe('attendance AI adapter with mocked structured replies', () => {
     ['in later, going to dentist', 'going to dentist'],
     ['Tandlægebesøg først, så jeg kommer senere', 'Tandlægebesøg først'],
     ['going to dentist so I will be in later', 'going to dentist'],
-  ])('extracts status and sender comment from %s through the SDK', async (text, comment) => {
-    const request = vi.fn().mockResolvedValue(
-      reply({
-        ...output,
-        intervals: [
-          {
-            ...interval,
-            status: 'IN_LATE',
-            fromDate: '2026-09-07',
-            toDate: '2026-09-07',
-            comment,
-          },
-        ],
-      })
-    );
-    vi.stubGlobal('fetch', request);
-    const result = await extractAttendance(text, sent);
-    expect(statusRows(result)[0]).toMatchObject({
-      status: 'IN_LATE',
-      details: comment,
-      time: null,
-      startsAtApproximate: false,
-      endsAtApproximate: false,
-    });
-    const payload = JSON.parse(request.mock.calls[0][1].body);
-    expect(payload.model).toBe('mock-model');
-    expect(
-      payload.response_format.json_schema.schema.properties.intervals.items.required
-    ).toContain('comment');
-    expect(payload.messages[0].content).toContain('semantic extraction, not a punctuation split');
-  });
-  it.each(['invented diagnosis', '', 'x'.repeat(2001)])(
+  ])(
+    'extracts status and saves the complete source message for %s through the SDK',
+    async (text, excerpt) => {
+      const request = vi.fn().mockResolvedValue(
+        reply({
+          ...output,
+          intervals: [
+            {
+              ...interval,
+              status: 'IN_LATE',
+              fromDate: '2026-09-07',
+              toDate: '2026-09-07',
+              comment: excerpt,
+            },
+          ],
+        })
+      );
+      vi.stubGlobal('fetch', request);
+      const result = await extractAttendance(text, sent);
+      expect(statusRows(result)[0]).toMatchObject({
+        status: 'IN_LATE',
+        details: text,
+        time: null,
+        startsAtApproximate: false,
+        endsAtApproximate: false,
+      });
+      const payload = JSON.parse(request.mock.calls[0][1].body);
+      expect(payload.model).toBe('mock-model');
+      expect(
+        payload.response_format.json_schema.schema.properties.intervals.items.required
+      ).toContain('comment');
+      expect(payload.messages[0].content).toContain('semantic extraction, not a punctuation split');
+    }
+  );
+  it.each(['invented diagnosis', '', 'x'.repeat(12001)])(
     'rejects an invented, empty or oversized comment %#',
     async (comment) => {
       vi.stubGlobal(
@@ -111,6 +114,21 @@ describe('attendance AI adapter with mocked structured replies', () => {
       });
     }
   );
+  it('accepts a source comment above 2000 characters up to the 12000-character limit', async () => {
+    const text = `in later, ${'x'.repeat(2500)}`;
+    const request = vi
+      .fn()
+      .mockResolvedValue(
+        reply({
+          ...output,
+          intervals: [{ ...interval, status: 'IN_LATE', comment: 'x'.repeat(2500) }],
+        })
+      );
+    vi.stubGlobal('fetch', request);
+    const result = await extractAttendance(text, sent);
+    expect(statusRows(result)[0].details).toBe(text);
+    expect(request).toHaveBeenCalledOnce();
+  });
   it('uses the default model when the optional model configuration is missing', async () => {
     vi.stubEnv('SLACK_EXTRACTION_MODEL', '');
     const request = vi
@@ -190,7 +208,10 @@ describe('attendance AI adapter with mocked structured replies', () => {
     const request = vi.fn().mockResolvedValue(reply());
     vi.stubGlobal('fetch', request);
 
-    await extractAttendance('speaking at a conference today and tomorow, reach out on mobile', sent);
+    await extractAttendance(
+      'speaking at a conference today and tomorow, reach out on mobile',
+      sent
+    );
     expect(request).toHaveBeenCalledOnce();
     const payload = JSON.parse(request.mock.calls[0][1].body);
     const systemPrompt = payload.messages[0].content;
@@ -200,7 +221,7 @@ describe('attendance AI adapter with mocked structured replies', () => {
     expect(systemPrompt).toContain('AWAY');
   });
 
-  it('accepts multi-day conference extraction with verbatim excerpt from the model', async () => {
+  it('normalizes a valid model excerpt to the complete multi-day source message', async () => {
     const message = 'I will be at conference today and tomorow, please ping if needed';
     vi.stubGlobal(
       'fetch',
@@ -234,7 +255,7 @@ describe('attendance AI adapter with mocked structured replies', () => {
         endTime: null,
         startApproximate: false,
         endApproximate: false,
-        comment: 'at conference',
+        comment: message,
       },
     ]);
   });
