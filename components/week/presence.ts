@@ -81,6 +81,39 @@ export function groupAttendance(people: readonly UserWithExtras[], day: string):
   });
 }
 
+export type ExceptionGroupKey = 'out' | 'elsewhere' | 'partly';
+
+export const exceptionGroups: { key: ExceptionGroupKey; label: string; tone: Tone }[] = [
+  { key: 'out', label: 'Out', tone: 'off' },
+  { key: 'elsewhere', label: 'Working elsewhere', tone: 'remote' },
+  { key: 'partly', label: 'Partly in', tone: 'partial' },
+];
+
+/** The day list's group for one day's status. Late arrivals and early departures are "Partly in". */
+export function exceptionGroupOf(status: Status | null): ExceptionGroupKey | null {
+  const { tone, group } = presenceOf(status);
+  if (tone === 'partial') return 'partly';
+  return group === 'out' || group === 'elsewhere' ? group : null;
+}
+
+/**
+ * Split colleagues by one day's status for the day list, preserving their order. People in the
+ * office that day are kept apart, as are notes and missing statuses.
+ */
+export function groupExceptions(people: readonly UserWithExtras[], day: string) {
+  const groups = exceptionGroups.map((group) => ({ ...group, members: [] as UserWithExtras[] }));
+  const other: UserWithExtras[] = [];
+  const inOffice: UserWithExtras[] = [];
+  for (const person of people) {
+    const status = person.week?.find((entry) => entry.date === day)?.status ?? null;
+    const key = exceptionGroupOf(status);
+    if (key) groups.find((group) => group.key === key)?.members.push(person);
+    else if (status?.status === 'IN_OFFICE') inOffice.push(person);
+    else other.push(person);
+  }
+  return { groups, other, inOffice };
+}
+
 function clock(value: Date | string | null | undefined, approximate?: boolean | null) {
   if (!value) return null;
   const date = new Date(value);

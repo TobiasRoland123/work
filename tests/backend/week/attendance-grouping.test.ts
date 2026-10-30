@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Status } from '@/db/types';
 import { WeekOverview } from '@/components/week/WeekOverview';
+import { groupExceptions } from '@/components/week/presence';
 import { workWeekDays } from '@/lib/status/week';
 
 vi.mock('@/components/layout/PageHeader', () => ({ PageHeader: () => null }));
@@ -75,7 +76,7 @@ function note(userId: string, details: string) {
 function gridGroups(grid: string) {
   return [
     ...grid.matchAll(
-      /<div role="rowgroup"[^>]*aria-label="([^"]+)"[^>]*>([\s\S]*?)(?=<div role="rowgroup"[^>]*aria-label=|<ul class="week-legend"|<\/main>)/g
+      /<div role="rowgroup"[^>]*aria-label="([^"]+)"[^>]*>([\s\S]*?)(?=<div role="rowgroup"[^>]*aria-label=|<section class="week-list"|<ul class="week-legend"|<\/main>)/g
     ),
   ];
 }
@@ -219,5 +220,69 @@ describe('attendance groups', () => {
     expect(sidebar).not.toContain('Unknown Person');
     expect(sidebar).not.toContain('aria-label="In office"');
     expect(sidebar).not.toContain('aria-label="No status"');
+  });
+});
+
+describe('phone day list', () => {
+  it('files late arrivals and early departures under Partly in, apart from the other exceptions', () => {
+    const people = [
+      ['late', 'IN_LATE'],
+      ['sick', 'SICK'],
+      ['home', 'FROM_HOME'],
+      ['early', 'LEAVING_EARLY'],
+      ['vacation', 'VACATION'],
+      ['client', 'AT_CLIENT'],
+      ['office', 'IN_OFFICE'],
+    ].map(([userId, value]) => ({
+      userId,
+      email: `${userId}@example.com`,
+      week: [daily(userId, value as Status['status'])],
+    }));
+    const noted = {
+      userId: 'noted',
+      email: 'noted@example.com',
+      week: [note('noted', 'Workshop')],
+    };
+    const { groups, other, inOffice } = groupExceptions([...people, noted], days[1]);
+    expect(groups.map(({ key, members }) => [key, members.map((person) => person.userId)])).toEqual(
+      [
+        ['out', ['sick', 'vacation']],
+        ['elsewhere', ['home', 'client']],
+        ['partly', ['late', 'early']],
+      ]
+    );
+    expect(inOffice.map((person) => person.userId)).toEqual(['office']);
+    expect(other.map((person) => person.userId)).toEqual(['noted']);
+  });
+
+  it('counts the selected day per filter and moves the signed-in person to Your week', () => {
+    const { html } = renderAttendance([
+      { userId: 'anna', status: null, week: [daily('anna', 'FROM_HOME')] },
+      { userId: 'ben', status: null, week: [daily('ben', 'SICK')] },
+      { userId: 'cara', status: null, week: [daily('cara', 'IN_LATE')] },
+      { userId: 'dan', status: null, week: [daily('dan', 'AT_CLIENT')] },
+      {
+        userId: 'eve',
+        status: null,
+        week: [daily('eve', 'IN_OFFICE'), daily('eve', 'VACATION', days[3])],
+      },
+    ]);
+    const list =
+      html.match(/<section class="week-list"[\s\S]*?(?=<ul class="week-legend")/)?.[0] ?? '';
+    const pills = [
+      ...list.matchAll(
+        /aria-pressed="(?:true|false)">(?:<i[^>]*><\/i>)?([^<]+) <span>(\d+)<\/span>/g
+      ),
+    ];
+    expect(pills.map(([, label, count]) => [label, Number(count)])).toEqual([
+      ['All', 3],
+      ['Out', 1],
+      ['Elsewhere', 1],
+      ['Partly in', 1],
+    ]);
+    expect(list).toContain('Your week');
+    expect(list).not.toContain('Anna Person');
+    expect(list).toContain('aria-label="In office Tuesday, away other days"');
+    expect(list).toContain('Next: Thursday · Vacation');
   });
 });
