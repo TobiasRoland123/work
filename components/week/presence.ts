@@ -18,15 +18,6 @@ const presence: Record<StatusType, { label: string; tone: Tone; group: DayGroup 
   AWAY: { label: 'Away', tone: 'away', group: 'out' },
 };
 
-export const legend: { tone: Tone; label: string }[] = [
-  { tone: 'office', label: 'In office' },
-  { tone: 'partial', label: 'Late / leaving early' },
-  { tone: 'remote', label: 'Home / remote / client' },
-  { tone: 'sick', label: 'Sick' },
-  { tone: 'off', label: 'Vacation / leave' },
-  { tone: 'away', label: 'Away' },
-];
-
 export const personName = (person: UserWithExtras) =>
   [person.firstName, person.lastName].filter(Boolean).join(' ') || person.email;
 
