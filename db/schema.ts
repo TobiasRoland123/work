@@ -28,6 +28,7 @@ export const userStatus = pgEnum('user_status', [
   'CHILD_SICK',
   'ON_LEAVE',
   'AWAY',
+  'REMOTE',
 ]);
 
 export const organisations = pgTable('organisations', {

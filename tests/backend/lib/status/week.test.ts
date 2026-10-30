@@ -152,7 +152,7 @@ describe('daily announcements alongside live presence', () => {
     expect(result.announcement).toEqual(late);
   });
 
-  it.each(['AWAY', 'FROM_HOME'] as const)(
+  it.each(['AWAY', 'FROM_HOME', 'REMOTE'] as const)(
     'retains a timed %s declaration after its office return',
     (status) => {
       const exception = { ...late, status };

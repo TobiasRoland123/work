@@ -45,6 +45,13 @@ describe('correcting an imported status', () => {
       fromDate: '2026-09-21',
       toDate: '2026-09-23',
     });
+    expect(correct({ status: 'REMOTE' })).toEqual({
+      status: 'REMOTE',
+      details: 'hjemme resten af ugen',
+      fromDate: '2026-09-22',
+      toDate: '2026-09-22',
+      time: null,
+    });
   });
 
   it('drops notes that would mislead on the corrected status', () => {

@@ -99,6 +99,7 @@ describe('attendance groups', () => {
     const values = [
       ['leaving', 'LEAVING_EARLY', 'Leaving early'],
       ['client', 'AT_CLIENT', 'At client'],
+      ['remote', 'REMOTE', 'Remote'],
       ['home', 'FROM_HOME', 'Home'],
       ['late', 'IN_LATE', 'In late'],
     ] as const;
@@ -107,7 +108,7 @@ describe('attendance groups', () => {
     );
 
     const labels = gridGroups(grid).map((match) => match[1]);
-    expect(labels).toEqual(['In late', 'Leaving early', 'Home', 'At client']);
+    expect(labels).toEqual(['In late', 'Leaving early', 'Home', 'Remote', 'At client']);
     for (const [userId, , label] of values) {
       const group = gridGroup(grid, label);
       expect(group).toContain(`<h2>`);
@@ -119,8 +120,8 @@ describe('attendance groups', () => {
       expect(sidebarGroup).toContain(`${label} <span>1</span></button></h3>`);
       expect(sidebarGroup).toContain(`${userId[0].toUpperCase()}${userId.slice(1)} Person`);
     }
-    expect(gridGroups(grid)).toHaveLength(4);
-    expect(sidebarGroups(sidebar)).toHaveLength(4);
+    expect(gridGroups(grid)).toHaveLength(5);
+    expect(sidebarGroups(sidebar)).toHaveLength(5);
   });
 
   it('preserves directory order and pins the signed-in person first inside a group', () => {

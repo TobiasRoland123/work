@@ -302,6 +302,13 @@
       "when": 1792184911151,
       "tag": "0042_learned_shorthands",
       "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1793401556396,
+      "tag": "0043_remote_status",
+      "breakpoints": true
     }
   ]
 }

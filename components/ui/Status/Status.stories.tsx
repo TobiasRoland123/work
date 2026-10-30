@@ -14,6 +14,7 @@ const allVariants = () => {
     <div className={'flex gap-4 flex-col'}>
       <Status status="IN_OFFICE" />
       <Status status="FROM_HOME" />
+      <Status status="REMOTE" />
       <Status status="AT_CLIENT" />
       <Status status="SICK" />
       <Status status="VACATION" />
@@ -34,6 +35,12 @@ export const Default: Story = {
 export const FromHome: Story = {
   args: {
     status: 'FROM_HOME',
+  },
+};
+
+export const Remote: Story = {
+  args: {
+    status: 'REMOTE',
   },
 };
 

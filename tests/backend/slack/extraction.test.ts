@@ -222,6 +222,28 @@ describe('multi-day out-of-office status extraction', () => {
       ]);
     }
   );
+
+  it('maps multi-day REMOTE intervals with statusRows and details preserved', () => {
+    const remoteInterval = {
+      ...interval,
+      status: 'REMOTE',
+      fromDate: '2026-09-07',
+      toDate: '2026-09-08',
+      comment: 'Working from Roskilde today and tomorrow',
+    };
+    const parsed = validateExtraction(
+      extract([remoteInterval]),
+      sent,
+      'Working from Roskilde today and tomorrow'
+    );
+    const [row] = statusRows(parsed);
+    expect(row.status).toBe('REMOTE');
+    expect(row.fromDate).toBe('2026-09-07');
+    expect(row.toDate).toBe('2026-09-08');
+    expect(row.details).toBe('Working from Roskilde today and tomorrow');
+    expect(row.startsAt.toISOString()).toBe('2026-09-06T22:00:00.000Z');
+    expect(row.endsAt.toISOString()).toBe('2026-09-08T22:00:00.000Z');
+  });
 });
 
 describe('AI Gateway transport', () => {

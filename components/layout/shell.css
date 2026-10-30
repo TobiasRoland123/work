@@ -101,6 +101,8 @@
   display: grid;
   justify-items: center;
   gap: 8px;
+  width: 100%;
+  min-width: 0;
   max-width: 100%;
 }
 .office-me > span {
@@ -113,9 +115,12 @@
   place-items: center;
 }
 .office-me small {
-  max-width: 70px;
+  max-width: 100%;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
 }
 .office-header {
   padding: 22px 28px;

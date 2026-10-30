@@ -1,6 +1,7 @@
 export type StatusType =
   | 'IN_OFFICE'
   | 'FROM_HOME'
+  | 'REMOTE'
   | 'AT_CLIENT'
   | 'SICK'
   | 'IN_LATE'
@@ -23,6 +24,7 @@ export function Status({ status, asLabel = true, children }: StatusProps) {
   const statusConfig: Record<StatusType, { message: string; color: string }> = {
     IN_OFFICE: { message: 'In office', color: 'bg-light-blue' },
     FROM_HOME: { message: 'From home', color: 'bg-light-blue' },
+    REMOTE: { message: 'Remote', color: 'bg-light-blue' },
     AT_CLIENT: { message: 'At client', color: 'bg-light-blue' },
     SICK: { message: 'Sick', color: 'bg-light-red' },
     IN_LATE: { message: 'In late', color: 'bg-light-mud  ' },

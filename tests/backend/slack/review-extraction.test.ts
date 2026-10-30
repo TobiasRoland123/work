@@ -204,6 +204,58 @@ describe('attendance AI adapter with mocked structured replies', () => {
     ).toMatchObject({ status: 'AWAY', fromDate: '2026-09-08', toDate: '2026-09-10' });
   });
 
+  it('maps multi-day remote declarations via AI to REMOTE with full message details', async () => {
+    const message = 'Working remotely from Odense Tuesday through Thursday';
+    const request = vi.fn().mockResolvedValue(
+      reply({
+        ...output,
+        intervals: [
+          {
+            ...interval,
+            status: 'REMOTE',
+            fromDate: '2026-09-08',
+            toDate: '2026-09-10',
+            comment: 'Working remotely from Odense',
+          },
+        ],
+      })
+    );
+    vi.stubGlobal('fetch', request);
+    const result = await extractAttendance(message, sent);
+    expect(result.intervals[0]).toMatchObject({
+      status: 'REMOTE',
+      fromDate: '2026-09-08',
+      toDate: '2026-09-10',
+      comment: message,
+    });
+    expect(statusRows(result)[0]).toMatchObject({
+      status: 'REMOTE',
+      fromDate: '2026-09-08',
+      toDate: '2026-09-10',
+      details: message,
+    });
+    const payload = JSON.parse(request.mock.calls[0][1].body);
+    const systemPrompt = payload.messages[0].content;
+    expect(systemPrompt).toContain('REMOTE');
+    expect(systemPrompt).toContain('not in the office');
+    expect(
+      payload.response_format.json_schema.schema.properties.intervals.items.properties.status.enum
+    ).toContain('REMOTE');
+  });
+
+  it('requires review rather than inferring REMOTE for "not in the office" alone', async () => {
+    const request = vi
+      .fn()
+      .mockResolvedValue(reply({ decision: 'review', reason: 'uncertain_status', intervals: [] }));
+    vi.stubGlobal('fetch', request);
+    await expect(extractAttendance('not in the office today', sent)).resolves.toEqual({
+      decision: 'review',
+      reason: 'uncertain_status',
+      intervals: [],
+    });
+    expect(request).toHaveBeenCalledOnce();
+  });
+
   it('includes conference and multi-day date instructions in the prompt sent to the AI', async () => {
     const request = vi.fn().mockResolvedValue(reply());
     vi.stubGlobal('fetch', request);
