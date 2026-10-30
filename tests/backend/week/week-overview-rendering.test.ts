@@ -70,7 +70,8 @@ function renderWeek(selectedStatus: Status | null) {
 function renderToday(
   selectedStatus: Status | null,
   profileStatus: Status | null = null,
-  profileWeek?: DayPresence[]
+  profileWeek?: DayPresence[],
+  displayDays: string[] = [days[1]]
 ) {
   const today = days[1];
   const html = renderToStaticMarkup(
@@ -86,7 +87,7 @@ function renderToday(
         },
       ],
       userId: 'anna',
-      days: [today],
+      days: displayDays,
       today,
       weekStart: days[0],
       currentWeekStart: days[0],
@@ -490,5 +491,45 @@ describe('today-only attendance', () => {
     expect(grid).not.toContain('until 24.09');
     expect(sidebar).toContain('In late · from 10:00 · doctor');
     expect(sidebar).not.toContain('until 24.09');
+  });
+});
+
+describe('daily announcement visibility after arrival', () => {
+  it.each([
+    ['07:29:59', 0],
+    ['07:30:00', 1],
+    ['15:00:00', 1],
+  ])('retains the announcement and live office count at %s', (clock, count) => {
+    const day = days[1];
+    const arrival = new Date(`${day}T07:30:00Z`); // 09:30 Copenhagen summer time.
+    const late = status({
+      id: 10,
+      status: 'IN_LATE',
+      fromDate: day,
+      toDate: day,
+      startsAt: new Date(`${day}T00:00:00+02:00`),
+      endsAt: arrival,
+      sourceMessageKey: 'channel:message',
+      details: 'Dentist first',
+    });
+    const office = {
+      ...late,
+      id: 11,
+      status: 'IN_OFFICE' as const,
+      startsAt: arrival,
+      endsAt: new Date('2026-09-23T00:00:00+02:00'),
+      details: null,
+    };
+    const week = resolveWorkWeek([late, office], 'anna', [day], new Date(`${day}T${clock}Z`));
+    for (const displayDays of [[day], days]) {
+      const { grid, sidebar } = renderToday(null, week[0].status, week, displayDays);
+      expect(grid).toContain('Anna Attendee');
+      expect(grid).toContain('<strong>In late</strong><small>from 09:30 · Dentist first</small>');
+      expect(grid).toContain('aria-label="In late"');
+      expect(sidebar).toContain('Anna Attendee');
+      expect(sidebar).toContain('aria-label="In late"');
+      expect(sidebar).toContain('<small>In late · from 09:30 · Dentist first</small>');
+      expect(sidebar).toContain(`<strong>${count}</strong> of 1 in the office`);
+    }
   });
 });

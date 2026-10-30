@@ -1,5 +1,10 @@
 import type { DayPresence, Status } from '@/db/types';
-import { copenhagenDate, copenhagenWallClock, resolvePresenceStatus } from './active';
+import {
+  copenhagenDate,
+  copenhagenWallClock,
+  resolvePresenceStatus,
+  selectDayAnnouncement,
+} from './active';
 
 const isoDay = /^\d{4}-\d{2}-\d{2}$/;
 
@@ -72,6 +77,10 @@ export function resolveWorkWeek(
   return days.map((date) => {
     const workdayStart = copenhagenWallClock(date, 9, 0);
     const moment = date === today ? now : workdayStart;
-    return { date, status: resolvePresenceStatus(statuses, userID, moment) };
+    return {
+      date,
+      status: resolvePresenceStatus(statuses, userID, moment),
+      announcement: selectDayAnnouncement(statuses, workdayStart),
+    };
   });
 }
