@@ -39,6 +39,10 @@ export const initials = (person: UserWithExtras) =>
 
 export const isInOffice = (person: UserWithExtras) => person.status?.status === 'IN_OFFICE';
 
+/** Daily declarations remain visible after their live attendance interval ends. */
+export const dayAnnouncement = (day: DayPresence | undefined): Status | null =>
+  day?.announcement ?? day?.status ?? null;
+
 /** Every attendance status, in display order. */
 export const statusTypes = Object.keys(presence) as StatusType[];
 
@@ -64,7 +68,7 @@ type AttendanceGroup = {
 export function groupAttendance(people: readonly UserWithExtras[], day: string): AttendanceGroup[] {
   const groups = new Map<string, AttendanceGroup>();
   for (const person of people) {
-    const status = person.week?.find((entry) => entry.date === day)?.status ?? null;
+    const status = dayAnnouncement(person.week?.find((entry) => entry.date === day));
     const key = status ? (status.status ?? 'note') : 'unknown';
     const { label, tone } = presenceOf(status);
     const group = groups.get(key) ?? { key, label, tone, members: [] };

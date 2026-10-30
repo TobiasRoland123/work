@@ -163,15 +163,53 @@ export function selectActiveStatus<T extends StatusLike>(
   statuses: readonly T[],
   now: Date = new Date()
 ): T | null {
-  const ordered = [...statuses].sort((a, b) => {
-    const created = (announcement(b) ?? 0) - (announcement(a) ?? 0);
-    return created || (b.id ?? 0) - (a.id ?? 0);
-  });
+  const ordered = orderAnnouncements(statuses);
 
   for (const candidate of ordered) {
     if (isStatusApplicable(candidate, now)) return candidate;
   }
   return null;
+}
+
+function orderAnnouncements<T extends StatusLike>(statuses: readonly T[]): T[] {
+  return [...statuses].sort((a, b) => {
+    const created = (announcement(b) ?? 0) - (announcement(a) ?? 0);
+    return created || (b.id ?? 0) - (a.id ?? 0);
+  });
+}
+
+/** The newest daily announcement, retained after its exact clock interval has elapsed. */
+export function selectDayAnnouncement(statuses: readonly Status[], now: Date): Status | null {
+  const ordered = orderAnnouncements(
+    statuses.filter((candidate) =>
+      isStatusApplicable({ ...candidate, startsAt: null, endsAt: null }, now)
+    )
+  );
+  const newest = ordered[0];
+  if (!newest) return null;
+
+  // One imported announcement can contain an exception and its office-return interval.
+  // Keep the exception visible without reviving one from an older message or revision.
+  const declaration = newest.sourceMessageKey
+    ? (ordered.find(
+        (candidate) =>
+          candidate.sourceMessageKey === newest.sourceMessageKey &&
+          announcement(candidate) === announcement(newest) &&
+          candidate.status !== 'IN_OFFICE'
+      ) ?? newest)
+    : newest;
+
+  if (declaration.status === 'IN_OFFICE' && declaration.time) {
+    const arrival = instant(declaration.time);
+    const day = copenhagenDate(now);
+    if (
+      arrival !== null &&
+      copenhagenDate(new Date(arrival)) === day &&
+      arrival > copenhagenWallClock(day, 9, 0).getTime()
+    )
+      return { ...declaration, status: 'IN_LATE' };
+  }
+  return declaration;
 }
 
 /** Resolve presence without writing synthetic defaults or transitions to the database. */

@@ -23,6 +23,7 @@ import { getSlackImageUrl } from '@/lib/slack/image';
 import type { UpcomingStatus } from '@/lib/status/plan';
 import { addDays, formatDay, isoWeekNumber, shiftWorkWeek } from '@/lib/status/week';
 import {
+  dayAnnouncement,
   dayNote,
   groupAttendance,
   initials,
@@ -230,7 +231,9 @@ function PersonSheet({
                 <h3 className="person-sheet-heading">{title}</h3>
                 <ol className="person-sheet-week">
                   {(person.week ?? days.map((date): DayPresence => ({ date, status: null }))).map(
-                    ({ date, status }) => {
+                    (day) => {
+                      const { date } = day;
+                      const status = dayAnnouncement(day);
                       const { label, tone } = presenceOf(status);
                       const note = dayNote(status);
                       return (
@@ -370,9 +373,9 @@ export function WeekOverview({
     ? formatDay(days[0], { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
     : `Week ${isoWeekNumber(weekStart)} · ${weekRange(days)}`;
   const statusOn = (person: UserWithExtras, index: number) =>
-    person.week?.find((day) => day.date === days[index])?.status ?? null;
+    dayAnnouncement(person.week?.find((day) => day.date === days[index]));
   const inOfficeOn = (person: UserWithExtras, index: number) =>
-    statusOn(person, index)?.status === 'IN_OFFICE';
+    person.week?.find((day) => day.date === days[index])?.status?.status === 'IN_OFFICE';
   const hasExceptionOn = (person: UserWithExtras, index: number) => {
     const status = statusOn(person, index);
     return status !== null && status.status !== 'IN_OFFICE';

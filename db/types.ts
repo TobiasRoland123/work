@@ -17,7 +17,13 @@ export type UserWithExtras = NewUser & {
   businessPhoneNumber?: string | null;
 };
 
-export type DayPresence = { date: string; status: Status | null };
+export type DayPresence = {
+  date: string;
+  /** Resolved presence at the day's reference time, used for office counts. */
+  status: Status | null;
+  /** The latest declaration for this day, visible throughout its calendar date. */
+  announcement?: Status | null;
+};
 
 // Type for inserting new users (INSERT operations)
 export type NewUser = InferInsertModel<typeof users>;
