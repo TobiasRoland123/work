@@ -104,8 +104,14 @@ export function AppShell({
             </>
           )}
         </div>
-        <Link href="/profile" prefetch={true} className="office-me">
-          <span>{firstName?.[0] || 'W'}</span>
+        <Link
+          href="/profile"
+          prefetch={true}
+          className="office-me"
+          title={firstName || 'My profile'}
+          aria-label={firstName ? `Profile for ${firstName}` : 'My profile'}
+        >
+          <span aria-hidden="true">{firstName?.[0] || 'W'}</span>
           <small>{firstName || 'My profile'}</small>
         </Link>
       </nav>

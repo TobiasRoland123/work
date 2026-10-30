@@ -59,7 +59,80 @@ describe('common Slack shorthand', () => {
     ['på konference', interval({ status: 'AWAY', comment: 'på konference' })],
     ['til konference', interval({ status: 'AWAY', comment: 'til konference' })],
     ['offsite', interval({ status: 'AWAY', comment: 'offsite' })],
+    ['remote', interval({ status: 'REMOTE' })],
+    ['working remotely', interval({ status: 'REMOTE' })],
+    ['working remote today', interval({ status: 'REMOTE' })],
+    ['arbejder remote i dag', interval({ status: 'REMOTE' })],
+    [
+      'Working remotely today, not from home',
+      interval({ status: 'REMOTE', comment: 'Working remotely today, not from home' }),
+    ],
+    [
+      'Working from Roskilde today',
+      interval({ status: 'REMOTE', comment: 'Working from Roskilde today' }),
+    ],
+    ['WF KMD Aalborg ✈️', interval({ status: 'REMOTE', comment: 'WF KMD Aalborg ✈️' })],
+    ['Working from home today', interval({ status: 'FROM_HOME' })],
   ])('resolves %s without an AI configuration', async (text, expected) => {
+    const request = vi.fn();
+    vi.stubGlobal('fetch', request);
+
+    await expect(extractAttendance(text, sent)).resolves.toEqual({
+      decision: 'apply',
+      reason: 'clear',
+      intervals: [expected],
+    });
+    expect(request).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    [
+      'working remotely today and tomorrow',
+      interval({
+        status: 'REMOTE',
+        toDate: '2026-09-08',
+      }),
+    ],
+    [
+      'working remote today and tomorow',
+      interval({
+        status: 'REMOTE',
+        toDate: '2026-09-08',
+      }),
+    ],
+    [
+      'arbejder remote i dag og i morgen',
+      interval({
+        status: 'REMOTE',
+        toDate: '2026-09-08',
+      }),
+    ],
+    [
+      'Working from Roskilde today and tomorrow',
+      interval({
+        status: 'REMOTE',
+        toDate: '2026-09-08',
+        comment: 'Working from Roskilde today and tomorrow',
+      }),
+    ],
+    [
+      'working remotely tomorrow',
+      interval({
+        status: 'REMOTE',
+        fromDate: '2026-09-08',
+        toDate: '2026-09-08',
+      }),
+    ],
+    [
+      'Working from Aarhus tomorrow',
+      interval({
+        status: 'REMOTE',
+        fromDate: '2026-09-08',
+        toDate: '2026-09-08',
+        comment: 'Working from Aarhus tomorrow',
+      }),
+    ],
+  ])('resolves remote pattern "%s" without an AI configuration', async (text, expected) => {
     const request = vi.fn();
     vi.stubGlobal('fetch', request);
 
@@ -201,6 +274,8 @@ describe('common Slack shorthand', () => {
   it.each([
     'wfh tomorrow',
     'not wfh',
+    'not in the office',
+    'not in the office today',
     'wfh with child sick',
     'wfh, hope to come in later',
     'in at 25:00',

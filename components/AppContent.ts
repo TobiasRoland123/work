@@ -11,6 +11,7 @@ export const statusOptions = {
   mainOptions: [
     { label: 'In Office', value: 'IN_OFFICE' },
     { label: 'From Home', value: 'FROM_HOME' },
+    { label: 'Remote', value: 'REMOTE' },
     { label: 'At Client', value: 'AT_CLIENT' },
     { label: 'Sick', value: 'SICK' },
   ],
@@ -26,7 +27,7 @@ export const statusOptions = {
 export function getDetailsPlaceholder(status: StatusType) {
   if (status === 'FROM_HOME' || status === 'IN_LATE' || status === 'LEAVING_EARLY') {
     return 'eg. why? 🏠⏰';
-  } else if (status === 'AT_CLIENT') {
+  } else if (status === 'REMOTE' || status === 'AT_CLIENT') {
     return 'ex. where? 🏢';
   } else if (status === 'CHILD_SICK') {
     return 'ex. Available on Slack 🤒💬';

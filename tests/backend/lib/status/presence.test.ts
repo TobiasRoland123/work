@@ -52,7 +52,7 @@ describe('office presence convention', () => {
     expect(resolve([early], '05:59')).toBeNull();
     expect(resolve([early], '06:00')?.status).toBe('IN_OFFICE');
   });
-  it.each(['FROM_HOME', 'SICK', 'VACATION', 'AT_CLIENT'] as const)(
+  it.each(['FROM_HOME', 'REMOTE', 'SICK', 'VACATION', 'AT_CLIENT'] as const)(
     'preserves an explicit %s declaration after 9',
     (status) => {
       expect(resolve([row({ status })], '08:00')?.status).toBe(status);

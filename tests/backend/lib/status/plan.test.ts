@@ -29,6 +29,21 @@ describe('planning ahead', () => {
         time: null,
       },
     ]);
+    expect(
+      plan({
+        status: 'REMOTE',
+        details: 'Roskilde',
+        when: { kind: 'days', days: ['2026-09-24', '2026-09-25'] },
+      })
+    ).toEqual([
+      {
+        status: 'REMOTE',
+        details: 'Roskilde',
+        fromDate: '2026-09-24',
+        toDate: '2026-09-25',
+        time: null,
+      },
+    ]);
   });
 
   it('stores timed statuses per day at Copenhagen wall-clock time', () => {

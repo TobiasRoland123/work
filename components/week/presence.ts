@@ -9,6 +9,7 @@ const presence: Record<StatusType, { label: string; tone: Tone; group: DayGroup 
   IN_LATE: { label: 'In late', tone: 'partial', group: 'office' },
   LEAVING_EARLY: { label: 'Leaving early', tone: 'partial', group: 'office' },
   FROM_HOME: { label: 'Home', tone: 'remote', group: 'elsewhere' },
+  REMOTE: { label: 'Remote', tone: 'remote', group: 'elsewhere' },
   AT_CLIENT: { label: 'At client', tone: 'remote', group: 'elsewhere' },
   SICK: { label: 'Sick', tone: 'sick', group: 'out' },
   CHILD_SICK: { label: 'Child sick', tone: 'sick', group: 'out' },
@@ -20,7 +21,7 @@ const presence: Record<StatusType, { label: string; tone: Tone; group: DayGroup 
 export const legend: { tone: Tone; label: string }[] = [
   { tone: 'office', label: 'In office' },
   { tone: 'partial', label: 'Late / leaving early' },
-  { tone: 'remote', label: 'Home / client' },
+  { tone: 'remote', label: 'Home / remote / client' },
   { tone: 'sick', label: 'Sick' },
   { tone: 'off', label: 'Vacation / leave' },
   { tone: 'away', label: 'Away' },
