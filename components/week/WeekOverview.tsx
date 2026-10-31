@@ -34,7 +34,6 @@ import {
   segmentWeek,
   type Segment,
 } from './presence';
-import { WeekLegend } from './WeekLegend';
 import { StatusCorrection } from './StatusCorrection';
 import './week.css';
 
@@ -604,7 +603,6 @@ export function WeekOverview({
               </p>
             )}
           </div>
-          <WeekLegend />
         </main>
         <aside
           className="day-panel"

@@ -2,7 +2,6 @@ import type { CSSProperties } from 'react';
 import { Search } from 'lucide-react';
 import { PageHeaderSkeleton } from '@/components/layout/PageHeader';
 import { Skeleton, SkeletonText } from '@/components/ui/skeleton';
-import { WeekLegend } from './WeekLegend';
 import './week.css';
 
 const pulse = 'animate-pulse motion-reduce:animate-none';
@@ -114,7 +113,6 @@ export function WeekOverviewSkeleton() {
               })}
             </div>
           </div>
-          <WeekLegend />
         </main>
         <aside className="day-panel" aria-hidden="true">
           <div className="day-panel-inner">

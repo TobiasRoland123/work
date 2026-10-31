@@ -75,7 +75,7 @@ function note(userId: string, details: string) {
 function gridGroups(grid: string) {
   return [
     ...grid.matchAll(
-      /<div role="rowgroup"[^>]*aria-label="([^"]+)"[^>]*>([\s\S]*?)(?=<div role="rowgroup"[^>]*aria-label=|<ul class="week-legend"|<\/main>)/g
+      /<div role="rowgroup"[^>]*aria-label="([^"]+)"[^>]*>([\s\S]*?)(?=<div role="rowgroup"[^>]*aria-label=|<\/main>)/g
     ),
   ];
 }

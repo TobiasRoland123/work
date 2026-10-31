@@ -1,4 +1,4 @@
-/* Status tones, shared by the board, legend, day panel and colleague sheet. */
+/* Status tones, shared by the board, day panel and colleague sheet. */
 .tone {
   --tone-bg: #f4f5f3;
   --tone-border: #dfe1dd;
@@ -440,29 +440,6 @@
   font-size: 14px;
 }
 
-.week-legend {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px 16px;
-  font-size: 12px;
-  color: #6b706b;
-}
-.week-legend li {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.week-legend i {
-  width: 12px;
-  height: 12px;
-  border-radius: 3px;
-  border: 1px solid var(--tone-border);
-  background: var(--tone-bg);
-}
-.week-legend i[data-assumed] {
-  border-style: dashed;
-}
-
 .day-panel {
   background: white;
   border-left: 1px solid #e3e3dc;
@@ -813,12 +790,7 @@
     grid-template-columns: minmax(0, 1fr);
   }
   .day-panel {
-    border-left: 0;
-    border-top: 1px solid #e3e3dc;
-  }
-  .day-panel-inner {
-    position: static;
-    max-height: none;
+    display: none;
   }
   .office-header:has(.week-nav) {
     flex-wrap: wrap;

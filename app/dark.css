@@ -301,7 +301,6 @@ html.dark {
 .dark .week-day-date,
 .dark .week-person-name small,
 .dark .week-empty,
-.dark .week-legend,
 .dark .day-panel-person small {
   color: var(--office-muted);
 }
