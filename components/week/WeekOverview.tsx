@@ -326,6 +326,9 @@ function PersonSheet({
   );
 }
 
+// Share of colleagues in the office, 0–1. The meter shifts from red (0) to green (1).
+const share = (inOffice: number, total: number) => (total ? inOffice / total : 0);
+
 export function WeekOverview({
   profiles,
   userId,
@@ -556,18 +559,19 @@ export function WeekOverview({
                       >
                         <span className="week-day-name">
                           {formatDay(day, { weekday: 'short' })}
+                          <span className="week-day-date">
+                            {formatDay(day, { day: 'numeric' })}
+                          </span>
                           {day === today && <em>Today</em>}
                         </span>
-                        <span className="week-day-date">
-                          {formatDay(day, { day: 'numeric', month: 'short' })}
-                        </span>
                         <span className="week-day-count">
-                          <strong>{officeCounts[index]}</strong> in office
+                          <strong>{people.length - officeCounts[index]}</strong> out of office
                         </span>
                         <span className="week-day-meter" aria-hidden="true">
                           <i
                             style={{
-                              width: `${people.length ? (officeCounts[index] / people.length) * 100 : 0}%`,
+                              width: `${share(officeCounts[index], people.length) * 100}%`,
+                              background: `hsl(${Math.round(share(officeCounts[index], people.length) * 120)} 55% 40%)`,
                             }}
                           />
                         </span>

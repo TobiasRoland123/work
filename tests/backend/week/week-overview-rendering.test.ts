@@ -518,7 +518,7 @@ describe('today-only attendance', () => {
     expect(grid).not.toContain('Dan Assumed');
     expect(sidebar).toContain('Dan Assumed');
     expect(grid).toContain('Colleagues <span>1</span>');
-    expect(grid).toContain('<strong>2</strong> in office');
+    expect(grid).toContain('<strong>2</strong> out of office');
     expect(sidebar).toContain('<strong>2</strong> of 4 in the office');
     expect(sidebar).toContain('Pinned <span>2</span>');
     expect(sidebar).toContain('2 of 2 in the office');

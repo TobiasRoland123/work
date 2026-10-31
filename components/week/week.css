@@ -242,7 +242,7 @@
 }
 .week-day-date {
   color: var(--office-muted);
-  font-size: 12px;
+  font-weight: 400;
 }
 .week-day-name em {
   margin-left: auto;
@@ -971,6 +971,14 @@
   }
   .week-day-name {
     font-size: 13px;
+  }
+  .week-day-count {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
   .week-day-name em {
     width: 7px;

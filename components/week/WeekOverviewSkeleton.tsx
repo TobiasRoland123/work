@@ -58,9 +58,6 @@ export function WeekOverviewSkeleton() {
                   {Array.from({ length: 5 }, (_, day) => (
                     <div key={day} className="week-day">
                       <span className="week-day-name">
-                        <SkeletonText className="w-9" />
-                      </span>
-                      <span className="week-day-date">
                         <SkeletonText className="w-12" />
                       </span>
                       <span className="week-day-count">
