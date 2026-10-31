@@ -33,7 +33,6 @@ export default async function WeekPage({
       initialProfiles={users}
       userId={userId}
       weekStart={weekStart}
-      currentWeekStart={workWeekStart(today)}
       days={days}
       day={day}
       today={today}

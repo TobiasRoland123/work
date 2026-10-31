@@ -53,6 +53,18 @@ export function parseDay(value: unknown, now: Date = new Date()): string {
   return isValidDay(value) ? value : copenhagenDate(now);
 }
 
+/**
+ * The view a /today URL asks for: a work week (`week`, its Monday) or one calendar day.
+ * A day left undefined follows Copenhagen today.
+ */
+export function resolveWeekView(
+  params: { week?: unknown; day?: unknown },
+  now: Date = new Date()
+): { week?: string; day?: string } {
+  if (params.week) return { week: parseWorkWeekStart(params.week, now) };
+  return params.day ? { day: parseDay(params.day, now) } : {};
+}
+
 /** ISO 8601 week number of a YYYY-MM-DD date. */
 export function isoWeekNumber(day: string): number {
   const date = new Date(`${day}T00:00:00Z`);
