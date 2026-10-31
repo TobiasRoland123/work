@@ -16,7 +16,7 @@ export const SANDBOX_FIXTURES = [
     lastName: 'Attendee',
     email: 'anna@sandbox.local',
     slackDeactivated: false,
-    note: 'Plain attendee who writes in English.',
+    note: 'Plain attendee who writes in English. Stands in as the employee stats admin.',
   },
   {
     userId: 'sandbox-mads',

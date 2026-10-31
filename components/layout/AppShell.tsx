@@ -5,10 +5,12 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   CalendarDays,
+  ChartColumn,
   Coins,
   FlaskConical,
   Menu,
   MessageSquareWarning,
+  ShieldCheck,
   Users,
   UserRound,
 } from 'lucide-react';
@@ -39,19 +41,47 @@ const reviewLink = {
 
 const aiCostLink = { href: '/ai-cost', label: 'AI cost', Icon: Coins, prefetch: null };
 
+const employeeStatsLink = {
+  href: '/employee-stats',
+  label: 'Stats',
+  Icon: ChartColumn,
+  prefetch: null,
+};
+
+const statsAccessLink = {
+  href: '/employee-stats/access',
+  label: 'Stats access',
+  Icon: ShieldCheck,
+  prefetch: null,
+};
+
+// The stats pages live under /employee-stats, but the access controls are their own link.
+export const isCurrentPath = (pathname: string | null, href: string) =>
+  pathname === href ||
+  (href === '/employee-stats' && !!pathname?.startsWith('/employee-stats/people'));
+
 export function AppShell({
   children,
   firstName,
   showMessageQuality = false,
+  showEmployeeStats = false,
+  showEmployeeStatsAdmin = false,
 }: {
   children: ReactNode;
   firstName?: string | null;
   showMessageQuality?: boolean;
+  showEmployeeStats?: boolean;
+  showEmployeeStatsAdmin?: boolean;
 }) {
   const pathname = usePathname();
   const moreMenuRef = useRef<HTMLDivElement>(null);
-  const special = [...(showMessageQuality ? [reviewLink, aiCostLink] : []), ...specialLinks];
-  const specialIsCurrent = special.some(({ href }) => pathname === href);
+  const special = [
+    ...(showMessageQuality ? [reviewLink, aiCostLink] : []),
+    ...(showEmployeeStats ? [employeeStatsLink] : []),
+    ...(showEmployeeStatsAdmin ? [statsAccessLink] : []),
+    ...specialLinks,
+  ];
+  const specialIsCurrent = special.some(({ href }) => isCurrentPath(pathname, href));
 
   const renderLink = (
     { href, label, Icon, prefetch }: (typeof links)[number],
@@ -61,7 +91,7 @@ export function AppShell({
       key={href}
       href={href}
       prefetch={prefetch}
-      aria-current={pathname === href ? 'page' : undefined}
+      aria-current={isCurrentPath(pathname, href) ? 'page' : undefined}
       onClick={onClick}
     >
       <Icon size={21} aria-hidden="true" />

@@ -64,6 +64,20 @@ export const users = pgTable(
   ]
 );
 
+// People the stats admin has allowed to view employee statistics. The admin is identified by
+// Slack identity in code, never by a row here. No public RLS policies: only the server database
+// role may access this table, and no profile or user-update action may touch it.
+export const employeeStatsAccess = pgTable('employee_stats_access', {
+  userId: varchar('user_id', { length: 36 })
+    .primaryKey()
+    .notNull()
+    .references(() => users.userId, { onDelete: 'cascade' }),
+  grantedByUserId: varchar('granted_by_user_id', { length: 36 }).references(() => users.userId, {
+    onDelete: 'set null',
+  }),
+  grantedAt: timestamp('granted_at', { withTimezone: true }).defaultNow().notNull(),
+}).enableRLS();
+
 export const organisation_roles = pgTable('organisation_roles', {
   id: serial().primaryKey().notNull(),
   role_name: varchar('role_name', { length: 255 }),
