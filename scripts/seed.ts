@@ -1,3 +1,4 @@
+import { invalidateWeekOverview } from '../lib/services/weekOverviewCache';
 import dotenv from 'dotenv';
 import { and, eq, notInArray, inArray } from 'drizzle-orm';
 import { db } from '../db';
@@ -33,6 +34,7 @@ export async function syncSlackUsers(slackUsers: SlackUser[] = []) {
         .set({ slackDeactivated: false })
         .where(and(eq(users.slackTeamId, getSlackTeamId()), inArray(users.slackUserId, activeIds)));
   });
+  invalidateWeekOverview();
   const [organisation] = await db
     .select()
     .from(organisations)
@@ -68,6 +70,7 @@ export async function syncSlackUsers(slackUsers: SlackUser[] = []) {
       if (profile.phone) update.mobilePhone = profile.phone.replaceAll(' ', '');
       if (organisationId && !current.organisationId) update.organisationId = organisationId;
       await db.update(users).set(update).where(eq(users.userId, current.userId));
+      invalidateWeekOverview();
       results.synced.push(current.userId);
     } catch (error) {
       results.skipped.push({

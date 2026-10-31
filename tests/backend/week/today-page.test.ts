@@ -3,14 +3,14 @@ import React from 'react';
 
 const mocked = vi.hoisted(() => ({
   requirePageUserId: vi.fn(),
-  getAllUsers: vi.fn(),
+  getWeekOverview: vi.fn(),
   getUpcoming: vi.fn(),
   listPinnedIds: vi.fn(),
   cookies: vi.fn(),
 }));
 
 vi.mock('@/lib/auth/require-user', () => ({ requirePageUserId: mocked.requirePageUserId }));
-vi.mock('@/lib/services/userService', () => ({ userService: { getAllUsers: mocked.getAllUsers } }));
+vi.mock('@/lib/services/weekOverviewQuery', () => ({ getWeekOverview: mocked.getWeekOverview }));
 vi.mock('@/lib/services/statusService', () => ({
   statusService: { getUpcomingStatusesByUserUserId: mocked.getUpcoming },
 }));
@@ -30,7 +30,7 @@ describe('/today page days', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-09-26T10:00:00Z'));
     mocked.requirePageUserId.mockReset().mockResolvedValue('viewer');
-    mocked.getAllUsers.mockReset().mockResolvedValue([]);
+    mocked.getWeekOverview.mockReset().mockResolvedValue([]);
     mocked.getUpcoming.mockReset().mockResolvedValue([]);
     mocked.listPinnedIds.mockReset().mockResolvedValue([]);
     mocked.cookies.mockReset().mockResolvedValue({ get: () => undefined });
@@ -46,7 +46,7 @@ describe('/today page days', () => {
       vi.setSystemTime(new Date(now));
       const element = await WeekPage({ searchParams: Promise.resolve({}) });
 
-      expect(mocked.getAllUsers).toHaveBeenCalledWith(false, ['2026-09-26']);
+      expect(mocked.getWeekOverview).toHaveBeenCalledWith(['2026-09-26']);
       expect(element.props).toEqual(
         expect.objectContaining({ days: ['2026-09-26'], today: '2026-09-26' })
       );
@@ -56,7 +56,7 @@ describe('/today page days', () => {
   it('keeps five days for an explicit week query', async () => {
     await WeekPage({ searchParams: Promise.resolve({ week: '2026-09-21' }) });
 
-    expect(mocked.getAllUsers).toHaveBeenCalledWith(false, [
+    expect(mocked.getWeekOverview).toHaveBeenCalledWith([
       '2026-09-21',
       '2026-09-22',
       '2026-09-23',
@@ -74,7 +74,7 @@ describe('/today page days', () => {
       const first = await WeekPage(props);
       const reloaded = await WeekPage(props);
 
-      expect(mocked.getAllUsers).toHaveBeenCalledWith(false, [day]);
+      expect(mocked.getWeekOverview).toHaveBeenCalledWith([day]);
       expect(first.props).toEqual(
         expect.objectContaining({ days: [day], day, today: '2026-10-14' })
       );
@@ -89,7 +89,7 @@ describe('/today page days', () => {
     async (day) => {
       const element = await WeekPage({ searchParams: Promise.resolve({ day }) });
 
-      expect(mocked.getAllUsers).toHaveBeenCalledWith(false, ['2026-09-26']);
+      expect(mocked.getWeekOverview).toHaveBeenCalledWith(['2026-09-26']);
       expect(element.props.days).toEqual(['2026-09-26']);
     }
   );

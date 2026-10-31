@@ -1,3 +1,4 @@
+import { invalidateWeekOverview } from './weekOverviewCache';
 import { NewUser, Status, UserWithExtras } from '@/db/types';
 import { db } from '@/db';
 import {
@@ -14,9 +15,8 @@ import { statusService } from './statusService';
 import { resolvePresenceStatus } from '@/lib/status/active';
 import { resolveWorkWeek } from '@/lib/status/week';
 const invalidateUserCache = (userId: string) => {
-  // Kept as a compatibility hook for callers; reads are intentionally uncached
-  // because timed statuses can become active or expire without a write event.
   void userId;
+  invalidateWeekOverview();
 };
 
 export const userService = {
@@ -224,6 +224,7 @@ export const userService = {
       throw new Error('User already exists');
     }
     const createdUser = await db.insert(users).values(user).returning();
+    if (createdUser.length) invalidateWeekOverview();
     return createdUser[0];
   },
 
@@ -283,6 +284,7 @@ export const userService = {
     await db.delete(status).where(eq(status.userID, userId));
     // Finally, delete the user
     await db.delete(users).where(eq(users.userId, userId));
+    invalidateUserCache(userId);
     return { userId, deleted: true };
   },
 

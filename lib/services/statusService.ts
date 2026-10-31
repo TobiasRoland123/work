@@ -1,3 +1,4 @@
+import { invalidateWeekOverview } from './weekOverviewCache';
 import { NewStatus } from '@/db/types';
 import { slackMessages, status, statusCorrections } from '@/db/schema';
 import { db } from '@/db';
@@ -44,6 +45,7 @@ export const statusService = {
       .insert(status)
       .values({ ...newStatus, announcedAt: new Date() })
       .returning();
+    if (createdStatus.length) invalidateWeekOverview();
     if (supabase) {
       await supabase.channel('status-sync').send({
         type: 'broadcast',
@@ -150,6 +152,7 @@ export const statusService = {
         .where(eq(statusCorrections.id, recordId));
       return { duplicate: !created, changed: true };
     });
+    if (result.changed) invalidateWeekOverview();
     if (result.changed && supabase) {
       await supabase.channel('status-sync').send({
         type: 'broadcast',
@@ -167,6 +170,7 @@ export const statusService = {
       .set(updatedStatus)
       .where(eq(status.userID, userID))
       .returning();
+    if (updated.length) invalidateWeekOverview();
     if (supabase) {
       await supabase.channel('status-sync').send({
         type: 'broadcast',
@@ -180,6 +184,7 @@ export const statusService = {
   // DELETE METHOD
   async deleteStatusById(id: number) {
     const deleted = await db.delete(status).where(eq(status.id, id)).returning();
+    if (deleted.length) invalidateWeekOverview();
     if (supabase) {
       await supabase.channel('status-sync').send({
         type: 'broadcast',
@@ -192,6 +197,7 @@ export const statusService = {
 
   async deleteStatusByUserUserId(userId: string) {
     const deleted = await db.delete(status).where(eq(status.userID, userId)).returning();
+    if (deleted.length) invalidateWeekOverview();
     if (supabase) {
       await supabase.channel('status-sync').send({
         type: 'broadcast',
