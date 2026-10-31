@@ -18,10 +18,7 @@ const rows = [
   { name: 'w-24', role: 'w-24', segments: [1, 4] },
 ];
 
-const panelGroups = [
-  { heading: 'w-20', people: ['w-28', 'w-36', 'w-24', 'w-32'] },
-  { heading: 'w-24', people: ['w-32', 'w-20'] },
-];
+const panelGroups = [{ heading: 'w-20', people: ['w-28', 'w-36', 'w-24', 'w-32', 'w-20'] }];
 
 /** Placeholder for WeekOverview while the week's attendance loads. */
 export function WeekOverviewSkeleton() {
@@ -138,14 +135,13 @@ export function WeekOverviewSkeleton() {
                 <ul>
                   {group.people.map((name, person) => (
                     <li key={person} className="flex items-center gap-[10px] px-[6px] py-[7px]">
-                      <Skeleton className="size-7 shrink-0 rounded-full" />
+                      <Skeleton className="size-8 shrink-0 rounded-full" />
                       <span className="day-panel-person">
                         <SkeletonText className={name} />
                         <small>
                           <SkeletonText className="w-16" />
                         </small>
                       </span>
-                      <Skeleton className="size-[9px] shrink-0 rounded-full" />
                     </li>
                   ))}
                 </ul>

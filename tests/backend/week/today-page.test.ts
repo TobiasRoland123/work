@@ -5,6 +5,8 @@ const mocked = vi.hoisted(() => ({
   requirePageUserId: vi.fn(),
   getAllUsers: vi.fn(),
   getUpcoming: vi.fn(),
+  listPinnedIds: vi.fn(),
+  cookies: vi.fn(),
 }));
 
 vi.mock('@/lib/auth/require-user', () => ({ requirePageUserId: mocked.requirePageUserId }));
@@ -12,6 +14,10 @@ vi.mock('@/lib/services/userService', () => ({ userService: { getAllUsers: mocke
 vi.mock('@/lib/services/statusService', () => ({
   statusService: { getUpcomingStatusesByUserUserId: mocked.getUpcoming },
 }));
+vi.mock('@/lib/services/pinService', () => ({
+  pinService: { listPinnedIds: mocked.listPinnedIds },
+}));
+vi.mock('next/headers', () => ({ cookies: mocked.cookies }));
 vi.mock('@/app/(authenticated)/today/WeekOverviewWrapper', () => ({
   WeekOverviewWrapper: () => null,
 }));
@@ -26,6 +32,8 @@ describe('/today page days', () => {
     mocked.requirePageUserId.mockReset().mockResolvedValue('viewer');
     mocked.getAllUsers.mockReset().mockResolvedValue([]);
     mocked.getUpcoming.mockReset().mockResolvedValue([]);
+    mocked.listPinnedIds.mockReset().mockResolvedValue([]);
+    mocked.cookies.mockReset().mockResolvedValue({ get: () => undefined });
   });
   afterEach(() => {
     vi.useRealTimers();
@@ -85,6 +93,26 @@ describe('/today page days', () => {
       expect(element.props.days).toEqual(['2026-09-26']);
     }
   );
+
+  it('loads the signed-in person’s pinned colleagues for the board', async () => {
+    mocked.listPinnedIds.mockResolvedValue(['marie', 'peter']);
+
+    const element = await WeekPage({ searchParams: Promise.resolve({}) });
+
+    expect(mocked.listPinnedIds).toHaveBeenCalledWith('viewer');
+    expect(element.props.initialPinnedIds).toEqual(['marie', 'peter']);
+  });
+
+  it('opens the side panel unless the visitor closed it', async () => {
+    const open = await WeekPage({ searchParams: Promise.resolve({}) });
+    expect(open.props.initialPanelOpen).toBe(true);
+
+    mocked.cookies.mockResolvedValue({
+      get: (name: string) => (name === 'week-panel' ? { value: 'closed' } : undefined),
+    });
+    const closed = await WeekPage({ searchParams: Promise.resolve({}) });
+    expect(closed.props.initialPanelOpen).toBe(false);
+  });
 
   it('keeps week mode when both query parameters are present', async () => {
     const element = await WeekPage({

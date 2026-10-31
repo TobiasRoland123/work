@@ -35,10 +35,11 @@ const makeStatus = (userID: string, value: Status['status'], date = days[1]): St
 type PersonInput = {
   userId: string;
   status?: Status | null;
+  organisationRoles?: string[];
   week: { date: string; status: Status | null }[];
 };
 
-function renderAttendance(people: PersonInput[], userId = 'anna') {
+function renderAttendance(people: PersonInput[], userId = 'anna', pinnedIds: string[] = []) {
   const html = renderToStaticMarkup(
     React.createElement(WeekOverview, {
       profiles: people.map((person) => ({
@@ -55,6 +56,8 @@ function renderAttendance(people: PersonInput[], userId = 'anna') {
       arrival: null,
       syncError: false,
       plans: [],
+      pinnedIds,
+      onPinChange: vi.fn(),
       onStatusSaved: vi.fn(),
     })
   );
@@ -90,7 +93,7 @@ function gridGroup(grid: string, label: string) {
 function sidebarGroups(sidebar: string) {
   return [
     ...sidebar.matchAll(
-      /<section class="day-panel-group" aria-label="([^"]+)">([\s\S]*?)<\/section>/g
+      /<section class="day-panel-group day-panel-pins" aria-label="([^"]+)">([\s\S]*?)<\/section>/g
     ),
   ];
 }
@@ -116,17 +119,15 @@ describe('attendance groups', () => {
       expect(group).toContain('aria-expanded="true"');
       expect(group).toContain(`${label} <span>1 shown</span>`);
       expect(group).toContain(`${userId[0].toUpperCase()}${userId.slice(1)} Person`);
-      const sidebarGroup = sidebarGroups(sidebar).find((match) => match[1] === label)?.[2] ?? '';
-      expect(sidebarGroup).toContain('aria-expanded="true"');
-      expect(sidebarGroup).toContain(`${label} <span>1</span></button></h3>`);
-      expect(sidebarGroup).toContain(`${userId[0].toUpperCase()}${userId.slice(1)} Person`);
+      expect(sidebar).not.toContain(`${userId[0].toUpperCase()}${userId.slice(1)} Person`);
     }
     expect(gridGroups(grid)).toHaveLength(5);
-    expect(sidebarGroups(sidebar)).toHaveLength(5);
+    expect(sidebarGroups(sidebar).map((match) => match[1])).toEqual(['Pinned colleagues']);
+    expect(sidebar).toContain('Pin the colleagues you work with most');
   });
 
   it('preserves directory order and pins the signed-in person first inside a group', () => {
-    const { grid, sidebar } = renderAttendance(
+    const { grid } = renderAttendance(
       ['zoe', 'ben', 'anna', 'cara'].map((userId) => ({
         userId,
         status: null,
@@ -141,11 +142,19 @@ describe('attendance groups', () => {
     for (const name of ['Anna', 'Zoe', 'Ben', 'Cara']) {
       expect(home.match(new RegExp(`${name} Person`, 'g'))).toHaveLength(1);
     }
-    const sidebarHome = sidebarGroups(sidebar).find((match) => match[1] === 'Home')?.[2] ?? '';
-    expect(sidebarHome).toContain('Home <span>4</span>');
-    for (const name of ['Anna', 'Zoe', 'Ben', 'Cara']) {
-      expect(sidebarHome.match(new RegExp(`${name} Person`, 'g'))).toHaveLength(1);
-    }
+  });
+
+  it('leaves colleagues out of the sidebar unless they are pinned', () => {
+    const { grid, sidebar } = renderAttendance([
+      { userId: 'zoe', week: [daily('zoe', 'IN_OFFICE')] },
+      { userId: 'cara', week: [daily('cara', 'FROM_HOME')] },
+      { userId: 'anna', week: [daily('anna', 'IN_OFFICE')] },
+    ]);
+
+    expect(sidebar).not.toContain('Zoe Person');
+    expect(sidebar).not.toContain('Cara Person');
+    expect(sidebar).toContain('Pinned <span>0</span>');
+    expect(grid).toContain('Cara Person');
   });
 
   it('keeps Note distinct from No status and omits empty groups', () => {
@@ -160,9 +169,7 @@ describe('attendance groups', () => {
     expect(grid).toContain('aria-label="Note"');
     expect(grid).toContain('aria-label="No status"');
     expect(grid).not.toContain('aria-label="Home"');
-    expect(sidebar).toContain('aria-label="Note"');
-    expect(sidebar).not.toContain('aria-label="No status"');
-    expect(sidebar).not.toContain('aria-label="Home"');
+    expect(sidebarGroups(sidebar).map((match) => match[1])).toEqual(['Pinned colleagues']);
     expect(grid).toContain('Note <span>1 shown</span>');
     expect(grid).toContain('No status <span>1 shown</span>');
   });
@@ -184,8 +191,8 @@ describe('attendance groups', () => {
     expect(gridGroup(grid, 'Home')).not.toContain('Ben Person');
     expect(gridGroup(grid, 'Sick')).toContain('Ben Person');
     expect(gridGroup(grid, 'Sick')).not.toContain('Anna Person');
-    expect(sidebar).toContain('aria-label="Home"');
-    expect(sidebar).toContain('aria-label="Sick"');
+    expect(sidebar).not.toContain('Anna Person');
+    expect(sidebar).not.toContain('Ben Person');
   });
 
   it('keeps week-wide exceptions visible in the selected-day In office or No status group', () => {
@@ -219,7 +226,100 @@ describe('attendance groups', () => {
     expect(gridGroup(grid, 'No status')).toContain('Unknown Person');
     expect(sidebar).not.toContain('Office Person');
     expect(sidebar).not.toContain('Unknown Person');
-    expect(sidebar).not.toContain('aria-label="In office"');
-    expect(sidebar).not.toContain('aria-label="No status"');
+  });
+});
+
+describe('pinned colleagues in the sidebar', () => {
+  const plain = (html: string) => html.replace(/<span aria-hidden="true">[^<]* <\/span>/gu, '');
+  const people = (): PersonInput[] => [
+    { userId: 'anna', week: [daily('anna', 'IN_OFFICE')] },
+    { userId: 'ben', week: [daily('ben', 'FROM_HOME')] },
+    {
+      userId: 'cara',
+      week: [
+        {
+          date: days[1],
+          status: { ...makeStatus('cara', 'IN_LATE'), time: new Date('2026-09-22T08:00:00Z') },
+        },
+      ],
+    },
+    { userId: 'dan', week: [daily('dan', 'SICK')] },
+    { userId: 'zoe', week: [daily('zoe', 'IN_OFFICE')], organisationRoles: ['Designer'] },
+    { userId: 'eli', week: [daily('eli', 'IN_OFFICE')] },
+  ];
+
+  it('lists pinned colleagues with in-office people first, then by pin order', () => {
+    const { sidebar } = renderAttendance(people(), 'anna', ['dan', 'ben', 'cara', 'zoe']);
+    const text = plain(sidebar);
+
+    expect(text).toContain('Pinned <span>4</span>');
+    const order = ['Zoe', 'Cara', 'Ben', 'Dan'].map((name) => text.indexOf(`${name} Person`));
+    expect(order.every((position) => position > -1)).toBe(true);
+    expect(order).toEqual([...order].sort((a, b) => a - b));
+    expect(text).not.toContain('Eli Person');
+    expect(text).toContain('<small>In office</small>');
+    expect(text).toContain('<small>In late · from 10:00</small>');
+    expect(text).toContain('<small>Home</small>');
+    expect(text).toContain('<small>Sick</small>');
+  });
+
+  it('shows how many pinned colleagues are in and who is arriving later', () => {
+    const { sidebar } = renderAttendance(people(), 'anna', ['zoe', 'cara', 'ben', 'dan']);
+    expect(sidebar).toContain('1 of 4 in the office · 1 arriving later');
+  });
+
+  it('omits the arriving note when nobody is late', () => {
+    const { sidebar } = renderAttendance(people(), 'anna', ['zoe', 'ben']);
+    expect(sidebar).toContain('1 of 2 in the office');
+    expect(sidebar).not.toContain('arriving later');
+  });
+
+  it('offers editing only once something is pinned', () => {
+    const empty = renderAttendance(people(), 'anna', []).sidebar;
+    const filled = renderAttendance(people(), 'anna', ['zoe']).sidebar;
+
+    expect(empty).not.toContain('>Edit<');
+    expect(empty).not.toContain('in the office ·');
+    expect(filled).toContain('aria-pressed="false">Edit</button>');
+    expect(filled).not.toContain('aria-label="Unpin');
+    expect(filled).toContain('Add a colleague…');
+  });
+
+  it('ignores pins for people who are no longer in the directory or are the viewer', () => {
+    const { sidebar } = renderAttendance(people(), 'anna', ['gone', 'anna', 'zoe']);
+
+    expect(sidebar).toContain('Pinned <span>1</span>');
+    expect(sidebar).toContain('Zoe Person');
+    expect(sidebar).not.toContain('Anna Person');
+  });
+
+  it('shows the status on the selected day, not on other days', () => {
+    const { sidebar } = renderAttendance(
+      [
+        { userId: 'anna', week: [daily('anna', 'IN_OFFICE')] },
+        { userId: 'ben', week: [daily('ben', 'VACATION'), daily('ben', 'IN_OFFICE', days[2])] },
+      ],
+      'anna',
+      ['ben']
+    );
+
+    expect(plain(sidebar)).toContain('<small>Vacation</small>');
+    expect(sidebar).toContain('0 of 1 in the office');
+  });
+
+  it('keeps a colleague with no status on the day at the end', () => {
+    const { sidebar } = renderAttendance(
+      [
+        { userId: 'anna', week: [daily('anna', 'IN_OFFICE')] },
+        { userId: 'ben', week: [{ date: days[1], status: null }] },
+        { userId: 'cara', week: [daily('cara', 'SICK')] },
+      ],
+      'anna',
+      ['ben', 'cara']
+    );
+    const text = plain(sidebar);
+
+    expect(text.indexOf('Cara Person')).toBeLessThan(text.indexOf('Ben Person'));
+    expect(text).toContain('<small>No status</small>');
   });
 });

@@ -35,6 +35,12 @@ Declarations with exactly that wording were read the same way. Its dates resolve
 new Declaration's own time. A correction or a conflicting reading blocks it for good.
 _Avoid_: Learned rule, cached answer, alias
 
+**Pinned Colleague**:
+A colleague one person has chosen to keep an eye on in the Week page side panel. Private
+to the person who pinned them, stored per person, never a symmetric relationship, and
+never pinning yourself.
+_Avoid_: Favourite, follow, watchlist, buddy
+
 ### Local Sandbox
 
 The Local Sandbox replaces the Slack workspace during local development. It runs only
