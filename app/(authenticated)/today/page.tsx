@@ -1,6 +1,7 @@
 import { requirePageUserId } from '@/lib/auth/require-user';
 import { userService } from '@/lib/services/userService';
 import { statusService } from '@/lib/services/statusService';
+import { pinService } from '@/lib/services/pinService';
 import { copenhagenDate } from '@/lib/status/active';
 import { parseDay, parseWorkWeekStart, workWeekDays, workWeekStart } from '@/lib/status/week';
 import { WeekOverviewWrapper } from './WeekOverviewWrapper';
@@ -17,9 +18,10 @@ export default async function WeekPage({
   const day = !week && requestedDay ? parseDay(requestedDay, now) : undefined;
   const weekStart = week ? parseWorkWeekStart(week, now) : workWeekStart(day ?? today);
   const days = week ? workWeekDays(weekStart) : [day ?? today];
-  const [users, plans] = await Promise.all([
+  const [users, plans, pinnedIds] = await Promise.all([
     userService.getAllUsers(false, days),
     statusService.getUpcomingStatusesByUserUserId(userId),
+    pinService.listPinnedIds(userId),
   ]);
 
   return (
@@ -33,6 +35,7 @@ export default async function WeekPage({
       day={day}
       today={today}
       initialPlans={plans}
+      initialPinnedIds={pinnedIds}
     />
   );
 }

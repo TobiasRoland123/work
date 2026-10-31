@@ -69,7 +69,7 @@ function person(
   };
 }
 
-function render(days: string[], selectedDate = days[0]) {
+function render(days: string[], selectedDate = days[0], pinnedIds: string[] = []) {
   const allDates = [...new Set([...days, today])];
   const profiles = [
     person('anna', 'Anna', allDates, [today]),
@@ -86,6 +86,8 @@ function render(days: string[], selectedDate = days[0]) {
       arrival: null,
       syncError: false,
       plans: [],
+      pinnedIds,
+      onPinChange: vi.fn(),
       onStatusSaved: vi.fn(),
     })
   );
@@ -143,18 +145,19 @@ describe('date navigation in WeekOverview', () => {
   });
 
   it('uses the selected historical date for the title, subtitle, grid, counts, and panel', () => {
-    const html = render(['2026-10-13']);
+    const html = render(['2026-10-13'], '2026-10-13', ['ben']);
     expect(html).toContain('<h1>Tuesday</h1>');
     expect(html).toContain('Tuesday, 13 October 2026');
     expect(viewLinksOf(html)).toContain('aria-current="page" href="/today">Today</a>');
     expect(html).not.toContain('<em>Today</em>');
     expect(html).toContain('<strong>1</strong> in office');
     expect(html).toContain('<strong>1</strong> of 2 in the office');
-    expect(html).toContain('Who is where on Tuesday');
+    expect(html).toContain('Who is in the office on Tuesday');
     expect(html).toContain('Earlier');
     expect(html).toContain('Anna Colleague');
     expect(html).toContain('<strong><span aria-hidden="true">🏠 </span>Home</strong>');
-    expect(html).not.toContain('<span>Ben Colleague</span>');
+    expect(html).toContain('<span>Ben Colleague</span>');
+    expect(html).not.toContain('<span>Anna Colleague</span>');
   });
 
   it('keeps week navigation at seven days and the Today link at /today', () => {

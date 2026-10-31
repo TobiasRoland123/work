@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, type CSSProperties } from 'react';
-import Image from 'next/image';
 import Link from 'next/link';
 import * as Dialog from '@radix-ui/react-dialog';
 import {
@@ -21,14 +20,12 @@ import { AIIndicator } from '@/components/ui/Status/AIIndicator';
 import { ProfileListItem } from '@/components/ui/ProfileListItem/ProfileListItem';
 import { StatusEmoji } from '@/components/ui/Status/StatusEmoji';
 import { deleteStatusByIdAction } from '@/app/actions/statusActions';
-import { getSlackImageUrl } from '@/lib/slack/image';
 import type { UpcomingStatus } from '@/lib/status/plan';
 import { addDays, formatDay, isoWeekNumber, shiftWorkWeek } from '@/lib/status/week';
 import {
   dayAnnouncement,
   dayNote,
   groupAttendance,
-  initials,
   isAssumed,
   personName,
   presenceOf,
@@ -36,6 +33,8 @@ import {
   segmentWeek,
   type Segment,
 } from './presence';
+import { Avatar } from './Avatar';
+import { PinnedColleagues } from './PinnedColleagues';
 import { StatusCorrection } from './StatusCorrection';
 import './week.css';
 
@@ -57,19 +56,6 @@ function weekRange(days: readonly string[]) {
   const last = days[days.length - 1];
   const sameMonth = first.slice(0, 7) === last.slice(0, 7);
   return `${formatDay(first, sameMonth ? { day: 'numeric' } : { day: 'numeric', month: 'short' })}–${formatDay(last, { day: 'numeric', month: 'long', year: 'numeric' })}`;
-}
-
-function Avatar({ person, size = 32 }: { person: UserWithExtras; size?: number }) {
-  const picture = getSlackImageUrl(person.profilePicture);
-  return (
-    <span className="week-avatar" style={{ width: size, height: size }} aria-hidden="true">
-      {picture ? (
-        <Image src={picture} alt="" width={size} height={size} unoptimized />
-      ) : (
-        initials(person)
-      )}
-    </span>
-  );
 }
 
 function WeekCell({
@@ -347,6 +333,8 @@ export function WeekOverview({
   arrival,
   syncError,
   plans,
+  pinnedIds,
+  onPinChange,
   onStatusSaved,
 }: {
   profiles: UserWithExtras[];
@@ -358,6 +346,9 @@ export function WeekOverview({
   arrival: string | null;
   syncError: boolean;
   plans: UpcomingStatus[];
+  /** Colleagues the signed-in person pinned, in the order they were pinned. */
+  pinnedIds: string[];
+  onPinChange: (colleagueUserId: string, pinned: boolean) => void;
   onStatusSaved: () => void;
 }) {
   const todayOnly = days.length === 1;
@@ -367,19 +358,18 @@ export function WeekOverview({
   const [planDays, setPlanDays] = useState<string[] | null>(null);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => new Set());
 
-  // A triple click applies the clicked group's toggled state to every group in that list.
-  const toggleGroup = (list: 'table' | 'sidebar', key: string, clicks: number) => {
-    const id = `${list}-${key}`;
+  // A triple click applies the clicked group's toggled state to every group.
+  const toggleGroup = (key: string, clicks: number) => {
     setCollapsedGroups((current) => {
       const next = new Set(current);
       if (clicks === 3) {
-        const collapse = !current.has(id);
+        const collapse = !current.has(key);
         for (const group of groups) {
-          if (collapse) next.add(`${list}-${group.key}`);
-          else next.delete(`${list}-${group.key}`);
+          if (collapse) next.add(group.key);
+          else next.delete(group.key);
         }
-      } else if (next.has(id)) next.delete(id);
-      else next.add(id);
+      } else if (next.has(key)) next.delete(key);
+      else next.add(key);
       return next;
     });
   };
@@ -431,6 +421,7 @@ export function WeekOverview({
     return searchable.includes(needle) && days.some((_, index) => hasExceptionOn(person, index));
   });
   const groups = groupAttendance(visible, days[dayIndex]);
+  const colleagues = people.filter((person) => person.userId !== userId);
 
   return (
     <div className="week-page">
@@ -564,15 +555,14 @@ export function WeekOverview({
                       <button
                         type="button"
                         className="week-group-toggle"
-                        aria-expanded={!collapsedGroups.has(`table-${key}`)}
-                        onClick={(event) => toggleGroup('table', key, event.detail)}
+                        aria-expanded={!collapsedGroups.has(key)}
+                        onClick={(event) => toggleGroup(key, event.detail)}
                       >
                         <ChevronDown size={16} className="group-chevron" aria-hidden="true" />
                         <i className="tone-dot tone" data-tone={tone} aria-hidden="true" />
                         {label}{' '}
                         <span>
-                          {members.length}{' '}
-                          {collapsedGroups.has(`table-${key}`) ? 'hidden' : 'shown'}
+                          {members.length} {collapsedGroups.has(key) ? 'hidden' : 'shown'}
                         </span>
                       </button>
                     </h2>
@@ -581,7 +571,7 @@ export function WeekOverview({
                 <div
                   role="none"
                   className="group-collapse"
-                  data-collapsed={collapsedGroups.has(`table-${key}`) || undefined}
+                  data-collapsed={collapsedGroups.has(key) || undefined}
                 >
                   <div role="none">
                     {members.map((person) => (
@@ -642,7 +632,7 @@ export function WeekOverview({
         </main>
         <aside
           className="day-panel"
-          aria-label={`Who is where on ${formatDay(selectedDay, { weekday: 'long' })}`}
+          aria-label={`Who is in the office on ${formatDay(selectedDay, { weekday: 'long' })}`}
         >
           <div className="day-panel-inner">
             <header className="day-panel-header">
@@ -664,58 +654,13 @@ export function WeekOverview({
                 {arrival}
               </p>
             )}
-            {groups.map(({ key, label, members: groupMembers }) => {
-              const members = groupMembers.filter((person) => hasExceptionOn(person, dayIndex));
-              if (!members.length) return null;
-              return (
-                <section key={key} className="day-panel-group" aria-label={label}>
-                  <h3>
-                    <button
-                      type="button"
-                      aria-expanded={!collapsedGroups.has(`sidebar-${key}`)}
-                      onClick={(event) => toggleGroup('sidebar', key, event.detail)}
-                    >
-                      <ChevronDown size={16} className="group-chevron" aria-hidden="true" />
-                      {label} <span>{members.length}</span>
-                    </button>
-                  </h3>
-                  <div
-                    className="group-collapse"
-                    data-collapsed={collapsedGroups.has(`sidebar-${key}`) || undefined}
-                  >
-                    <ul>
-                      {members.map((person) => {
-                        const status = statusOn(person, dayIndex);
-                        const { label: statusLabel, tone } = presenceOf(status);
-                        const note = dayNote(status);
-                        const detail = [statusLabel, note].filter(Boolean).join(' · ');
-                        return (
-                          <li key={person.userId}>
-                            <button onClick={() => setOpenId(person.userId)}>
-                              <Avatar person={person} size={28} />
-                              <span className="day-panel-person">
-                                <span>{personName(person)}</span>
-                                {detail && (
-                                  <small>
-                                    <StatusEmoji
-                                      status={status?.status ?? null}
-                                      emoji={status?.emoji}
-                                      details={status?.details}
-                                    />
-                                    {detail}
-                                  </small>
-                                )}
-                              </span>
-                              <i className="tone-dot tone" data-tone={tone} aria-hidden="true" />
-                            </button>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  </div>
-                </section>
-              );
-            })}
+            <PinnedColleagues
+              people={colleagues}
+              pinnedIds={pinnedIds}
+              day={days[dayIndex]}
+              onOpen={setOpenId}
+              onPinChange={onPinChange}
+            />
           </div>
         </aside>
       </div>

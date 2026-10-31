@@ -3,6 +3,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import type { UserWithExtras } from '@/db/types';
 import { getWeekOverviewAction } from '@/app/actions/userActions';
 import { getMyUpcomingStatusesAction } from '@/app/actions/statusActions';
+import { pinColleagueAction, unpinColleagueAction } from '@/app/actions/pinActions';
+import { toast } from 'sonner';
 import { supabase } from '@/lib/supabaseClient';
 import { copenhagenDate } from '@/lib/status/active';
 import { workWeekStart } from '@/lib/status/week';
@@ -19,6 +21,7 @@ export const WeekOverviewWrapper = ({
   day,
   today: initialToday,
   initialPlans,
+  initialPinnedIds,
 }: {
   initialProfiles: UserWithExtras[];
   userId: string;
@@ -28,10 +31,12 @@ export const WeekOverviewWrapper = ({
   day?: string;
   today: string;
   initialPlans: UpcomingStatus[];
+  initialPinnedIds: string[];
 }) => {
   const todayOnly = days.length === 1;
   const [profiles, setProfiles] = useState(initialProfiles);
   const [plans, setPlans] = useState(initialPlans);
+  const [pinnedIds, setPinnedIds] = useState(initialPinnedIds);
   const [today, setToday] = useState(initialToday);
   const [arrival, setArrival] = useState<string | null>(null);
   const [syncError, setSyncError] = useState(false);
@@ -71,6 +76,22 @@ export const WeekOverviewWrapper = ({
     }
   }, [weekStart, todayOnly, day]);
 
+  // Pins change instantly and roll back when the server refuses them. They are not polled, so
+  // the list cannot flicker back to an older state while a change is on its way.
+  const changePin = useCallback(async (colleagueUserId: string, pinned: boolean) => {
+    const add = (ids: string[]) =>
+      ids.includes(colleagueUserId) ? ids : [...ids, colleagueUserId];
+    const remove = (ids: string[]) => ids.filter((id) => id !== colleagueUserId);
+    setPinnedIds(pinned ? add : remove);
+    try {
+      const result = await (pinned ? pinColleagueAction : unpinColleagueAction)(colleagueUserId);
+      if (!result.ok) throw new Error(result.error);
+    } catch (error) {
+      setPinnedIds(pinned ? remove : add);
+      toast(error instanceof Error ? error.message : 'Could not update your pinned colleagues 🚫');
+    }
+  }, []);
+
   // Synchronize server attendance with broadcasts, the clock, and browser visibility.
   useEffect(() => {
     mounted.current = true;
@@ -103,6 +124,8 @@ export const WeekOverviewWrapper = ({
       arrival={arrival}
       syncError={syncError}
       plans={plans}
+      pinnedIds={pinnedIds}
+      onPinChange={(id, pinned) => void changePin(id, pinned)}
       onStatusSaved={() => void refetchProfiles()}
     />
   );

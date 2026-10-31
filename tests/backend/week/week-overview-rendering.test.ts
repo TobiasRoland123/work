@@ -63,6 +63,8 @@ function renderWeek(selectedStatus: Status | null) {
       arrival: null,
       syncError: false,
       plans: [],
+      pinnedIds: [],
+      onPinChange: vi.fn(),
       onStatusSaved: vi.fn(),
     })
   );
@@ -101,6 +103,8 @@ function renderToday(
       arrival: null,
       syncError: false,
       plans: [],
+      pinnedIds: [],
+      onPinChange: vi.fn(),
       onStatusSaved: vi.fn(),
     })
   );
@@ -112,7 +116,7 @@ function renderToday(
   };
 }
 
-describe('status labels in the week grid and selected-day sidebar', () => {
+describe('status labels in the week grid and the sidebar', () => {
   it.each(['FROM_HOME', 'IN_LATE', null] as const)(
     'marks an imported %s announcement only in the grid',
     (value) => {
@@ -153,15 +157,17 @@ describe('status labels in the week grid and selected-day sidebar', () => {
     ['VACATION', 'Vacation'],
     ['ON_LEAVE', 'On leave'],
     ['AWAY', 'Away'],
-  ] as const)('displays %s in both areas', (value, label) => {
+  ] as const)('displays %s in the grid and keeps it out of the sidebar', (value, label) => {
     const { grid, sidebar } = renderWeek(status({ status: value }));
     expect(grid).toContain(`<strong>${label}</strong>`);
-    expect(sidebar).toContain(`<small>${label}</small>`);
+    expect(sidebar).not.toContain('Anna Attendee');
+    expect(sidebar).not.toContain(label);
   });
 
-  it.each([0, 7])('omits office attendance with id %s from both areas', (id) => {
+  it.each([0, 7])('keeps office attendance with id %s out of the grid but counts it', (id) => {
     const { grid, sidebar } = renderWeek(status({ id }));
     expect(grid).not.toContain('Anna Attendee');
+    expect(sidebar).toContain('<strong>1</strong> of 1 in the office');
     expect(sidebar).not.toContain('Anna Attendee');
   });
 
@@ -180,7 +186,7 @@ describe('status labels in the week grid and selected-day sidebar', () => {
       const label = value === 'IN_LATE' ? 'In late' : 'Leaving early';
       const note = value === 'IN_LATE' ? 'from 10:30' : 'until 10:30';
       expect(grid).toContain(`<strong>${label}</strong><small>${note} · dentist</small>`);
-      expect(sidebar).toContain(`<small>${label} · ${note} · dentist</small>`);
+      expect(sidebar).not.toContain('dentist');
     }
   );
 
@@ -213,6 +219,8 @@ describe('status labels in the week grid and selected-day sidebar', () => {
         arrival: null,
         syncError: false,
         plans: [],
+        pinnedIds: [],
+        onPinChange: vi.fn(),
         onStatusSaved: vi.fn(),
       })
     );
@@ -224,18 +232,18 @@ describe('status labels in the week grid and selected-day sidebar', () => {
 
   it('groups late arrivals and early departures separately', () => {
     const late = renderWeek(status({ status: 'IN_LATE' }));
-    expect(late.sidebar).toContain('aria-label="In late"');
-    expect(late.sidebar).not.toContain('aria-label="Leaving early"');
+    expect(late.grid).toContain('aria-label="In late"');
+    expect(late.grid).not.toContain('aria-label="Leaving early"');
 
     const early = renderWeek(status({ status: 'LEAVING_EARLY' }));
-    expect(early.sidebar).toContain('aria-label="Leaving early"');
-    expect(early.sidebar).not.toContain('aria-label="In late"');
+    expect(early.grid).toContain('aria-label="Leaving early"');
+    expect(early.grid).not.toContain('aria-label="In late"');
   });
 
-  it('retains description-only announcements in both areas', () => {
+  it('retains description-only announcements in the grid', () => {
     const { grid, sidebar } = renderWeek(status({ status: null, details: 'At a workshop' }));
     expect(grid).toContain('<strong>Note</strong><small>At a workshop</small>');
-    expect(sidebar).toContain('<small>Note · At a workshop</small>');
+    expect(sidebar).not.toContain('At a workshop');
   });
 });
 
@@ -256,7 +264,7 @@ describe('attendance view links', () => {
     expect(todayLinks).toContain(`href="/today?week=${days[0]}"`);
   });
 
-  it('includes people with an exception on any week day but limits the sidebar to today', () => {
+  it('includes people with an exception on any week day and shows only pinned colleagues in the sidebar', () => {
     const tomorrow = days[2];
     const profiles = [
       {
@@ -296,6 +304,8 @@ describe('attendance view links', () => {
         arrival: null,
         syncError: false,
         plans: [],
+        pinnedIds: ['ben'],
+        onPinChange: vi.fn(),
         onStatusSaved: vi.fn(),
       })
     );
@@ -305,7 +315,10 @@ describe('attendance view links', () => {
     expect(grid).toContain('<strong>Vacation</strong>');
     expect(grid).not.toContain('Ben Office');
     expect(sidebar).not.toContain('Anna Attendee');
-    expect(sidebar).not.toContain('Ben Office');
+    expect(sidebar).toContain('Ben Office');
+    expect(sidebar).toContain('Pinned <span>1</span>');
+    expect(sidebar).toContain('<strong>2</strong> of 2 in the office');
+    expect(sidebar).not.toContain('Vacation');
   });
 
   it('keeps a week row with an exception on another day but omits it from today’s sidebar', () => {
@@ -337,6 +350,8 @@ describe('attendance view links', () => {
         arrival: null,
         syncError: false,
         plans: [],
+        pinnedIds: [],
+        onPinChange: vi.fn(),
         onStatusSaved: vi.fn(),
       })
     );
@@ -356,12 +371,19 @@ describe('today-only attendance', () => {
     expect(grid).toContain('<strong>In late</strong>');
   });
 
-  it('excludes IN_OFFICE from both the grid and sidebar, including assumed attendance', () => {
+  it('keeps IN_OFFICE out of the grid and counts it in the sidebar, including assumed attendance', () => {
     for (const office of [status({ status: 'IN_OFFICE' }), status({ id: 0 })]) {
       const { grid, sidebar } = renderToday(office);
       expect(grid).not.toContain('Anna Attendee');
-      expect(sidebar).not.toContain('Anna Attendee');
+      expect(sidebar).toContain('<strong>1</strong> of 1 in the office');
     }
+  });
+
+  it('invites the viewer to pin colleagues when none are pinned', () => {
+    const { sidebar } = renderToday(status({ status: 'VACATION' }));
+    expect(sidebar).toContain('<strong>0</strong> of 1 in the office');
+    expect(sidebar).toContain('Pinned <span>0</span>');
+    expect(sidebar).toContain('Pin the colleagues you work with most');
   });
 
   it.each([
@@ -376,10 +398,10 @@ describe('today-only attendance', () => {
     status({ status: 'VACATION' }),
     status({ status: 'ON_LEAVE' }),
     status({ status: 'AWAY' }),
-  ])('keeps declared attendance exceptions visible in both areas', (todayStatus) => {
+  ])('shows declared attendance exceptions in the grid, not the sidebar', (todayStatus) => {
     const { grid, sidebar } = renderToday(todayStatus, status({ status: 'IN_OFFICE' }));
     expect(grid).toContain('Anna Attendee');
-    expect(sidebar).toContain('Anna Attendee');
+    expect(sidebar).not.toContain('Anna Attendee');
   });
 
   it('uses the selected date status rather than a different day or the profile status', () => {
@@ -389,7 +411,7 @@ describe('today-only attendance', () => {
     );
     expect(grid).toContain('Anna Attendee');
     expect(grid).toContain('<strong>Vacation</strong>');
-    expect(sidebar).toContain('Anna Attendee');
+    expect(sidebar).not.toContain('Anna Attendee');
   });
 
   it('looks up today by date when the profile still has a full week of statuses', () => {
@@ -405,10 +427,10 @@ describe('today-only attendance', () => {
     expect(grid).toContain('Anna Attendee');
     expect(grid).toContain('<strong>Vacation</strong>');
     expect(grid).not.toContain('<strong>In office</strong>');
-    expect(sidebar).toContain('Vacation');
+    expect(sidebar).not.toContain('Anna Attendee');
   });
 
-  it('excludes missing statuses while retaining an exception and office totals on an earlier day', () => {
+  it('keeps exceptions in the grid and shows pinned colleagues’ status on an earlier day', () => {
     const yesterday = days[0];
     const profiles = [
       {
@@ -480,6 +502,8 @@ describe('today-only attendance', () => {
         arrival: null,
         syncError: false,
         plans: [],
+        pinnedIds: ['cara', 'dan'],
+        onPinChange: vi.fn(),
         onStatusSaved: vi.fn(),
       })
     );
@@ -488,14 +512,16 @@ describe('today-only attendance', () => {
     expect(grid).not.toContain('Anna Missing');
     expect(sidebar).not.toContain('Anna Missing');
     expect(grid).toContain('Ben Leave');
-    expect(sidebar).toContain('Ben Leave');
+    expect(sidebar).not.toContain('Ben Leave');
     expect(grid).not.toContain('Cara Explicit');
-    expect(sidebar).not.toContain('Cara Explicit');
+    expect(sidebar).toContain('Cara Explicit');
     expect(grid).not.toContain('Dan Assumed');
-    expect(sidebar).not.toContain('Dan Assumed');
+    expect(sidebar).toContain('Dan Assumed');
     expect(grid).toContain('Colleagues <span>1</span>');
     expect(grid).toContain('<strong>2</strong> in office');
     expect(sidebar).toContain('<strong>2</strong> of 4 in the office');
+    expect(sidebar).toContain('Pinned <span>2</span>');
+    expect(sidebar).toContain('2 of 2 in the office');
   });
 
   it.each([days[0], days[2]])(
@@ -511,7 +537,7 @@ describe('today-only attendance', () => {
 
       expect(resolved[1].status).toMatchObject({ id: 0, status: 'IN_OFFICE' });
       expect(grid).not.toContain('Anna Attendee');
-      expect(sidebar).not.toContain('Anna Attendee');
+      expect(sidebar).toContain('<strong>1</strong> of 1 in the office');
     }
   );
 
@@ -527,7 +553,7 @@ describe('today-only attendance', () => {
 
     expect(grid).toContain('<small>from 10:00 · doctor</small>');
     expect(grid).not.toContain('until 24.09');
-    expect(sidebar).toContain('In late · from 10:00 · doctor');
+    expect(sidebar).not.toContain('doctor');
     expect(sidebar).not.toContain('until 24.09');
   });
 });
@@ -565,25 +591,18 @@ describe('daily announcement visibility after arrival', () => {
       expect(grid).toContain('<strong>In late</strong><small>from 09:30 · Dentist first</small>');
       expect(grid).toContain('data-ai-indicator="corner"');
       expect(grid).toContain('aria-label="In late"');
-      expect(sidebar).toContain('Anna Attendee');
-      expect(sidebar).toContain('aria-label="In late"');
-      expect(sidebar).toContain('<small>In late · from 09:30 · Dentist first</small>');
       expect(sidebar).toContain(`<strong>${count}</strong> of 1 in the office`);
     }
   });
 });
 
 describe('status emoji presentation', () => {
-  it('shows the persisted vacation emoji beside readable labels in the board and sidebar', () => {
+  it('shows the persisted vacation emoji beside readable labels in the board', () => {
     const { html } = renderWeek(
       status({ status: 'VACATION', emoji: '🌴', details: 'Vacation 🌴' })
     );
     const grid = html.match(/<div class="week-board"[\s\S]*?<\/main>/)?.[0] ?? '';
-    const sidebar = html.match(/<aside[\s\S]*?<\/aside>/)?.[0] ?? '';
     expect(grid).toContain('<strong><span aria-hidden="true">🌴 </span>Vacation</strong>');
-    expect(sidebar).toContain(
-      '<small><span aria-hidden="true">🌴 </span>Vacation · Vacation 🌴</small>'
-    );
   });
 
   it('gives manual declarations a default emoji without changing their note', () => {

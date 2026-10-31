@@ -14,6 +14,8 @@ import {
   boolean,
   numeric,
   index,
+  primaryKey,
+  check,
 } from 'drizzle-orm/pg-core';
 
 export const systemRole = pgEnum('system_role', ['ADMIN', 'USER', 'GUEST']);
@@ -121,6 +123,25 @@ export const status = pgTable(
       to: 'service_role',
       using: sql`true`,
     }),
+  ]
+).enableRLS();
+
+// A person's own shortlist of colleagues whose attendance they want to see at a glance.
+// No public RLS policies: only the server database role may access this table.
+export const pinnedColleagues = pgTable(
+  'pinned_colleagues',
+  {
+    userId: varchar('user_id', { length: 36 })
+      .notNull()
+      .references(() => users.userId, { onDelete: 'cascade' }),
+    colleagueUserId: varchar('colleague_user_id', { length: 36 })
+      .notNull()
+      .references(() => users.userId, { onDelete: 'cascade' }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.userId, table.colleagueUserId] }),
+    check('pinned_colleagues_not_self', sql`${table.userId} <> ${table.colleagueUserId}`),
   ]
 ).enableRLS();
 

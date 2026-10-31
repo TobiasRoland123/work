@@ -5,12 +5,16 @@ const mocked = vi.hoisted(() => ({
   requirePageUserId: vi.fn(),
   getAllUsers: vi.fn(),
   getUpcoming: vi.fn(),
+  listPinnedIds: vi.fn(),
 }));
 
 vi.mock('@/lib/auth/require-user', () => ({ requirePageUserId: mocked.requirePageUserId }));
 vi.mock('@/lib/services/userService', () => ({ userService: { getAllUsers: mocked.getAllUsers } }));
 vi.mock('@/lib/services/statusService', () => ({
   statusService: { getUpcomingStatusesByUserUserId: mocked.getUpcoming },
+}));
+vi.mock('@/lib/services/pinService', () => ({
+  pinService: { listPinnedIds: mocked.listPinnedIds },
 }));
 vi.mock('@/app/(authenticated)/today/WeekOverviewWrapper', () => ({
   WeekOverviewWrapper: () => null,
@@ -26,6 +30,7 @@ describe('/today page days', () => {
     mocked.requirePageUserId.mockReset().mockResolvedValue('viewer');
     mocked.getAllUsers.mockReset().mockResolvedValue([]);
     mocked.getUpcoming.mockReset().mockResolvedValue([]);
+    mocked.listPinnedIds.mockReset().mockResolvedValue([]);
   });
   afterEach(() => {
     vi.useRealTimers();
@@ -85,6 +90,15 @@ describe('/today page days', () => {
       expect(element.props.days).toEqual(['2026-09-26']);
     }
   );
+
+  it('loads the signed-in person’s pinned colleagues for the board', async () => {
+    mocked.listPinnedIds.mockResolvedValue(['marie', 'peter']);
+
+    const element = await WeekPage({ searchParams: Promise.resolve({}) });
+
+    expect(mocked.listPinnedIds).toHaveBeenCalledWith('viewer');
+    expect(element.props.initialPinnedIds).toEqual(['marie', 'peter']);
+  });
 
   it('keeps week mode when both query parameters are present', async () => {
     const element = await WeekPage({

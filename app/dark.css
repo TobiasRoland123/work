@@ -237,7 +237,8 @@ html.dark {
 }
 .dark .week-nav a:hover,
 .dark .week-day:hover,
-.dark .day-panel-group button:hover,
+.dark .day-panel-row:hover,
+.dark .day-panel-unpin:hover,
 .dark .week-person-row:hover .week-person-cell {
   background: var(--office-hover);
 }
@@ -301,8 +302,26 @@ html.dark {
 .dark .week-day-date,
 .dark .week-person-name small,
 .dark .week-empty,
-.dark .day-panel-person small {
+.dark .day-panel-person small,
+.dark .day-panel-empty,
+.dark .day-panel-unpin,
+.dark .day-panel-add,
+.dark .day-panel-find-field button,
+.dark .day-panel-pin-summary {
   color: var(--office-muted);
+}
+.dark .day-panel-add,
+.dark .day-panel-find-field {
+  border-color: var(--office-border);
+}
+.dark .day-panel-add:hover {
+  color: var(--office-ink);
+}
+.dark .day-panel-link {
+  color: var(--office-link);
+}
+.dark .day-panel-find-field input {
+  color: var(--office-ink);
 }
 .dark .week-day-name em,
 .dark .week-person-name em {
