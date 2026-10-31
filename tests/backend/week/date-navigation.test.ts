@@ -150,7 +150,7 @@ describe('date navigation in WeekOverview', () => {
     expect(html).toContain('Tuesday, 13 October 2026');
     expect(viewLinksOf(html)).toContain('aria-current="page" href="/today">Today</a>');
     expect(html).not.toContain('<em>Today</em>');
-    expect(html).toContain('<strong>1</strong> in office');
+    expect(html).toContain('<strong>1</strong> out of office');
     expect(html).toContain('<strong>1</strong> of 2 in the office');
     expect(html).toContain('Who is in the office on Tuesday');
     expect(html).toContain('Earlier');
