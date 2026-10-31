@@ -7,6 +7,7 @@ import './dark.css';
 import type * as React from 'react';
 import { PALETTE_INIT_SCRIPT } from '@/lib/theme/palettes';
 import { Providers } from './providers';
+import { ServiceWorkerRegistration } from '@/components/pwa/ServiceWorkerRegistration';
 const monumentGrotesk = localFont({
   src: [
     {
@@ -41,6 +42,8 @@ const ibxMono = localFont({
 export const metadata: Metadata = {
   title: 'WØRK',
   description: 'Make sure your colleagues know how to get a hold of you!',
+  appleWebApp: { capable: true, title: 'WØRK', statusBarStyle: 'default' },
+  icons: { apple: '/icons/apple-touch-icon.png' },
 };
 
 export const viewport = {
@@ -48,6 +51,7 @@ export const viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
+  themeColor: '#010101',
 };
 
 export default async function RootLayout({
@@ -67,6 +71,7 @@ export default async function RootLayout({
       </head>
       <body>
         <Providers>{children}</Providers>
+        <ServiceWorkerRegistration />
       </body>
     </html>
   );

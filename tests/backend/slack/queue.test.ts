@@ -76,11 +76,15 @@ describe('Slack queue consumer', () => {
     expect(processQueuedSlackMessage).not.toHaveBeenCalled();
     expect(log).toHaveBeenCalledWith('slack_queue', { outcome: 'invalid_job' });
   });
-  it('registers a private queue trigger and removes the status-processing cron', () => {
+  it('registers a private queue trigger and no cron that processes the status queue', () => {
     const config = JSON.parse(readFileSync('vercel.json', 'utf8'));
     expect(config.functions['app/api/queues/slack-status/route.ts'].experimentalTriggers).toEqual([
       { type: 'queue/v2beta', topic: 'slack-status', retryAfterSeconds: 60 },
     ]);
-    expect(config.crons).toEqual([{ path: '/api/check-users', schedule: '0 0 * * *' }]);
+    expect(config.crons).toEqual([
+      { path: '/api/check-users', schedule: '0 0 * * *' },
+      { path: '/api/notifications/pinned-digest', schedule: '0 7 * * 1-5' },
+      { path: '/api/notifications/pinned-digest', schedule: '0 8 * * 1-5' },
+    ]);
   });
 });

@@ -196,3 +196,60 @@
     min-width: 0;
   }
 }
+
+.profile-settings__toggles {
+  display: grid;
+  gap: 10px;
+}
+
+.settings-toggle {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 12px 14px;
+  border: 1px solid var(--office-border);
+  border-radius: 10px;
+  background: var(--office-surface);
+  color: var(--office-ink);
+  cursor: pointer;
+}
+.settings-toggle:hover {
+  background: var(--office-hover);
+}
+.settings-toggle input {
+  margin-top: 3px;
+  accent-color: var(--office-link);
+}
+.settings-toggle__text {
+  display: grid;
+  gap: 2px;
+  font-size: 14px;
+}
+.settings-toggle__text small {
+  color: var(--office-muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.settings-action {
+  min-height: 44px;
+  padding: 0 18px;
+  border: 1px solid var(--office-border);
+  border-radius: 10px;
+  background: var(--office-surface);
+  color: var(--office-ink);
+  font-size: 14px;
+  cursor: pointer;
+}
+.settings-action:hover:not(:disabled) {
+  background: var(--office-hover);
+}
+.settings-action:disabled {
+  cursor: wait;
+  opacity: 0.6;
+}
+.settings-action:focus-visible,
+.settings-toggle:has(input:focus-visible) {
+  outline: 2px solid var(--office-link);
+  outline-offset: 3px;
+}

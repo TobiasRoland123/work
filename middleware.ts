@@ -12,6 +12,7 @@ const serviceRoutes = [
   '/api/slack/process',
   '/api/slack/install',
   '/api/slack/install/callback',
+  '/api/notifications/pinned-digest',
 ];
 
 export async function middleware(request: NextRequest) {
@@ -53,5 +54,8 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ['/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
+  matcher: [
+    // The manifest and service worker are fetched without a session cookie.
+    '/((?!_next/static|_next/image|favicon.ico|sw\\.js|manifest\\.webmanifest|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
 };
