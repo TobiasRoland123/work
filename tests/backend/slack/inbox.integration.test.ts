@@ -7,6 +7,7 @@ import {
   shorthandObservations,
   slackAiUsage,
   slackMessageFeedback,
+  slackMessageProcessing,
   slackMessages,
   status,
   statusCorrections,
@@ -97,6 +98,7 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
       });
     });
     beforeEach(async () => {
+      await db.delete(slackMessageProcessing).where(eq(slackMessageProcessing.teamId, team));
       await db.delete(status).where(eq(status.userID, userID));
       await db.delete(slackMessages).where(eq(slackMessages.messageKey, key));
       await db.delete(slackAiUsage).where(eq(slackAiUsage.messageKey, key));
@@ -105,6 +107,7 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
       broadcastChannel.mockClear();
     });
     afterAll(async () => {
+      await db.delete(slackMessageProcessing).where(eq(slackMessageProcessing.teamId, team));
       await db.delete(slackAiUsage).where(eq(slackAiUsage.messageKey, key));
       await db.delete(slackMessages).where(eq(slackMessages.messageKey, key));
       await db.delete(users).where(eq(users.userId, userID));
@@ -125,6 +128,20 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
       expect(job.reviewText).toBeNull();
       expect(job.convertedToStatus).toBe(true);
       expect(job.processedAt).toBeInstanceOf(Date);
+      expect(
+        await db
+          .select()
+          .from(slackMessageProcessing)
+          .where(eq(slackMessageProcessing.messageKey, key))
+      ).toMatchObject([
+        {
+          messageKey: key,
+          teamId: team,
+          channelId: channel,
+          usedAi: false,
+          handledAt: expect.any(Date),
+        },
+      ]);
     });
     it('retains a recorded AI charge after the Slack message is deleted', async () => {
       vi.mocked(extractAttendance).mockImplementationOnce(async (_text, _date, usage) => {
@@ -159,6 +176,11 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
       });
       expect(recorded.completedAt).toBeInstanceOf(Date);
       expect(recorded).not.toHaveProperty('text');
+      const [handled] = await db
+        .select()
+        .from(slackMessageProcessing)
+        .where(eq(slackMessageProcessing.messageKey, key));
+      expect(handled).toMatchObject({ usedAi: true, handledAt: expect.any(Date) });
       await db.insert(slackMessageFeedback).values({
         messageKey: key,
         revision: messageTs,
@@ -184,6 +206,96 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
       expect(
         await db.select().from(slackAiUsage).where(eq(slackAiUsage.messageKey, key))
       ).toHaveLength(1);
+      expect(
+        await db
+          .select()
+          .from(slackMessageProcessing)
+          .where(eq(slackMessageProcessing.messageKey, key))
+      ).toEqual([handled]);
+    });
+    it('retains the first handling time and sticky AI classification across edits', async () => {
+      await enqueueSlackEvent(original);
+      await makeQueuedMessageDue();
+      await processSlackInbox(1, key);
+      const [first] = await db
+        .select()
+        .from(slackMessageProcessing)
+        .where(eq(slackMessageProcessing.messageKey, key));
+      expect(first.usedAi).toBe(false);
+      vi.mocked(extractAttendance).mockImplementationOnce(async (_text, _date, observer) => {
+        await observer?.onStart('provider/model');
+        return extraction;
+      });
+      for (const revision of ['1788766700.000001', '1788766800.000001']) {
+        await enqueueSlackEvent({
+          ...original,
+          event: {
+            type: 'message',
+            subtype: 'message_changed',
+            channel,
+            event_ts: revision,
+            message: {
+              ...original.event,
+              text: 'Edited attendance message',
+              edited: { ts: revision },
+            },
+          },
+        });
+        await makeQueuedMessageDue();
+        await processSlackInbox(1, key);
+      }
+      const handled = await db
+        .select()
+        .from(slackMessageProcessing)
+        .where(eq(slackMessageProcessing.messageKey, key));
+      expect(handled).toHaveLength(1);
+      expect(handled[0]).toMatchObject({ usedAi: true, handledAt: first.handledAt });
+    });
+    it('counts a retried message once and includes a failed AI attempt in its classification', async () => {
+      await enqueueSlackEvent(original);
+      vi.mocked(extractAttendance).mockImplementationOnce(async (_text, _date, observer) => {
+        await observer?.onStart('provider/model');
+        throw new Error('temporary AI failure');
+      });
+      await makeQueuedMessageDue();
+      await processSlackInbox(1, key);
+      expect(
+        await db
+          .select()
+          .from(slackMessageProcessing)
+          .where(eq(slackMessageProcessing.messageKey, key))
+      ).toHaveLength(0);
+      await makeQueuedMessageDue();
+      await processSlackInbox(1, key);
+      expect(
+        await db
+          .select()
+          .from(slackMessageProcessing)
+          .where(eq(slackMessageProcessing.messageKey, key))
+      ).toMatchObject([{ usedAi: true }]);
+    });
+    it('does not count oversized intake or exhausted processing as handling', async () => {
+      await enqueueSlackEvent({
+        ...original,
+        event: { ...original.event, text: 'x'.repeat(12001) },
+      });
+      expect(
+        await db
+          .select()
+          .from(slackMessageProcessing)
+          .where(eq(slackMessageProcessing.messageKey, key))
+      ).toHaveLength(0);
+      await db.delete(slackMessages).where(eq(slackMessages.messageKey, key));
+      await enqueueSlackEvent(original);
+      await db.update(slackMessages).set({ attempts: 5 }).where(eq(slackMessages.messageKey, key));
+      await makeQueuedMessageDue();
+      await processSlackInbox(1, key);
+      expect(
+        await db
+          .select()
+          .from(slackMessageProcessing)
+          .where(eq(slackMessageProcessing.messageKey, key))
+      ).toHaveLength(0);
     });
     it('applies uncertain status as a source-linked description using the original message text and Copenhagen day', async () => {
       const uncertainMessageTs = '1788733800.000001';
@@ -677,6 +789,12 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
         return extraction;
       });
       expect(await processSlackInbox()).toMatchObject({ superseded: 1 });
+      expect(
+        await db
+          .select()
+          .from(slackMessageProcessing)
+          .where(eq(slackMessageProcessing.messageKey, key))
+      ).toHaveLength(0);
       expect(await db.select().from(status).where(eq(status.userID, userID))).toHaveLength(0);
     });
     it('backs off failures and clears abandoned text after 24 hours', async () => {

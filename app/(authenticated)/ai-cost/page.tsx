@@ -92,7 +92,9 @@ export default async function AiCostPage({ searchParams }: { searchParams: Searc
   await requireMessageReviewer();
   const params = await searchParams;
   const data = await getAiCostDashboard({ days: one(params.days) });
-  const { totals } = data;
+  const { totals, messages } = data;
+  const aiShare = messages.total > 0 ? (messages.ai / messages.total) * 100 : 0;
+  const percent = new Intl.NumberFormat('en-GB', { maximumFractionDigits: 1 });
   const average = averageCostPerPricedCall(totals);
 
   return (
@@ -154,6 +156,54 @@ export default async function AiCostPage({ searchParams }: { searchParams: Searc
               <small>Not in the total</small>
             </div>
           </div>
+        </section>
+
+        <section
+          aria-labelledby="ai-cost-messages-heading"
+          className="ai-cost-section ai-cost-panel"
+        >
+          <div className="ai-cost-panel-heading">
+            <h2 id="ai-cost-messages-heading">Messages handled</h2>
+            <span className="ai-cost-legend">{count.format(messages.total)} recorded messages</span>
+          </div>
+          {messages.total === 0 ? (
+            <p className="ai-cost-empty">No handled messages were recorded in this period.</p>
+          ) : (
+            <>
+              <div className="ai-cost-message-bar" aria-hidden="true">
+                <span style={{ width: `${aiShare}%` }} />
+              </div>
+              <dl className="ai-cost-message-counts">
+                <div>
+                  <dt>
+                    <span className="ai-cost-message-key" />
+                    With AI
+                  </dt>
+                  <dd>
+                    <strong>{count.format(messages.ai)}</strong>
+                    <small>{percent.format(aiShare)}%</small>
+                  </dd>
+                </div>
+                <div>
+                  <dt>
+                    <span className="ai-cost-message-key" data-without-ai />
+                    Without AI
+                  </dt>
+                  <dd>
+                    <strong>{count.format(messages.withoutAi)}</strong>
+                    <small>{percent.format(100 - aiShare)}%</small>
+                  </dd>
+                </div>
+              </dl>
+            </>
+          )}
+          <p className="ai-cost-note">
+            Counts cover the selected period and configured Slack channel. Each successfully handled
+            message is counted once, on its first successful handling date in Copenhagen. A message
+            counts as with AI if any processing used AI. Retries and edits do not add messages;
+            deleted messages remain counted. Tracking starts with this feature, so earlier messages
+            are not included.
+          </p>
         </section>
 
         <section aria-labelledby="ai-cost-daily-heading" className="ai-cost-section ai-cost-panel">

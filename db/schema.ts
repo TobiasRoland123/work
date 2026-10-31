@@ -164,10 +164,31 @@ export const slackAiUsage = pgTable(
     state: text('state').default('started').notNull(),
   },
   (table) => [
+    index('slack_ai_usage_message_key_idx').on(table.messageKey),
     index('slack_ai_usage_team_channel_started_idx').on(
       table.teamId,
       table.channelId,
       table.startedAt
+    ),
+  ]
+).enableRLS();
+
+// One row per successfully handled Slack message, retained through edits/deletion.
+// AI usage is also consulted by the dashboard for attempts after the first handling.
+export const slackMessageProcessing = pgTable(
+  'slack_message_processing',
+  {
+    messageKey: text('message_key').primaryKey(),
+    teamId: text('team_id').notNull(),
+    channelId: text('channel_id').notNull(),
+    handledAt: timestamp('handled_at', { withTimezone: true }).defaultNow().notNull(),
+    usedAi: boolean('used_ai').notNull(),
+  },
+  (table) => [
+    index('slack_message_processing_team_channel_handled_idx').on(
+      table.teamId,
+      table.channelId,
+      table.handledAt
     ),
   ]
 ).enableRLS();

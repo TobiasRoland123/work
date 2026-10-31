@@ -1,3 +1,4 @@
+import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { emptyAiUsage } from '@/lib/ai-cost/stats';
 
@@ -25,6 +26,7 @@ beforeEach(() => {
     startDate: '2026-09-17',
     endDate: '2026-10-16',
     totals: emptyAiUsage(),
+    messages: { ai: 0, withoutAi: 0, total: 0 },
     daily: [],
     models: [],
     currentMonth: { start: '2026-10-01', ...emptyAiUsage() },
@@ -49,5 +51,45 @@ describe('AI cost page authorization', () => {
   it('fetches the requested period after both checks pass', async () => {
     await AiCostPage({ searchParams: Promise.resolve({ days: '7' }) });
     expect(mocked.getAiCostDashboard).toHaveBeenCalledWith({ days: '7' });
+  });
+});
+
+describe('AI cost message breakdown', () => {
+  it('shows message counts and proportions separately from AI request counts', async () => {
+    const data = await mocked.getAiCostDashboard();
+    mocked.getAiCostDashboard.mockResolvedValue({
+      ...data,
+      messages: { ai: 3, withoutAi: 2, total: 5 },
+      totals: { ...emptyAiUsage(), calls: 9 },
+    });
+    const html = renderToStaticMarkup(await AiCostPage({ searchParams: Promise.resolve({}) }));
+    expect(html).toContain('5 recorded messages');
+    expect(html).toContain('With AI');
+    expect(html).toContain('Without AI');
+    expect(html).toContain('<strong>3</strong><small>60%</small>');
+    expect(html).toContain('<strong>2</strong><small>40%</small>');
+    expect(html).toContain('Tracking starts with this feature');
+    expect(html).toContain('Including retries');
+  });
+
+  it('shows an empty tracking state without a misleading percentage', async () => {
+    const html = renderToStaticMarkup(await AiCostPage({ searchParams: Promise.resolve({}) }));
+    expect(html).toContain('No handled messages were recorded in this period.');
+    expect(html).not.toContain('NaN');
+    expect(html).not.toContain('ai-cost-message-bar');
+    expect(html).toContain('earlier messages are not included');
+  });
+
+  it('shows messages handled without AI even when there are no AI calls', async () => {
+    const data = await mocked.getAiCostDashboard();
+    mocked.getAiCostDashboard.mockResolvedValue({
+      ...data,
+      messages: { ai: 0, withoutAi: 8, total: 8 },
+    });
+    const html = renderToStaticMarkup(await AiCostPage({ searchParams: Promise.resolve({}) }));
+    expect(html).toContain('<strong>0</strong><small>0%</small>');
+    expect(html).toContain('<strong>8</strong><small>100%</small>');
+    expect(html).toContain('No AI calls were recorded in this period.');
+    expect(html).not.toContain('No handled messages were recorded in this period.');
   });
 });

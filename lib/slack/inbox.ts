@@ -10,6 +10,7 @@ import {
 import { inspectSlackEvent } from './events';
 import { descriptionRows, extractAttendance, statusRows } from './extraction';
 import { createSlackAiUsageRecorder } from './ai-usage';
+import { recordSlackMessageProcessing } from './message-processing';
 import {
   forgetShorthandObservation,
   learningThreshold,
@@ -244,6 +245,8 @@ export async function processSlackInbox(limit = 2, messageKey?: string, revision
             outcome: { reason: extraction.reason },
           })
           .where(eq(slackMessages.messageKey, job.messageKey));
+        // Count only the revision that actually committed. Edits retain the first handling time.
+        await recordSlackMessageProcessing(tx, job);
         // Recorded with the committed revision, so retries and reprocessing replace the evidence.
         if (learned.phrase && template)
           await recordShorthandObservation(
