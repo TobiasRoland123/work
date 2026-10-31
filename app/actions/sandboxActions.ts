@@ -1,5 +1,7 @@
 'use server';
 import { z } from 'zod';
+import { redirect } from 'next/navigation';
+import { revalidatePath } from 'next/cache';
 import { auth, signIn, signOut } from '@/auth';
 import { db } from '@/db';
 import { users } from '@/db/schema';
@@ -137,10 +139,18 @@ export async function resetSandboxDataAction() {
 export async function signInAsSandboxProfileAction(formData: FormData) {
   assertSandbox();
   const userId = z.string().min(1).max(36).parse(formData.get('userId'));
-  await signIn(SANDBOX_PROVIDER_ID, { userId, redirectTo: '/sandbox' });
+  // Auth.js builds its redirect from AUTH_URL, which sends the browser to the wrong origin
+  // when the dev server is not on that exact host and port. Set the cookie only, then
+  // redirect relatively so we stay on the origin the user is actually using.
+  await signIn(SANDBOX_PROVIDER_ID, { userId, redirect: false });
+  // Drop the client router cache so the shell and pages stop rendering the previous user.
+  revalidatePath('/', 'layout');
+  redirect('/sandbox');
 }
 
 export async function signOutSandboxAction() {
   assertSandbox();
-  await signOut({ redirectTo: '/sandbox' });
+  await signOut({ redirect: false });
+  revalidatePath('/', 'layout');
+  redirect('/sandbox');
 }
