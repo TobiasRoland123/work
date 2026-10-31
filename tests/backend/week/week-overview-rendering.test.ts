@@ -113,6 +113,35 @@ function renderToday(
 }
 
 describe('status labels in the week grid and selected-day sidebar', () => {
+  it.each(['FROM_HOME', 'IN_LATE', null] as const)(
+    'marks an imported %s announcement only in the grid',
+    (value) => {
+      const { grid, sidebar } = renderWeek(
+        status({ status: value, details: 'Slack announcement', sourceMessageKey: 'T:C:123' })
+      );
+      expect(grid).toContain('aria-label="AI-assisted"');
+      expect(grid).toContain('title="AI-assisted Slack import"');
+      expect(grid).toContain('lucide-sparkles');
+      expect(grid).toContain('data-ai-indicator="corner"');
+      expect(grid).toContain('data-ai-assisted="true"');
+      expect(grid).not.toContain('>AI</span>');
+      expect(sidebar).not.toContain('AI-assisted');
+      expect(sidebar).not.toContain('data-ai-indicator');
+      expect(sidebar).not.toContain('data-ai-assisted');
+    }
+  );
+
+  it('announces AI involvement on the signed-in person’s planning button', () => {
+    const { grid } = renderWeek(status({ status: 'FROM_HOME', sourceMessageKey: 'T:C:123' }));
+    expect(grid).toMatch(/aria-label="Plan [^"]+Currently: Home · AI-assisted"/);
+  });
+
+  it('leaves manually announced statuses unmarked', () => {
+    const { grid, sidebar } = renderWeek(status({ status: 'FROM_HOME' }));
+    expect(grid).not.toContain('AI-assisted');
+    expect(sidebar).not.toContain('AI-assisted');
+  });
+
   it.each([
     ['IN_LATE', 'In late'],
     ['LEAVING_EARLY', 'Leaving early'],
@@ -534,6 +563,7 @@ describe('daily announcement visibility after arrival', () => {
       const { grid, sidebar } = renderToday(null, week[0].status, week, displayDays);
       expect(grid).toContain('Anna Attendee');
       expect(grid).toContain('<strong>In late</strong><small>from 09:30 · Dentist first</small>');
+      expect(grid).toContain('data-ai-indicator="corner"');
       expect(grid).toContain('aria-label="In late"');
       expect(sidebar).toContain('Anna Attendee');
       expect(sidebar).toContain('aria-label="In late"');

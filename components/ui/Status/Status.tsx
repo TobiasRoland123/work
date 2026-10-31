@@ -1,4 +1,5 @@
 import { StatusEmoji } from './StatusEmoji';
+import { AIIndicator } from './AIIndicator';
 
 export type StatusType =
   | 'IN_OFFICE'
@@ -16,12 +17,20 @@ export type StatusType =
 export type StatusProps = {
   status: StatusType | null;
   asLabel?: boolean;
+  sourceMessageKey?: string | null;
   emoji?: string | null;
   details?: string | null;
   children?: React.ReactNode;
 };
 
-export function Status({ status, asLabel = true, children, emoji, details }: StatusProps) {
+export function Status({
+  status,
+  asLabel = true,
+  children,
+  emoji,
+  details,
+  sourceMessageKey,
+}: StatusProps) {
   if (status === null) return null;
 
   // Map status types to display messages and colors
@@ -45,7 +54,7 @@ export function Status({ status, asLabel = true, children, emoji, details }: Sta
     <>
       {asLabel ? (
         <div
-          className={`w-fit px-1.5 py-0.5 h-fit text-nowrap text-[#0b1014] ${color} rounded-md`}
+          className={`relative w-fit px-1.5 py-0.5 h-fit text-nowrap text-[#0b1014] ${color} rounded-md${sourceMessageKey ? ' pr-5' : ''}`}
           role="status"
         >
           <p className="text-sm font-mono">
@@ -58,6 +67,7 @@ export function Status({ status, asLabel = true, children, emoji, details }: Sta
               </>
             )}
           </p>
+          <AIIndicator sourceMessageKey={sourceMessageKey} position="corner" />
         </div>
       ) : (
         <p className={'font-mono h-fit'} role={'status'}>
@@ -69,6 +79,7 @@ export function Status({ status, asLabel = true, children, emoji, details }: Sta
               {message}
             </>
           )}
+          <AIIndicator sourceMessageKey={sourceMessageKey} />
         </p>
       )}
     </>
