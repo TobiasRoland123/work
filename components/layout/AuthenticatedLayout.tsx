@@ -4,7 +4,8 @@ import { db } from '@/db';
 import { users } from '@/db/schema';
 import { requirePageUserId } from '@/lib/auth/require-user';
 import { canReviewMessages } from '@/lib/auth/message-review';
-import { canViewEmployeeStats, isEmployeeStatsAdmin } from '@/lib/auth/employee-stats';
+import { canViewEmployeeStats } from '@/lib/auth/employee-stats';
+import { isAdmin } from '@/lib/auth/roles';
 import { AppShell } from './AppShell';
 import { Toaster } from '@/components/ui/sonner';
 
@@ -15,14 +16,13 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
     canReviewMessages(userId),
     canViewEmployeeStats(userId),
   ]);
-  // Only someone who can view the statistics can be their admin.
-  const showEmployeeStatsAdmin = showEmployeeStats && (await isEmployeeStatsAdmin(userId));
+  const showRoleManagement = await isAdmin(userId);
   return (
     <AppShell
       firstName={user?.firstName}
       showMessageQuality={showMessageQuality}
       showEmployeeStats={showEmployeeStats}
-      showEmployeeStatsAdmin={showEmployeeStatsAdmin}
+      showRoleManagement={showRoleManagement}
     >
       {children}
       <Toaster />

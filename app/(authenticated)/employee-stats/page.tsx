@@ -90,8 +90,8 @@ export default async function EmployeeStatsPage({ searchParams }: { searchParams
         subtitle="Where people worked, based on announced and default attendance"
         actions={
           isAdmin ? (
-            <Link href="/employee-stats/access" className="stats-header-link">
-              Manage access
+            <Link href="/admin/roles" className="stats-header-link">
+              Manage roles
             </Link>
           ) : undefined
         }

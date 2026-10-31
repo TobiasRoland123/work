@@ -4,7 +4,7 @@ import { and, eq, sql } from 'drizzle-orm';
 import { db } from '@/db';
 import { users } from '@/db/schema';
 import { getSlackTeamId, SlackUser } from './client';
-import { isInitialMessageReviewer } from '@/lib/auth/message-review-defaults';
+import { isInitialAdmin } from '@/lib/auth/message-review-defaults';
 export class SlackIdentityError extends Error {
   constructor(message: string) {
     super(message);
@@ -121,9 +121,8 @@ export async function resolveSlackIdentity(identity: TrustedSlackIdentity) {
         .update(users)
         .set({
           ...profile,
-          ...(isFirstSlackLink &&
-          isInitialMessageReviewer(identity.slackTeamId, identity.slackUserId)
-            ? { canReviewMessages: true }
+          ...(isFirstSlackLink && isInitialAdmin(identity.slackTeamId, identity.slackUserId)
+            ? { systemRole: 'ADMIN' as const }
             : {}),
         })
         .where(eq(users.userId, user.userId))
@@ -135,7 +134,9 @@ export async function resolveSlackIdentity(identity: TrustedSlackIdentity) {
       .values({
         userId: randomUUID(),
         ...profile,
-        canReviewMessages: isInitialMessageReviewer(identity.slackTeamId, identity.slackUserId),
+        systemRole: isInitialAdmin(identity.slackTeamId, identity.slackUserId)
+          ? 'ADMIN'
+          : 'EMPLOYEE',
       })
       .returning();
     return created;

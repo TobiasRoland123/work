@@ -2,16 +2,14 @@ import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { eq, inArray } from 'drizzle-orm';
 import { db, pool } from '@/db';
-import { employeeStatsAccess, status, users } from '@/db/schema';
+import { status, users } from '@/db/schema';
 import { requireUserId } from '@/lib/auth/require-user';
 import { ADMIN_SLACK_IDENTITY } from '@/lib/auth/admin-identity';
 import { canViewEmployeeStats, isEmployeeStatsAdmin } from '@/lib/auth/employee-stats';
-import { listEmployeeStatsAccess } from '@/lib/employee-stats/access';
+import { listUserRoles } from '@/lib/admin/roles';
+import { canReviewMessages } from '@/lib/auth/message-review';
 import { getEmployeeProfile, getEmployeeStats, listEmployees } from '@/lib/employee-stats/service';
-import {
-  grantEmployeeStatsAccessAction,
-  revokeEmployeeStatsAccessAction,
-} from '@/app/actions/employeeStatsActions';
+import { changeUserRoleAction } from '@/app/actions/roleActions';
 
 vi.mock('@/lib/auth/require-user', () => ({ requireUserId: vi.fn() }));
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
@@ -112,16 +110,21 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
           slackDeactivated: 'off' in person,
           firstName: person.first,
           lastName: person.last,
+          systemRole:
+            person === people.admin
+              ? ('ADMIN' as const)
+              : [
+                    people.viewer.userId,
+                    people.gone.userId,
+                    people.unmapped.userId,
+                    people.abroad.userId,
+                    people.deactivated.userId,
+                  ].includes(person.userId)
+                ? ('MANAGER' as const)
+                : ('EMPLOYEE' as const),
           createdAt: 'joined' in person ? person.joined : '2026-01-01 00:00:00',
         }))
       );
-      await db
-        .insert(employeeStatsAccess)
-        .values(
-          [people.viewer, people.gone, people.unmapped, people.abroad, people.deactivated].map(
-            (person) => ({ userId: person.userId, grantedByUserId: people.admin.userId })
-          )
-        );
       await db.insert(status).values([
         declaration(people.member, {
           status: 'VACATION',
@@ -159,7 +162,7 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
       await pool.end();
     });
 
-    it('lets an account view the stats only through a grant in an active workspace account', async () => {
+    it('lets an account view the stats only through a manager role in an active workspace account', async () => {
       const verdicts = await Promise.all(
         [
           people.viewer,
@@ -173,7 +176,7 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
       expect(verdicts.filter(([, can]) => can).map(([person]) => person.first)).toEqual(['Viola']);
     });
 
-    it('recognizes the admin only by their Slack identity in the admin workspace', async () => {
+    it('recognizes admins by their persisted role in the configured workspace', async () => {
       vi.stubEnv('SLACK_TEAM_ID', adminTeam);
       expect(await isEmployeeStatsAdmin(people.admin.userId)).toBe(true);
       expect(await canViewEmployeeStats(people.admin.userId)).toBe(true);
@@ -186,7 +189,7 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
       expect(await canViewEmployeeStats(people.deactivated.userId)).toBe(false);
     });
 
-    it('denies the stats to everyone without a grant before reading any data', async () => {
+    it('denies the stats to everyone without a manager or admin role before reading any data', async () => {
       as(people.outsider);
       const select = vi.spyOn(db, 'select');
       await expect(getEmployeeStats({}, new Date('2026-09-25T10:00:00Z'))).rejects.toThrow(
@@ -317,7 +320,7 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
       expect(await getEmployeeProfile({ userId: id() }, friday)).toBeNull();
     });
 
-    it('denies profiles and the directory to everyone without a grant', async () => {
+    it('denies profiles and the directory to everyone without a manager or admin role', async () => {
       as(people.outsider);
       await expect(getEmployeeProfile({ userId: people.member.userId }, friday)).rejects.toThrow(
         'NOT_FOUND'
@@ -325,89 +328,75 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
       await expect(listEmployees()).rejects.toThrow('NOT_FOUND');
     });
 
-    it('lets the admin grant and revoke access, and nobody else', async () => {
+    it('lets admins promote managers and admins, with immediate permission changes', async () => {
       vi.stubEnv('SLACK_TEAM_ID', adminTeam);
-      const grantee = people.grantee.userId;
-      const grants = () =>
-        db.select().from(employeeStatsAccess).where(eq(employeeStatsAccess.userId, grantee));
+      const userId = people.grantee.userId;
+      as(people.admin);
+      expect(await changeUserRoleAction({ userId, role: 'MANAGER' })).toEqual({ ok: true });
+      expect(await canViewEmployeeStats(userId)).toBe(true);
+      expect(await canReviewMessages(userId)).toBe(false);
+      expect(await isEmployeeStatsAdmin(userId)).toBe(false);
+      const roles = await listUserRoles();
+      expect(roles.find((entry) => entry.userId === userId)?.role).toBe('MANAGER');
+      expect(roles.find((entry) => entry.userId === people.copycat.userId)).toBeUndefined();
+      expect(roles.find((entry) => entry.userId === people.deactivated.userId)).toBeUndefined();
 
       as(people.grantee);
-      await expect(grantEmployeeStatsAccessAction({ userId: grantee })).rejects.toThrow(
-        'NOT_FOUND'
-      );
-      expect(await grants()).toEqual([]);
+      await expect(listUserRoles()).rejects.toThrow('NOT_FOUND');
+      await expect(
+        changeUserRoleAction({ userId: people.impostor.userId, role: 'ADMIN' })
+      ).rejects.toThrow('NOT_FOUND');
 
       as(people.admin);
-      expect(await grantEmployeeStatsAccessAction({ userId: grantee })).toEqual({ ok: true });
-      const [first] = await grants();
-      expect(first?.grantedByUserId).toBe(people.admin.userId);
-      expect(await canViewEmployeeStats(grantee)).toBe(true);
-
-      // A repeated grant keeps the original date.
-      expect(await grantEmployeeStatsAccessAction({ userId: grantee })).toEqual({ ok: true });
-      expect((await grants())[0]?.grantedAt).toEqual(first?.grantedAt);
-
-      const list = await listEmployeeStatsAccess();
-      const role = (person: Person) => list.find((entry) => entry.userId === person.userId)?.role;
-      expect(role(people.admin)).toBe('admin');
-      expect(role(people.grantee)).toBe('viewer');
-      expect(role(people.impostor)).toBe('none');
-      expect(role(people.deactivated)).toBeUndefined();
-      expect(role(people.copycat)).toBeUndefined();
-      expect(list.find((entry) => entry.userId === grantee)?.grantedBy).toBe('Ada Admin');
-
-      // The viewer sees the stats page data but cannot manage access.
+      expect(await changeUserRoleAction({ userId, role: 'ADMIN' })).toEqual({ ok: true });
+      expect(await canReviewMessages(userId)).toBe(true);
+      // A newly promoted admin can manage roles without the bootstrap Slack identity.
       as(people.grantee);
-      await expect(listEmployeeStatsAccess()).rejects.toThrow('NOT_FOUND');
-      await expect(revokeEmployeeStatsAccessAction({ userId: grantee })).rejects.toThrow(
-        'NOT_FOUND'
-      );
-      expect(await grants()).toHaveLength(1);
-
-      as(people.admin);
-      expect(await revokeEmployeeStatsAccessAction({ userId: grantee })).toEqual({ ok: true });
-      expect(await grants()).toEqual([]);
-      expect(await canViewEmployeeStats(grantee)).toBe(false);
-      expect(await revokeEmployeeStatsAccessAction({ userId: grantee })).toEqual({ ok: true });
-    });
-
-    it('refuses grants to deactivated people, other workspaces, unknown ids and the admin', async () => {
-      vi.stubEnv('SLACK_TEAM_ID', adminTeam);
-      as(people.admin);
-      const refused = { ok: false, error: expect.any(String) };
-      expect(await grantEmployeeStatsAccessAction({ userId: people.deactivated.userId })).toEqual(
-        refused
-      );
-      expect(await grantEmployeeStatsAccessAction({ userId: people.copycat.userId })).toEqual(
-        refused
-      );
-      expect(await grantEmployeeStatsAccessAction({ userId: id() })).toEqual(refused);
-      expect(await grantEmployeeStatsAccessAction({ userId: people.admin.userId })).toEqual(
-        refused
-      );
-      const rows = await db
-        .select()
-        .from(employeeStatsAccess)
-        .where(eq(employeeStatsAccess.userId, people.admin.userId));
-      expect(rows).toEqual([]);
-    });
-
-    it('drops a grant when the person is deleted', async () => {
-      const doomed = { ...people.grantee, userId: id(), slackUserId: 'UDOOMED' };
-      await db.insert(users).values({
-        userId: doomed.userId,
-        email: `${doomed.userId}@example.com`,
-        slackTeamId: adminTeam,
-        slackUserId: doomed.slackUserId,
-      });
-      await db.insert(employeeStatsAccess).values({ userId: doomed.userId });
-      await db.delete(users).where(eq(users.userId, doomed.userId));
       expect(
-        await db
-          .select()
-          .from(employeeStatsAccess)
-          .where(eq(employeeStatsAccess.userId, doomed.userId))
-      ).toEqual([]);
+        await changeUserRoleAction({ userId: people.impostor.userId, role: 'MANAGER' })
+      ).toEqual({ ok: true });
+      as(people.admin);
+      expect(await changeUserRoleAction({ userId, role: 'EMPLOYEE' })).toEqual({ ok: true });
+      expect(await canViewEmployeeStats(userId)).toBe(false);
+      expect(await canReviewMessages(userId)).toBe(false);
+      await expect(changeUserRoleAction({ userId, role: 'ADMIN' })).resolves.toEqual({ ok: true });
+      // Two admins trying to demote each other cannot remove both admins.
+      const actor = vi.mocked(requireUserId);
+      actor.mockResolvedValueOnce(people.admin.userId).mockResolvedValueOnce(userId);
+      const changes = await Promise.all([
+        changeUserRoleAction({ userId, role: 'EMPLOYEE' }),
+        changeUserRoleAction({ userId: people.admin.userId, role: 'EMPLOYEE' }),
+      ]);
+      expect(changes.filter((change) => change.ok)).toHaveLength(1);
+      expect(
+        (
+          await db
+            .select()
+            .from(users)
+            .where(inArray(users.userId, [userId, people.admin.userId]))
+        ).filter((person) => person.systemRole === 'ADMIN')
+      ).toHaveLength(1);
+    });
+
+    it('rejects self changes, inactive or foreign accounts, unknown users and invalid roles', async () => {
+      vi.stubEnv('SLACK_TEAM_ID', adminTeam);
+      // Previous race may have demoted the original fixture admin. Restore fixture roles.
+      await db
+        .update(users)
+        .set({ systemRole: 'ADMIN' })
+        .where(eq(users.userId, people.admin.userId));
+      as(people.admin);
+      for (const userId of [
+        people.deactivated.userId,
+        people.copycat.userId,
+        id(),
+        people.admin.userId,
+      ]) {
+        expect(await changeUserRoleAction({ userId, role: 'ADMIN' })).toMatchObject({ ok: false });
+      }
+      expect(
+        await changeUserRoleAction({ userId: people.grantee.userId, role: 'OWNER' })
+      ).toMatchObject({ ok: false });
     });
   }
 );

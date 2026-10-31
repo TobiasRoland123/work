@@ -12,9 +12,7 @@ vi.mock('next/link', () => ({
 import { AppShell, isCurrentPath } from '@/components/layout/AppShell';
 
 describe('employee stats navigation', () => {
-  const renderShell = (
-    props: { showEmployeeStats?: boolean; showEmployeeStatsAdmin?: boolean } = {}
-  ) =>
+  const renderShell = (props: { showEmployeeStats?: boolean; showRoleManagement?: boolean } = {}) =>
     renderToStaticMarkup(
       React.createElement(AppShell, props as React.ComponentProps<typeof AppShell>, 'Content')
     );
@@ -22,19 +20,19 @@ describe('employee stats navigation', () => {
   it('does not expose either link to ordinary users', () => {
     const html = renderShell();
     expect(html).not.toContain('/employee-stats');
-    expect(html).not.toContain('Stats access');
+    expect(html).not.toContain('Roles');
   });
 
-  it('shows the stats link to a viewer but not the access controls', () => {
+  it('shows the stats link to a manager but not the access controls', () => {
     const html = renderShell({ showEmployeeStats: true });
     expect(html).toContain('href="/employee-stats"');
-    expect(html).not.toContain('/employee-stats/access');
+    expect(html).not.toContain('/admin/roles');
   });
 
   it('shows the access controls to the admin', () => {
-    const html = renderShell({ showEmployeeStats: true, showEmployeeStatsAdmin: true });
+    const html = renderShell({ showEmployeeStats: true, showRoleManagement: true });
     expect(html).toContain('href="/employee-stats"');
-    expect(html).toContain('href="/employee-stats/access"');
+    expect(html).toContain('href="/admin/roles"');
   });
 });
 
@@ -43,9 +41,9 @@ describe('highlighting the stats link', () => {
     expect(isCurrentPath('/employee-stats', '/employee-stats')).toBe(true);
     expect(isCurrentPath('/employee-stats/people', '/employee-stats')).toBe(true);
     expect(isCurrentPath('/employee-stats/people/abc', '/employee-stats')).toBe(true);
-    expect(isCurrentPath('/employee-stats/access', '/employee-stats')).toBe(false);
-    expect(isCurrentPath('/employee-stats/access', '/employee-stats/access')).toBe(true);
-    expect(isCurrentPath('/employee-stats/people', '/employee-stats/access')).toBe(false);
+    expect(isCurrentPath('/admin/roles', '/employee-stats')).toBe(false);
+    expect(isCurrentPath('/admin/roles', '/admin/roles')).toBe(true);
+    expect(isCurrentPath('/employee-stats/people', '/admin/roles')).toBe(false);
     expect(isCurrentPath('/today', '/employee-stats')).toBe(false);
     expect(isCurrentPath(null, '/employee-stats')).toBe(false);
   });

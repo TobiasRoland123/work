@@ -25,7 +25,7 @@ port, `3000`; open `http://127.0.0.1:3000/sandbox`, matching the example `AUTH_U
    sandbox data. The checked-in PostgreSQL values are disposable Docker development defaults.
 3. Install Docker. Make sure the current user can run `docker compose` without `sudo`.
 4. Run `pnpm local:db`, then `pnpm sandbox:seed`, then `pnpm run dev`. Open
-   `http://127.0.0.1:3000/sandbox`. On repeated starts, run only `pnpm run dev`.
+   `http://127.0.0.1:3000/sandbox`. On repeated starts, run only `pnpm run dev`. For an existing database with legacy `ADMIN`/`USER`/`GUEST` roles, apply migration `0048` before schema push; see [Application access](access-control.md#migration).
 
 For an existing PostgreSQL setup, configure its connection values in `.env.local`, then run
 `pnpm db:push` and `pnpm sandbox:seed` once. Start the app with `pnpm run dev`; repeated
@@ -98,18 +98,7 @@ text; a newer edit replaces it. There is no automatic age cutoff. Edit and Delet
 `message_changed` and `message_deleted` envelopes; a stale edit surfaces as
 `duplicate_or_stale`. "Clear list" forgets the browser list without touching data.
 
-**Message quality review.** Every active mapped Sandbox Profile can open `/message-quality`
-after signing in. This exception applies only to the nonproduction `T_LOCAL` workspace.
-Real workspaces require `users.can_review_messages`; Tobias Roland's confirmed Slack account
-gets an initial grant in each environment. Use `pnpm message-review:access grant <user-id>`
-or `pnpm message-review:access revoke <user-id>` to manage other real-workspace grants with
-the intended environment's database configuration. See
-[Message quality review](message-quality.md) for access requirements and what the dashboard retains.
-
-**Employee stats.** `/employee-stats` is restricted: Tobias Roland (the admin) always has access
-and grants or revokes it for others on `/employee-stats/access`. The Local Sandbox has no real
-admin, so Anna Attendee (`U_LOCAL_ANNA`) stands in: sign in as Anna, grant Mads or Freja, then sign
-in as them to see the difference. See [Employee stats](employee-stats.md).
+**Roles and restricted pages.** Sign in as Anna Attendee, the initial sandbox admin, and open **More → Roles** (`/admin/roles`). Assign **Manager** for employee stats, **Admin** for all features including message review, AI costs and role management, or **Employee** for normal attendance access. Other new profiles start as employees. Reseeding preserves edited roles. See [Application access](access-control.md) and [Employee stats](employee-stats.md).
 
 **Reset.** Deletes `status` rows of `T_LOCAL` profiles and `slack_messages` rows of team
 `T_LOCAL` (including any retained `review_text`), then clears the browser list. Profiles

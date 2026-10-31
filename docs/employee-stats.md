@@ -1,6 +1,6 @@
 # Employee stats
 
-`/employee-stats` shows how people have worked: an overview of everyone, and a page for each individual. It is restricted. The admin chooses who can see it.
+`/employee-stats` shows how people have worked: an overview of everyone, and a page for each individual. It is restricted to managers and admins. Admins manage application roles.
 
 ## Pages
 
@@ -29,20 +29,17 @@ The norm is everyone else: all other active employees, pooled over the same work
 
 ## Access
 
-There are two roles.
+Employee statistics are available to the **Admin** and **Manager** application roles. **Employee** accounts cannot open the overview, directory, or individual statistics. Admins also have message review and AI costs, and can manage roles at **More → Roles** (`/admin/roles`). Managers cannot change roles.
 
-- **Admin.** Tobias Roland, identified by Slack team `T02HKL21R` and Slack user `U05NP1NF3QB` (the same identity as the initial [message reviewer](message-quality.md#access)). The admin always has access and is the only one who can change who else has it. The identity is set in code (`lib/auth/admin-identity.ts`), not in the database, so nobody can be promoted to admin through the app.
-- **Viewer.** Anyone the admin has granted access to. A viewer can read the stats but cannot see or change the access list.
+Samuel Tobias Roland Uyet's verified Slack identity (`T02HKL21R` / `U05NP1NF3QB`) bootstraps the first admin. After that, the stored role determines access, including for additional admins. Admins cannot change their own role. The old `/employee-stats/access` link redirects admins to Roles.
 
-The admin manages access on **Stats access** (`/employee-stats/access`, under **More** in the navigation, or **Manage access** on the stats page). The page lists every active workspace member, with the people who can view the stats first. **Grant access** and **Revoke** take effect immediately; the person sees the page on their next load. Use the search box to find someone by name or email. A grant records who gave it and when.
-
-Every request checks the live database. A session alone grants nothing. The page, the access list and both actions each repeat the check, so hiding a link is never the only protection, and a person who loses access is turned away on their next request. People without access get a "not found" page, and neither navigation link is shown to them. A grant only counts while the person is an active member of `SLACK_TEAM_ID`; a deactivated person has no access, and a grant left behind applies again if they are reactivated. The admin cannot be granted or revoked.
-
-If `SLACK_TEAM_ID` is unset, or names a workspace other than the admin's, nobody is an admin and the page is open only to granted viewers.
+Every request checks the active mapped account and current role in the configured workspace. Removing a role takes effect on the next request. The navigation hides restricted pages, and the server checks again before returning data or applying changes.
 
 ### Local sandbox
 
-The sandbox workspace (`T_LOCAL`, nonproduction builds only) has no real admin. Anna Attendee (`U_LOCAL_ANNA`) stands in so the controls can be tried: sign in as Anna, grant Mads or Freja, then sign in as them to see the page. A production build pointed at `T_LOCAL` has no admin.
+Anna Attendee is created as the local sandbox admin. Other profiles start as employees. Sign in as Anna and assign **Manager** to Mads or Freja to try stats access, or **Admin** to try role management, message review and AI costs. Reseeding does not overwrite roles you have changed.
+
+See [Application access](access-control.md) for the full hierarchy and migration steps.
 
 ## What the numbers mean
 
@@ -69,4 +66,4 @@ Sick days are sensitive, so grant access only to people who need it.
 
 ## Migration
 
-The feature adds the `employee_stats_access` table (`db/0047_employee_stats_access.sql`). Apply it before deploying, in the same way as other migrations (`pnpm db:migrate` against the intended database). It has row level security enabled like the other tables and cascades when a user is deleted.
+The original feature added `employee_stats_access` in migration `0047`. Migration `0048_application_roles.sql` replaces those grants with application roles. Existing viewers become managers; the verified initial admin becomes an admin; all other accounts become employees. The old grant table is retained for history and is no longer used for authorization. See [Application access](access-control.md#migration).

@@ -873,14 +873,14 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
       };
       const created = await resolveSlackIdentity(identity);
       try {
-        expect(created.canReviewMessages).toBe(true);
+        expect(created.systemRole).toBe('ADMIN');
         await db
           .update(users)
-          .set({ canReviewMessages: false })
+          .set({ systemRole: 'EMPLOYEE' })
           .where(eq(users.userId, created.userId));
 
         const signedInAgain = await resolveSlackIdentity(identity);
-        expect(signedInAgain.canReviewMessages).toBe(false);
+        expect(signedInAgain.systemRole).toBe('EMPLOYEE');
       } finally {
         await db.delete(users).where(eq(users.userId, created.userId));
       }
@@ -897,7 +897,7 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
       try {
         const linked = await resolveSlackIdentity(identity);
         expect(linked.userId).toBe(legacyUserId);
-        expect(linked.canReviewMessages).toBe(true);
+        expect(linked.systemRole).toBe('ADMIN');
       } finally {
         await db.delete(users).where(eq(users.userId, legacyUserId));
       }
