@@ -18,6 +18,7 @@ const makeStatus = (userID: string, value: Status['status'], date = days[1]): St
   id: 1,
   userID,
   status: value,
+  emoji: null,
   details: null,
   time: null,
   fromDate: date,

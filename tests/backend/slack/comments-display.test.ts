@@ -53,6 +53,7 @@ function render(
           userID: 'local-user',
           createdAt: '2026-09-07T07:00:00Z',
           announcedAt: new Date('2026-09-07T07:00:00Z'),
+          emoji: null,
           sourceMessageKey: 'T:C:1788766200.000001',
         },
       },
@@ -68,6 +69,7 @@ describe('sender comment display', () => {
       expect(html).not.toContain('00:00');
       expect(html).not.toContain('>00.00<');
       expect(html).toContain('View Slack message');
+      expect(html).toContain('aria-label="AI-assisted"');
     }
   );
   it('keeps approximate timing separate from comment wording', () => {
@@ -118,8 +120,8 @@ describe('sender comment display', () => {
             userID: 'local-user',
             createdAt: '2026-09-07T07:00:00Z',
             announcedAt: new Date('2026-09-07T07:00:00Z'),
+            emoji: null,
             sourceMessageKey: 'T:C:1788766200.000001',
-            ...{ emoji: null },
           },
         },
       })
@@ -193,6 +195,7 @@ describe('unclassified attendance descriptions', () => {
             userID: 'local-user',
             createdAt: sent.toISOString(),
             announcedAt: sent,
+            emoji: null,
             sourceMessageKey: 'T:C:1788810600.000001',
           },
         },
@@ -227,6 +230,7 @@ describe('unclassified attendance descriptions', () => {
             endsAtApproximate: false,
             createdAt: '2026-09-19T07:00:00Z',
             announcedAt: new Date('2026-09-19T07:00:00Z'),
+            emoji: null,
             sourceMessageKey: 'T:C:1788810600.000001',
           },
         },

@@ -162,6 +162,7 @@ describe('planning ahead', () => {
       id: index + 1,
       userID: 'me',
       status: row.status ?? null,
+      emoji: null,
       details: row.details ?? null,
       fromDate: row.fromDate ?? null,
       toDate: row.toDate ?? null,

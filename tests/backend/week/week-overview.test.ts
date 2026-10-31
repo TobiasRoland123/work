@@ -9,6 +9,7 @@ const status = (values: Partial<Status>): Status => ({
   id: 7,
   userID: 'anna',
   status: 'AWAY',
+  emoji: null,
   details: null,
   time: null,
   fromDate: null,

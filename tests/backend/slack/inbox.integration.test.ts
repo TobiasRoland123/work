@@ -114,6 +114,38 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
       vi.unstubAllEnvs();
       await pool.end();
     });
+    it('keeps a relevant Slack emoji when extraction has no comment and replaces it on edit', async () => {
+      await enqueueSlackEvent({
+        ...original,
+        event: { ...original.event, text: 'WFH 🏡 today' },
+      });
+      await makeQueuedMessageDue();
+      await processSlackInbox();
+      let rows = await db.select().from(status).where(eq(status.userID, userID));
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toMatchObject({ emoji: '🏡', details: null });
+      await enqueueSlackEvent({
+        ...original,
+        event_id: 'EvEmojiEdit',
+        event: {
+          type: 'message',
+          subtype: 'message_changed',
+          channel,
+          event_ts: '1788766500.000001',
+          message: {
+            ...original.event,
+            text: 'WFH today :tada:',
+            edited: { ts: '1788766500.000001' },
+          },
+        },
+      });
+      await makeQueuedMessageDue();
+      await processSlackInbox();
+      rows = await db.select().from(status).where(eq(status.userID, userID));
+      expect(rows).toHaveLength(1);
+      expect(rows[0]).toMatchObject({ emoji: '🏠', details: null });
+    });
+
     it('deduplicates deliveries and clears text after writing one status', async () => {
       await Promise.all([enqueueSlackEvent(original), enqueueSlackEvent(original)]);
       await makeQueuedMessageDue();

@@ -18,6 +18,7 @@ import {
   recordShorthandObservation,
   templateFromExtraction,
 } from './learned-shorthand';
+import { statusEmoji } from '@/lib/status/emoji';
 import { supabase } from '@/lib/supabaseClient';
 
 const MAX_REVIEW_TEXT_LENGTH = 12000;
@@ -227,6 +228,7 @@ export async function processSlackInbox(limit = 2, messageKey?: string, revision
           await tx.insert(status).values(
             rows.map((row) => ({
               ...row,
+              emoji: statusEmoji(row.status, job.text),
               userID: user.id,
               sourceMessageKey: job.messageKey,
               createdAt: new Date(Number(job.revision) * 1000).toISOString(),

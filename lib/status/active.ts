@@ -108,6 +108,7 @@ function defaultOfficeStatus(userID: string, now: Date): Status | null {
     userID,
     status: 'IN_OFFICE',
     details: null,
+    emoji: null,
     fromDate: day,
     toDate: day,
     startsAt,
@@ -207,7 +208,7 @@ export function selectDayAnnouncement(statuses: readonly Status[], now: Date): S
       copenhagenDate(new Date(arrival)) === day &&
       arrival > copenhagenWallClock(day, 9, 0).getTime()
     )
-      return { ...declaration, status: 'IN_LATE' };
+      return { ...declaration, status: 'IN_LATE', emoji: null };
   }
   return declaration;
 }
@@ -235,6 +236,7 @@ export function resolvePresenceStatus(
         const late: Status = {
           ...candidate,
           status: 'IN_LATE',
+          emoji: null,
           startsAt: copenhagenWallClock(today, 0, 0),
           endsAt: clock,
         };
@@ -270,6 +272,7 @@ export function resolvePresenceStatus(
     const office: Status = {
       ...candidate,
       status: 'IN_OFFICE',
+      emoji: null,
       fromDate: today,
       toDate: today,
       startsAt: arriving ? clock : officeStart,

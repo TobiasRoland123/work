@@ -8,6 +8,7 @@ const row = (values: Partial<Status> = {}): Status => ({
   id: 1,
   userID: 'person',
   status: 'IN_OFFICE',
+  emoji: null,
   details: null,
   time: null,
   fromDate: day,
@@ -100,4 +101,10 @@ describe('office presence convention', () => {
       )?.status
     ).toBe('IN_OFFICE');
   });
+});
+
+it('does not carry an arrival emoji into resolved office attendance', () => {
+  const late = row({ status: 'IN_LATE', emoji: '⏰', time: at('08:00') });
+  expect(resolve([late], '07:30')).toMatchObject({ status: 'IN_LATE', emoji: '⏰' });
+  expect(resolve([late], '08:00')).toMatchObject({ status: 'IN_OFFICE', emoji: null });
 });
