@@ -231,11 +231,13 @@ html.dark {
 .dark .week-nav,
 .dark .week-nav .week-nav-current,
 .dark .week-search,
+.dark .week-panel-toggle,
 .dark .week-board,
 .dark .day-panel {
   border-color: var(--office-border);
 }
 .dark .week-nav a:hover,
+.dark .week-panel-toggle:hover,
 .dark .week-day:hover,
 .dark .day-panel-row:hover,
 .dark .day-panel-unpin:hover,
@@ -250,10 +252,20 @@ html.dark {
   color: var(--office-subtle);
 }
 .dark .week-search,
+.dark .week-panel-toggle,
 .dark .week-board,
 .dark .week-head,
 .dark .day-panel {
   background: var(--office-surface);
+}
+.dark .week-panel-toggle {
+  color: var(--office-muted);
+}
+.dark .week-panel-toggle:hover {
+  color: var(--office-ink);
+}
+.dark .week-panel-toggle:focus-visible {
+  outline-color: var(--office-link);
 }
 .dark .week-search {
   color: var(--office-subtle);

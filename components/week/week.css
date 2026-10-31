@@ -56,6 +56,9 @@
   display: grid;
   grid-template-columns: minmax(0, 1fr) clamp(300px, 24vw, 360px);
 }
+.week-body[data-panel='closed'] {
+  grid-template-columns: minmax(0, 1fr);
+}
 .week-main {
   min-width: 0;
   padding: 20px 28px 40px;
@@ -138,6 +141,30 @@
 .week-filters span {
   margin-left: 4px;
   color: #8b908e;
+}
+.week-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.week-panel-toggle {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  flex: none;
+  border: 1px solid #deded8;
+  border-radius: 6px;
+  background: white;
+  color: #5e635f;
+}
+.week-panel-toggle:hover {
+  background: #f2f5f6;
+  color: #0b1014;
+}
+.week-panel-toggle:focus-visible {
+  outline: 2px solid #28749a;
+  outline-offset: 2px;
 }
 
 .week-grouping-note {
@@ -955,8 +982,11 @@
     padding: 4px 6px;
     font-size: 11px;
   }
-  .week-filters {
+  .week-toolbar-actions {
     width: 100%;
+  }
+  .week-filters {
+    flex: 1;
   }
   .week-filters a {
     flex: 1;

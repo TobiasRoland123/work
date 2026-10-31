@@ -14,6 +14,8 @@ The side panel shows the signed-in person's pinned colleagues, a short list of t
 
 **Edit** reveals a remove button on every row, and **Add a colleague…** searches the directory by name or role. Pressing Enter pins the first match. Pins are private, saved per person in `pinned_colleagues`, loaded with the page and not refreshed by the live poll. They update immediately and roll back with a toast if saving fails. `pinService` refuses to pin yourself, unknown people and deactivated people, and pinning someone twice does nothing. Deactivated people drop out of the list but stay pinned, so they return if reactivated. Deleting a user removes their pins and any pins of them.
 
+The panel can be hidden with the side-panel button beside the Today and Week switch, which gives the board the full width. The choice is remembered per browser in the `week-panel` cookie, which the server reads so the page loads in the right layout without a flash. The panel is open until it is closed.
+
 ## Status emojis
 
 Attendance labels show an automatic emoji in the board, selected-day list and person details. The text label remains visible, and screen readers read that label without repeating the decorative emoji. Manual declarations and existing attendance get a suitable default, such as 🏠 for working from home.

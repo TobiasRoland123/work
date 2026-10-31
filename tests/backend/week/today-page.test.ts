@@ -6,6 +6,7 @@ const mocked = vi.hoisted(() => ({
   getAllUsers: vi.fn(),
   getUpcoming: vi.fn(),
   listPinnedIds: vi.fn(),
+  cookies: vi.fn(),
 }));
 
 vi.mock('@/lib/auth/require-user', () => ({ requirePageUserId: mocked.requirePageUserId }));
@@ -16,6 +17,7 @@ vi.mock('@/lib/services/statusService', () => ({
 vi.mock('@/lib/services/pinService', () => ({
   pinService: { listPinnedIds: mocked.listPinnedIds },
 }));
+vi.mock('next/headers', () => ({ cookies: mocked.cookies }));
 vi.mock('@/app/(authenticated)/today/WeekOverviewWrapper', () => ({
   WeekOverviewWrapper: () => null,
 }));
@@ -31,6 +33,7 @@ describe('/today page days', () => {
     mocked.getAllUsers.mockReset().mockResolvedValue([]);
     mocked.getUpcoming.mockReset().mockResolvedValue([]);
     mocked.listPinnedIds.mockReset().mockResolvedValue([]);
+    mocked.cookies.mockReset().mockResolvedValue({ get: () => undefined });
   });
   afterEach(() => {
     vi.useRealTimers();
@@ -98,6 +101,17 @@ describe('/today page days', () => {
 
     expect(mocked.listPinnedIds).toHaveBeenCalledWith('viewer');
     expect(element.props.initialPinnedIds).toEqual(['marie', 'peter']);
+  });
+
+  it('opens the side panel unless the visitor closed it', async () => {
+    const open = await WeekPage({ searchParams: Promise.resolve({}) });
+    expect(open.props.initialPanelOpen).toBe(true);
+
+    mocked.cookies.mockResolvedValue({
+      get: (name: string) => (name === 'week-panel' ? { value: 'closed' } : undefined),
+    });
+    const closed = await WeekPage({ searchParams: Promise.resolve({}) });
+    expect(closed.props.initialPanelOpen).toBe(false);
   });
 
   it('keeps week mode when both query parameters are present', async () => {

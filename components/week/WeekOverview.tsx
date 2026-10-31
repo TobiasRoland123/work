@@ -9,6 +9,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Pencil,
+  PanelRightClose,
+  PanelRightOpen,
   Search,
   X,
 } from 'lucide-react';
@@ -34,6 +36,7 @@ import {
   type Segment,
 } from './presence';
 import { Avatar } from './Avatar';
+import { rememberWeekPanel } from './panelPreference';
 import { PinnedColleagues } from './PinnedColleagues';
 import { StatusCorrection } from './StatusCorrection';
 import './week.css';
@@ -336,6 +339,7 @@ export function WeekOverview({
   pinnedIds,
   onPinChange,
   onStatusSaved,
+  initialPanelOpen = true,
 }: {
   profiles: UserWithExtras[];
   userId: string;
@@ -350,8 +354,11 @@ export function WeekOverview({
   pinnedIds: string[];
   onPinChange: (colleagueUserId: string, pinned: boolean) => void;
   onStatusSaved: () => void;
+  /** Whether the side panel starts open; the visitor's last choice, read on the server. */
+  initialPanelOpen?: boolean;
 }) {
   const todayOnly = days.length === 1;
+  const [panelOpen, setPanelOpen] = useState(initialPanelOpen);
   const [query, setQuery] = useState('');
   const [selectedDay, setSelectedDay] = useState(days.includes(today) ? today : days[0]);
   const [openId, setOpenId] = useState<string | null>(null);
@@ -372,6 +379,12 @@ export function WeekOverview({
       else next.add(key);
       return next;
     });
+  };
+
+  const togglePanel = () => {
+    const next = !panelOpen;
+    setPanelOpen(next);
+    rememberWeekPanel(next);
   };
 
   const plan = (planned: string[]) => {
@@ -463,7 +476,7 @@ export function WeekOverview({
           </nav>
         }
       />
-      <div className="week-body">
+      <div className="week-body" data-panel={panelOpen ? 'open' : 'closed'}>
         <main className="week-main" id="dashboard-main">
           <div className="week-toolbar">
             <label className="week-search">
@@ -480,16 +493,33 @@ export function WeekOverview({
                 </button>
               )}
             </label>
-            <div className="week-filters" role="group" aria-label="Attendance view">
-              <Link href="/today" aria-current={todayOnly ? 'page' : undefined}>
-                Today
-              </Link>
-              <Link
-                href={`/today?week=${todayOnly ? currentWeekStart : weekStart}`}
-                aria-current={todayOnly ? undefined : 'page'}
+            <div className="week-toolbar-actions">
+              <div className="week-filters" role="group" aria-label="Attendance view">
+                <Link href="/today" aria-current={todayOnly ? 'page' : undefined}>
+                  Today
+                </Link>
+                <Link
+                  href={`/today?week=${todayOnly ? currentWeekStart : weekStart}`}
+                  aria-current={todayOnly ? undefined : 'page'}
+                >
+                  Week
+                </Link>
+              </div>
+              <button
+                type="button"
+                className="week-panel-toggle"
+                aria-expanded={panelOpen}
+                aria-controls={panelOpen ? 'day-panel' : undefined}
+                aria-label="Side panel"
+                title={panelOpen ? 'Hide side panel' : 'Show side panel'}
+                onClick={togglePanel}
               >
-                Week
-              </Link>
+                {panelOpen ? (
+                  <PanelRightClose size={18} aria-hidden="true" />
+                ) : (
+                  <PanelRightOpen size={18} aria-hidden="true" />
+                )}
+              </button>
             </div>
           </div>
           {!todayOnly && (
@@ -630,39 +660,44 @@ export function WeekOverview({
             )}
           </div>
         </main>
-        <aside
-          className="day-panel"
-          aria-label={`Who is in the office on ${formatDay(selectedDay, { weekday: 'long' })}`}
-        >
-          <div className="day-panel-inner">
-            <header className="day-panel-header">
-              <p className="day-panel-eyebrow">
-                {selectedDay === today ? 'Today' : selectedDay < today ? 'Earlier' : 'Planned'}
-                <span className="day-panel-sync" data-error={syncError || undefined}>
+        {panelOpen && (
+          <aside
+            id="day-panel"
+            className="day-panel"
+            aria-label={`Who is in the office on ${formatDay(selectedDay, { weekday: 'long' })}`}
+          >
+            <div className="day-panel-inner">
+              <header className="day-panel-header">
+                <p className="day-panel-eyebrow">
+                  {selectedDay === today ? 'Today' : selectedDay < today ? 'Earlier' : 'Planned'}
+                  <span className="day-panel-sync" data-error={syncError || undefined}>
+                    <i aria-hidden="true" />
+                    {syncError ? 'Reconnecting...' : 'Live'}
+                  </span>
+                </p>
+                <h2>
+                  {formatDay(selectedDay, { weekday: 'long', day: 'numeric', month: 'long' })}
+                </h2>
+                <p className="day-panel-total">
+                  <strong>{officeCounts[dayIndex]}</strong> of {people.length} in the office
+                </p>
+              </header>
+              {arrival && selectedDay === today && (
+                <p className="day-panel-arrival" role="status">
                   <i aria-hidden="true" />
-                  {syncError ? 'Reconnecting...' : 'Live'}
-                </span>
-              </p>
-              <h2>{formatDay(selectedDay, { weekday: 'long', day: 'numeric', month: 'long' })}</h2>
-              <p className="day-panel-total">
-                <strong>{officeCounts[dayIndex]}</strong> of {people.length} in the office
-              </p>
-            </header>
-            {arrival && selectedDay === today && (
-              <p className="day-panel-arrival" role="status">
-                <i aria-hidden="true" />
-                {arrival}
-              </p>
-            )}
-            <PinnedColleagues
-              people={colleagues}
-              pinnedIds={pinnedIds}
-              day={days[dayIndex]}
-              onOpen={setOpenId}
-              onPinChange={onPinChange}
-            />
-          </div>
-        </aside>
+                  {arrival}
+                </p>
+              )}
+              <PinnedColleagues
+                people={colleagues}
+                pinnedIds={pinnedIds}
+                day={days[dayIndex]}
+                onOpen={setOpenId}
+                onPinChange={onPinChange}
+              />
+            </div>
+          </aside>
+        )}
       </div>
       <PersonSheet
         person={profiles.find((person) => person.userId === openId)}

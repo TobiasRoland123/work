@@ -22,6 +22,7 @@ export const WeekOverviewWrapper = ({
   today: initialToday,
   initialPlans,
   initialPinnedIds,
+  initialPanelOpen = true,
 }: {
   initialProfiles: UserWithExtras[];
   userId: string;
@@ -32,6 +33,7 @@ export const WeekOverviewWrapper = ({
   today: string;
   initialPlans: UpcomingStatus[];
   initialPinnedIds: string[];
+  initialPanelOpen?: boolean;
 }) => {
   const todayOnly = days.length === 1;
   const [profiles, setProfiles] = useState(initialProfiles);
@@ -125,6 +127,7 @@ export const WeekOverviewWrapper = ({
       syncError={syncError}
       plans={plans}
       pinnedIds={pinnedIds}
+      initialPanelOpen={initialPanelOpen}
       onPinChange={(id, pinned) => void changePin(id, pinned)}
       onStatusSaved={() => void refetchProfiles()}
     />
