@@ -29,6 +29,7 @@ type ChannelItem = {
   lastOutcome: string;
 };
 const STORAGE_KEY = 'work.sandbox.channel';
+const INBOX_PREVIEW_LIMIT = 10;
 
 const copenhagen = new Intl.DateTimeFormat('en-GB', {
   timeZone: 'Europe/Copenhagen',
@@ -83,6 +84,17 @@ export function SandboxConsole({
   const [channel, setChannel] = useState<ChannelItem[]>([]);
   const [editing, setEditing] = useState<{ messageTs: string; text: string } | null>(null);
   const [newProfile, setNewProfile] = useState({ firstName: '', lastName: '' });
+  const [inboxExpanded, setInboxExpanded] = useState(false);
+  const [profileSearch, setProfileSearch] = useState('');
+  const visibleInbox = inboxExpanded
+    ? overview.inbox
+    : overview.inbox.slice(0, INBOX_PREVIEW_LIMIT);
+  const profileQuery = profileSearch.trim().toLowerCase();
+  const visibleProfiles = overview.profiles.filter(
+    (profile) =>
+      profileName(profile).toLowerCase().includes(profileQuery) ||
+      profile.slackUserId.toLowerCase().includes(profileQuery)
+  );
 
   useEffect(() => {
     try {
@@ -393,30 +405,48 @@ export function SandboxConsole({
             {overview.inbox.length === 0 ? (
               <p className="sandbox-hint">No inbox rows.</p>
             ) : (
-              <table className="sandbox-table">
-                <thead>
-                  <tr>
-                    <th>Announced</th>
-                    <th>Author</th>
-                    <th>State</th>
-                    <th>Reason</th>
-                    <th>Attempts</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {overview.inbox.map((row) => (
-                    <tr key={row.messageKey}>
-                      <td>{wallClockOfTs(row.messageTs)}</td>
-                      <td>{row.slackUserId ? authorLabel(row.slackUserId) : '–'}</td>
-                      <td>
-                        <span className={`sandbox-badge ${row.state}`}>{row.state}</span>
-                      </td>
-                      <td>{row.reason ?? '–'}</td>
-                      <td>{row.attempts}</td>
+              <>
+                <p className="sandbox-hint">
+                  Showing {visibleInbox.length} of {overview.inbox.length} inbox rows.
+                </p>
+                <table id="sandbox-inbox-table" className="sandbox-table">
+                  <thead>
+                    <tr>
+                      <th>Announced</th>
+                      <th>Author</th>
+                      <th>State</th>
+                      <th>Reason</th>
+                      <th>Attempts</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody>
+                    {visibleInbox.map((row) => (
+                      <tr key={row.messageKey}>
+                        <td>{wallClockOfTs(row.messageTs)}</td>
+                        <td>{row.slackUserId ? authorLabel(row.slackUserId) : '–'}</td>
+                        <td>
+                          <span className={`sandbox-badge ${row.state}`}>{row.state}</span>
+                        </td>
+                        <td>{row.reason ?? '–'}</td>
+                        <td>{row.attempts}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {overview.inbox.length > INBOX_PREVIEW_LIMIT && (
+                  <div className="sandbox-row" style={{ marginTop: 12 }}>
+                    <button
+                      className="sandbox-button secondary"
+                      type="button"
+                      aria-expanded={inboxExpanded}
+                      aria-controls="sandbox-inbox-table"
+                      onClick={() => setInboxExpanded(!inboxExpanded)}
+                    >
+                      {inboxExpanded ? 'Show fewer' : `Show all ${overview.inbox.length} rows`}
+                    </button>
+                  </div>
+                )}
+              </>
             )}
           </section>
         </div>
@@ -490,28 +520,45 @@ export function SandboxConsole({
           <section className="sandbox-card" aria-labelledby="profiles-heading">
             <h2 id="profiles-heading">Sandbox Profiles</h2>
             <p>People who exist only in this local database, under team {`T_LOCAL`}.</p>
-            {overview.profiles.length === 0 ? (
-              <p className="sandbox-hint">
-                No profiles yet. Seed the fixtures or run <code>pnpm sandbox:seed</code>.
-              </p>
-            ) : (
-              <ul className="sandbox-profiles">
-                {overview.profiles.map((profile) => (
-                  <li key={profile.userId}>
-                    <span>
-                      {profileName(profile)}
-                      {profile.slackDeactivated && (
-                        <>
-                          {' '}
-                          <span className="sandbox-badge">deactivated</span>
-                        </>
-                      )}
-                    </span>
-                    <span>{profile.slackUserId}</span>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <div className="sandbox-field">
+              <label htmlFor="sandbox-profile-search">Search profiles</label>
+              <input
+                id="sandbox-profile-search"
+                type="search"
+                placeholder="Search by name or Slack ID"
+                value={profileSearch}
+                onChange={(event) => setProfileSearch(event.target.value)}
+                aria-controls="sandbox-profile-results"
+              />
+            </div>
+            <div id="sandbox-profile-results">
+              {overview.profiles.length === 0 ? (
+                <p className="sandbox-hint">
+                  No profiles yet. Seed the fixtures or run <code>pnpm sandbox:seed</code>.
+                </p>
+              ) : visibleProfiles.length === 0 ? (
+                <p className="sandbox-hint" role="status">
+                  No profiles match your search. Try another name or Slack ID.
+                </p>
+              ) : (
+                <ul className="sandbox-profiles">
+                  {visibleProfiles.map((profile) => (
+                    <li key={profile.userId}>
+                      <span>
+                        {profileName(profile)}
+                        {profile.slackDeactivated && (
+                          <>
+                            {' '}
+                            <span className="sandbox-badge">deactivated</span>
+                          </>
+                        )}
+                      </span>
+                      <span>{profile.slackUserId}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
             <div className="sandbox-row" style={{ marginTop: 12 }}>
               <button
                 className="sandbox-button secondary"
