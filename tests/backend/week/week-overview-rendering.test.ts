@@ -3,6 +3,8 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DayPresence, Status } from '@/db/types';
 import { WeekOverview } from '@/components/week/WeekOverview';
+import { ProfileListItem } from '@/components/ui/ProfileListItem/ProfileListItem';
+import { StatusEmoji } from '@/components/ui/Status/StatusEmoji';
 import { resolveWorkWeek, workWeekDays } from '@/lib/status/week';
 
 vi.mock('@/components/layout/PageHeader', () => ({
@@ -22,6 +24,7 @@ const status = (values: Partial<Status>): Status => ({
   userID: 'anna',
   status: 'IN_OFFICE',
   details: null,
+  emoji: null,
   time: null,
   fromDate: days[0],
   toDate: days[4],
@@ -34,6 +37,10 @@ const status = (values: Partial<Status>): Status => ({
   sourceMessageKey: null,
   ...values,
 });
+
+// Existing assertions compare readable status text; decoration is covered separately.
+const withoutEmoji = (html: string) =>
+  html.replace(/<span aria-hidden="true">[^<]* <\/span>/gu, '');
 
 function renderWeek(selectedStatus: Status | null) {
   const html = renderToStaticMarkup(
@@ -62,8 +69,8 @@ function renderWeek(selectedStatus: Status | null) {
 
   return {
     html,
-    grid: html.match(/<div class="week-board"[\s\S]*?<\/main>/)?.[0] ?? '',
-    sidebar: html.match(/<aside[\s\S]*?<\/aside>/)?.[0] ?? '',
+    grid: withoutEmoji(html.match(/<div class="week-board"[\s\S]*?<\/main>/)?.[0] ?? ''),
+    sidebar: withoutEmoji(html.match(/<aside[\s\S]*?<\/aside>/)?.[0] ?? ''),
   };
 }
 
@@ -100,8 +107,8 @@ function renderToday(
 
   return {
     html,
-    grid: html.match(/<div class="week-board"[\s\S]*?<\/main>/)?.[0] ?? '',
-    sidebar: html.match(/<aside[\s\S]*?<\/aside>/)?.[0] ?? '',
+    grid: withoutEmoji(html.match(/<div class="week-board"[\s\S]*?<\/main>/)?.[0] ?? ''),
+    sidebar: withoutEmoji(html.match(/<aside[\s\S]*?<\/aside>/)?.[0] ?? ''),
   };
 }
 
@@ -180,7 +187,7 @@ describe('status labels in the week grid and selected-day sidebar', () => {
         onStatusSaved: vi.fn(),
       })
     );
-    const grid = html.match(/<div class="week-board"[\s\S]*?<\/main>/)?.[0] ?? '';
+    const grid = withoutEmoji(html.match(/<div class="week-board"[\s\S]*?<\/main>/)?.[0] ?? '');
     expect(grid).toContain('<span class="sr-only">No exception</span>');
     expect(grid).not.toContain('<strong>In office</strong>');
     expect(grid).toMatch(/aria-label="Plan [^"]+\. Currently: No exception"/);
@@ -263,8 +270,8 @@ describe('attendance view links', () => {
         onStatusSaved: vi.fn(),
       })
     );
-    const grid = html.match(/<div class="week-board"[\s\S]*?<\/main>/)?.[0] ?? '';
-    const sidebar = html.match(/<aside[\s\S]*?<\/aside>/)?.[0] ?? '';
+    const grid = withoutEmoji(html.match(/<div class="week-board"[\s\S]*?<\/main>/)?.[0] ?? '');
+    const sidebar = withoutEmoji(html.match(/<aside[\s\S]*?<\/aside>/)?.[0] ?? '');
     expect(grid).toContain('Anna Attendee');
     expect(grid).toContain('<strong>Vacation</strong>');
     expect(grid).not.toContain('Ben Office');
@@ -304,8 +311,8 @@ describe('attendance view links', () => {
         onStatusSaved: vi.fn(),
       })
     );
-    const grid = html.match(/<div class="week-board"[\s\S]*?<\/main>/)?.[0] ?? '';
-    const sidebar = html.match(/<aside[\s\S]*?<\/aside>/)?.[0] ?? '';
+    const grid = withoutEmoji(html.match(/<div class="week-board"[\s\S]*?<\/main>/)?.[0] ?? '');
+    const sidebar = withoutEmoji(html.match(/<aside[\s\S]*?<\/aside>/)?.[0] ?? '');
     expect(grid).toContain('Anna Attendee');
     expect(grid).toContain('<strong>On leave</strong>');
     expect(sidebar).not.toContain('Anna Attendee');
@@ -447,8 +454,8 @@ describe('today-only attendance', () => {
         onStatusSaved: vi.fn(),
       })
     );
-    const grid = html.match(/<div class="week-board"[\s\S]*?<\/main>/)?.[0] ?? '';
-    const sidebar = html.match(/<aside[\s\S]*?<\/aside>/)?.[0] ?? '';
+    const grid = withoutEmoji(html.match(/<div class="week-board"[\s\S]*?<\/main>/)?.[0] ?? '');
+    const sidebar = withoutEmoji(html.match(/<aside[\s\S]*?<\/aside>/)?.[0] ?? '');
     expect(grid).not.toContain('Anna Missing');
     expect(sidebar).not.toContain('Anna Missing');
     expect(grid).toContain('Ben Leave');
@@ -533,5 +540,52 @@ describe('daily announcement visibility after arrival', () => {
       expect(sidebar).toContain('<small>In late · from 09:30 · Dentist first</small>');
       expect(sidebar).toContain(`<strong>${count}</strong> of 1 in the office`);
     }
+  });
+});
+
+describe('status emoji presentation', () => {
+  it('shows the persisted vacation emoji beside readable labels in the board and sidebar', () => {
+    const { html } = renderWeek(
+      status({ status: 'VACATION', emoji: '🌴', details: 'Vacation 🌴' })
+    );
+    const grid = html.match(/<div class="week-board"[\s\S]*?<\/main>/)?.[0] ?? '';
+    const sidebar = html.match(/<aside[\s\S]*?<\/aside>/)?.[0] ?? '';
+    expect(grid).toContain('<strong><span aria-hidden="true">🌴 </span>Vacation</strong>');
+    expect(sidebar).toContain(
+      '<small><span aria-hidden="true">🌴 </span>Vacation · Vacation 🌴</small>'
+    );
+  });
+
+  it('gives manual declarations a default emoji without changing their note', () => {
+    const { html } = renderWeek(status({ status: 'FROM_HOME', details: 'Waiting for a delivery' }));
+    expect(html).toContain('<strong><span aria-hidden="true">🏠 </span>Home</strong>');
+    expect(html).toContain('Waiting for a delivery');
+  });
+
+  it('shows the chosen emoji once in the person details status, alongside dates and notes', () => {
+    const html = renderToStaticMarkup(
+      React.createElement(ProfileListItem, {
+        showStatus: true,
+        user: {
+          userId: 'anna',
+          email: 'anna@example.com',
+          firstName: 'Anna',
+          lastName: 'Attendee',
+          status: status({ status: 'VACATION', emoji: '🏖️', details: 'Family holiday' }),
+        },
+      })
+    );
+    expect(html).toContain('<span aria-hidden="true">🏖️ </span>Vacation');
+    expect(html.match(/🏖️/gu)).toHaveLength(1);
+    expect(html).toContain('Family holiday');
+  });
+
+  it('leaves notes and missing statuses without an attendance emoji', () => {
+    expect(
+      renderToStaticMarkup(React.createElement(StatusEmoji, { status: null, emoji: '🌴' }))
+    ).toBe('');
+    const { html } = renderWeek(status({ status: null, details: 'At a workshop' }));
+    expect(html).toContain('<strong>Note</strong>');
+    expect(html).not.toMatch(/<span aria-hidden="true">[^<]* <\/span>/u);
   });
 });

@@ -35,6 +35,7 @@ const status = (userID: string, date: string, value: Status['status']): Status =
   id: date === today ? 1 : 2,
   userID,
   status: value,
+  emoji: null,
   details: null,
   time: null,
   fromDate: date,
@@ -152,7 +153,7 @@ describe('date navigation in WeekOverview', () => {
     expect(html).toContain('Who is where on Tuesday');
     expect(html).toContain('Earlier');
     expect(html).toContain('Anna Colleague');
-    expect(html).toContain('<strong>Home</strong>');
+    expect(html).toContain('<strong><span aria-hidden="true">🏠 </span>Home</strong>');
     expect(html).not.toContain('<span>Ben Colleague</span>');
   });
 

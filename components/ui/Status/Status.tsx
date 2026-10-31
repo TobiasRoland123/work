@@ -1,3 +1,5 @@
+import { StatusEmoji } from './StatusEmoji';
+
 export type StatusType =
   | 'IN_OFFICE'
   | 'FROM_HOME'
@@ -14,10 +16,12 @@ export type StatusType =
 export type StatusProps = {
   status: StatusType | null;
   asLabel?: boolean;
+  emoji?: string | null;
+  details?: string | null;
   children?: React.ReactNode;
 };
 
-export function Status({ status, asLabel = true, children }: StatusProps) {
+export function Status({ status, asLabel = true, children, emoji, details }: StatusProps) {
   if (status === null) return null;
 
   // Map status types to display messages and colors
@@ -44,11 +48,27 @@ export function Status({ status, asLabel = true, children }: StatusProps) {
           className={`w-fit px-1.5 py-0.5 h-fit text-nowrap text-[#0b1014] ${color} rounded-md`}
           role="status"
         >
-          <p className="text-sm font-mono">{children ? children : message}</p>
+          <p className="text-sm font-mono">
+            {children ? (
+              children
+            ) : (
+              <>
+                <StatusEmoji status={status} emoji={emoji} details={details} />
+                {message}
+              </>
+            )}
+          </p>
         </div>
       ) : (
         <p className={'font-mono h-fit'} role={'status'}>
-          {children ? children : message}
+          {children ? (
+            children
+          ) : (
+            <>
+              <StatusEmoji status={status} emoji={emoji} details={details} />
+              {message}
+            </>
+          )}
         </p>
       )}
     </>
