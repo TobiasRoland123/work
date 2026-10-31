@@ -27,6 +27,7 @@ beforeEach(() => {
     endDate: '2026-10-16',
     totals: emptyAiUsage(),
     messages: { ai: 0, withoutAi: 0, total: 0 },
+    dailyMessages: [],
     daily: [],
     models: [],
     currentMonth: { start: '2026-10-01', ...emptyAiUsage() },
