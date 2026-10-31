@@ -3,8 +3,8 @@
   min-height: 100%;
   margin: 0 auto;
   padding: 26px clamp(20px, 5vw, 64px) 72px;
-  color: #0b1014;
-  background: #f1f0e7;
+  color: var(--office-ink);
+  background: var(--office-page);
 }
 
 .profile-info__hero {
@@ -13,7 +13,7 @@
   gap: clamp(24px, 6vw, 72px);
   margin-top: 62px;
   padding-bottom: 46px;
-  border-bottom: 1px solid #deded9;
+  border-bottom: 1px solid var(--office-border-soft);
 }
 
 .profile-info__avatar-wrap {
@@ -30,8 +30,8 @@
   place-items: center;
   overflow: hidden;
   border-radius: 50%;
-  background: #d1d0bd;
-  color: #0b1014;
+  background: var(--office-avatar);
+  color: var(--office-ink);
   font:
     36px var(--font-ibx-mono),
     monospace;
@@ -44,13 +44,13 @@
 }
 
 .profile-info__avatar-wrap small {
-  color: #737775;
+  color: var(--office-muted);
   font-size: 11px;
   text-align: center;
 }
 
 .profile-info__heading span {
-  color: #55543c;
+  color: var(--office-muted-strong);
   font:
     13px var(--font-ibx-mono),
     monospace;
@@ -80,7 +80,7 @@
   gap: 24px;
   align-items: end;
   padding: 20px 0;
-  border-bottom: 1px solid #deded9;
+  border-bottom: 1px solid var(--office-border-soft);
 }
 
 .profile-info__field-label p {
@@ -95,14 +95,14 @@
   display: block;
   margin: 0;
   overflow-wrap: anywhere;
-  color: #0b1014;
+  color: var(--office-ink);
   font-size: clamp(18px, 3vw, 25px);
   line-height: 1.25;
   text-decoration: none;
 }
 
 .profile-info__field-value a:hover {
-  color: #2d6ea8;
+  color: var(--office-link);
   text-decoration: underline;
 }
 

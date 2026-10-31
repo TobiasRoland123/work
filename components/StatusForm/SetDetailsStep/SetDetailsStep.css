@@ -4,7 +4,7 @@
 }
 
 .office-status-dialog .status-details-field [data-slot='form-label'] {
-  color: #6a7063;
+  color: var(--office-subtle);
   font:
     11px/1.2 var(--font-ibx-mono),
     monospace;
@@ -15,15 +15,14 @@
 .office-status-dialog .status-details-field input {
   height: 44px;
   padding: 0 12px;
-  border: 1px solid #deded8;
+  border: 1px solid var(--office-border);
   border-radius: 6px;
-  background: white;
-  color: #0b1014;
+  background: var(--office-surface);
+  color: var(--office-ink);
   font-size: 14px;
   box-shadow: none;
-  color-scheme: light;
 }
 
 .office-status-dialog .status-details-field input::placeholder {
-  color: #8b908e;
+  color: var(--office-faint);
 }

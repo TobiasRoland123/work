@@ -8,9 +8,11 @@ import './profile-info.css';
 
 interface UserProps {
   user: UserWithExtras;
+  /** Rendered below the profile fields, inside the same column. */
+  children?: React.ReactNode;
 }
 
-const ProfileInfo = ({ user }: UserProps) => {
+const ProfileInfo = ({ user, children }: UserProps) => {
   const profilePicture = getSlackImageUrl(user.profilePicture);
   const name = [user.firstName, user.lastName].filter(Boolean).join(' ');
   const heading = name ? name : 'Profile';
@@ -69,6 +71,7 @@ const ProfileInfo = ({ user }: UserProps) => {
           <ProfileInfoField label={'Mail'} value={user.email} href={`mailto:${user.email}`} />
         ) : null}
       </div>
+      {children}
     </section>
   );
 };

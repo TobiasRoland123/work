@@ -2,8 +2,10 @@ import type { Metadata } from 'next';
 
 import localFont from 'next/font/local';
 import './globals.css';
+import './themes.css';
 import './dark.css';
 import type * as React from 'react';
+import { PALETTE_INIT_SCRIPT } from '@/lib/theme/palettes';
 import { Providers } from './providers';
 const monumentGrotesk = localFont({
   src: [
@@ -61,6 +63,7 @@ export default async function RootLayout({
     >
       <head>
         <link rel="icon" href="./icon.svg" sizes="any" />
+        <script dangerouslySetInnerHTML={{ __html: PALETTE_INIT_SCRIPT }} />
       </head>
       <body>
         <Providers>{children}</Providers>

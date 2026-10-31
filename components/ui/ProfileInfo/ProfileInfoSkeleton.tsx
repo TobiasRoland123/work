@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { SkeletonText } from '@/components/ui/skeleton';
 import './profile-info.css';
 
@@ -11,7 +12,7 @@ const fields = [
 ];
 
 /** Placeholder for ProfileInfo while the signed-in profile loads. */
-export function ProfileInfoSkeleton() {
+export function ProfileInfoSkeleton({ children }: { children?: ReactNode }) {
   return (
     <section className="profile-info">
       <span role="status" className="sr-only">
@@ -49,6 +50,7 @@ export function ProfileInfoSkeleton() {
           </div>
         ))}
       </div>
+      {children}
     </section>
   );
 }
