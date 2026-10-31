@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type CSSProperties } from 'react';
+import { useState, type CSSProperties, type MouseEvent } from 'react';
 import Link from 'next/link';
 import * as Dialog from '@radix-ui/react-dialog';
 import {
@@ -39,6 +39,7 @@ import { Avatar } from './Avatar';
 import { rememberWeekPanel } from './panelPreference';
 import { PinnedColleagues } from './PinnedColleagues';
 import { StatusCorrection } from './StatusCorrection';
+import { DayPanelSkeleton, WeekBoardSkeleton } from './WeekOverviewSkeleton';
 import './week.css';
 
 const shortDay = (day: string) =>
@@ -338,11 +339,15 @@ export function WeekOverview({
   currentWeekStart,
   arrival,
   syncError,
+  loading = false,
   plans,
   pinnedIds,
   onPinChange,
   onStatusSaved,
   initialPanelOpen = true,
+  onPanelChange,
+  onNavigate,
+  onPrefetch,
 }: {
   profiles: UserWithExtras[];
   userId: string;
@@ -352,6 +357,8 @@ export function WeekOverview({
   currentWeekStart: string;
   arrival: string | null;
   syncError: boolean;
+  /** The chosen day or week is still being fetched, so the board and panel show placeholders. */
+  loading?: boolean;
   plans: UpcomingStatus[];
   /** Colleagues the signed-in person pinned, in the order they were pinned. */
   pinnedIds: string[];
@@ -359,6 +366,11 @@ export function WeekOverview({
   onStatusSaved: () => void;
   /** Whether the side panel starts open; the visitor's last choice, read on the server. */
   initialPanelOpen?: boolean;
+  onPanelChange?: (open: boolean) => void;
+  /** Handles a plain click on a day or week link without waiting for a server round trip. */
+  onNavigate?: (href: string) => void;
+  /** Warms the data behind a link when it is hovered, focused, or touched. */
+  onPrefetch?: (href: string) => void;
 }) {
   const todayOnly = days.length === 1;
   const [panelOpen, setPanelOpen] = useState(initialPanelOpen);
@@ -387,8 +399,31 @@ export function WeekOverview({
   const togglePanel = () => {
     const next = !panelOpen;
     setPanelOpen(next);
+    onPanelChange?.(next);
     rememberWeekPanel(next);
   };
+
+  const viewLinkProps = (href: string) =>
+    onNavigate
+      ? {
+          prefetch: false,
+          onClick: (event: MouseEvent<HTMLAnchorElement>) => {
+            if (
+              event.button !== 0 ||
+              event.metaKey ||
+              event.ctrlKey ||
+              event.shiftKey ||
+              event.altKey
+            )
+              return;
+            event.preventDefault();
+            onNavigate(href);
+          },
+          onMouseEnter: () => onPrefetch?.(href),
+          onFocus: () => onPrefetch?.(href),
+          onTouchStart: () => onPrefetch?.(href),
+        }
+      : {};
 
   const plan = (planned: string[]) => {
     setOpenId(null);
@@ -438,6 +473,13 @@ export function WeekOverview({
   });
   const groups = groupAttendance(visible, days[dayIndex]);
   const colleagues = people.filter((person) => person.userId !== userId);
+  const previousHref = todayOnly
+    ? `/today?day=${addDays(days[0], -1)}`
+    : `/today?week=${shiftWorkWeek(weekStart, -1)}`;
+  const nextHref = todayOnly
+    ? `/today?day=${addDays(days[0], 1)}`
+    : `/today?week=${shiftWorkWeek(weekStart, 1)}`;
+  const weekHref = `/today?week=${todayOnly ? currentWeekStart : weekStart}`;
 
   return (
     <div className="week-page">
@@ -450,12 +492,9 @@ export function WeekOverview({
         actions={
           <nav className="week-nav" aria-label={todayOnly ? 'Choose day' : 'Choose week'}>
             <Link
-              href={
-                todayOnly
-                  ? `/today?day=${addDays(days[0], -1)}`
-                  : `/today?week=${shiftWorkWeek(weekStart, -1)}`
-              }
+              href={previousHref}
               aria-label={todayOnly ? 'Previous day' : 'Previous week'}
+              {...viewLinkProps(previousHref)}
             >
               <ChevronLeft size={18} />
             </Link>
@@ -463,16 +502,14 @@ export function WeekOverview({
               href="/today"
               aria-current={todayOnly && days[0] === today ? 'page' : undefined}
               className="week-nav-current"
+              {...viewLinkProps('/today')}
             >
               Today
             </Link>
             <Link
-              href={
-                todayOnly
-                  ? `/today?day=${addDays(days[0], 1)}`
-                  : `/today?week=${shiftWorkWeek(weekStart, 1)}`
-              }
+              href={nextHref}
               aria-label={todayOnly ? 'Next day' : 'Next week'}
+              {...viewLinkProps(nextHref)}
             >
               <ChevronRight size={18} />
             </Link>
@@ -498,12 +535,17 @@ export function WeekOverview({
             </label>
             <div className="week-toolbar-actions">
               <div className="week-filters" role="group" aria-label="Attendance view">
-                <Link href="/today" aria-current={todayOnly ? 'page' : undefined}>
+                <Link
+                  href="/today"
+                  aria-current={todayOnly ? 'page' : undefined}
+                  {...viewLinkProps('/today')}
+                >
                   Today
                 </Link>
                 <Link
-                  href={`/today?week=${todayOnly ? currentWeekStart : weekStart}`}
+                  href={weekHref}
                   aria-current={todayOnly ? undefined : 'page'}
+                  {...viewLinkProps(weekHref)}
                 >
                   Week
                 </Link>
@@ -532,139 +574,149 @@ export function WeekOverview({
               Showing colleagues with an attendance exception this week.
             </p>
           )}
-          <div
-            className="week-board"
-            role="table"
-            aria-label={`Attendance, ${subtitle}`}
-            aria-describedby={todayOnly ? undefined : 'week-grouping-note'}
-            style={{ '--selected': dayIndex, '--days': days.length } as CSSProperties}
-          >
-            <div role="rowgroup" className="week-head">
-              <div role="row" className="week-row">
-                <div role="columnheader" className="week-person-head">
-                  Colleagues <span>{visible.length}</span>
-                </div>
-                <div className="week-strip">
-                  {days.map((day, index) => (
-                    <div
-                      role="columnheader"
-                      key={day}
-                      aria-current={day === today ? 'date' : undefined}
-                    >
-                      <button
-                        className="week-day"
-                        aria-pressed={day === selectedDay}
-                        data-past={day < today || undefined}
-                        onClick={() => setSelectedDay(day)}
-                      >
-                        <span className="week-day-name">
-                          {formatDay(day, { weekday: 'short' })}
-                          <span className="week-day-date">
-                            {formatDay(day, { day: 'numeric' })}
-                          </span>
-                          {day === today && <em>Today</em>}
-                        </span>
-                        <span className="week-day-count">
-                          <strong>{people.length - officeCounts[index]}</strong> out of office
-                        </span>
-                        <span className="week-day-meter" aria-hidden="true">
-                          <i
-                            style={{
-                              width: `${share(officeCounts[index], people.length) * 100}%`,
-                              background: `hsl(${Math.round(share(officeCounts[index], people.length) * 120)} 55% 40%)`,
-                            }}
-                          />
-                        </span>
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-            {groups.map(({ key, label, tone, members }) => (
-              <div role="rowgroup" className="week-status-group" aria-label={label} key={key}>
-                <div role="row" className="week-status-heading">
-                  <div role="cell" aria-colspan={days.length + 1}>
-                    <h2>
-                      <button
-                        type="button"
-                        className="week-group-toggle"
-                        aria-expanded={!collapsedGroups.has(key)}
-                        onClick={(event) => toggleGroup(key, event.detail)}
-                      >
-                        <ChevronDown size={16} className="group-chevron" aria-hidden="true" />
-                        <i className="tone-dot tone" data-tone={tone} aria-hidden="true" />
-                        {label}{' '}
-                        <span>
-                          {members.length} {collapsedGroups.has(key) ? 'hidden' : 'shown'}
-                        </span>
-                      </button>
-                    </h2>
+          {loading ? (
+            <WeekBoardSkeleton />
+          ) : (
+            <div
+              className="week-board"
+              role="table"
+              aria-label={`Attendance, ${subtitle}`}
+              aria-describedby={todayOnly ? undefined : 'week-grouping-note'}
+              style={{ '--selected': dayIndex, '--days': days.length } as CSSProperties}
+            >
+              <div role="rowgroup" className="week-head">
+                <div role="row" className="week-row">
+                  <div role="columnheader" className="week-person-head">
+                    Colleagues <span>{visible.length}</span>
                   </div>
-                </div>
-                <div
-                  role="none"
-                  className="group-collapse"
-                  data-collapsed={collapsedGroups.has(key) || undefined}
-                >
-                  <div role="none">
-                    {members.map((person) => (
-                      <div role="row" className="week-row week-person-row" key={person.userId}>
-                        <div role="rowheader" className="week-person-cell">
-                          <button className="week-person" onClick={() => setOpenId(person.userId)}>
-                            <Avatar person={person} />
-                            <span className="week-person-name">
-                              <span className="week-person-name-line">
-                                <span className="week-person-name-text">{personName(person)}</span>
-                                {person.userId === userId && <em>You</em>}
-                              </span>
-                              {person.userId === userId ? (
-                                <small>Click a day to plan it</small>
-                              ) : (
-                                person.organisationRoles?.[0] && (
-                                  <small>{person.organisationRoles[0]}</small>
-                                )
-                              )}
+                  <div className="week-strip">
+                    {days.map((day, index) => (
+                      <div
+                        role="columnheader"
+                        key={day}
+                        aria-current={day === today ? 'date' : undefined}
+                      >
+                        <button
+                          className="week-day"
+                          aria-pressed={day === selectedDay}
+                          data-past={day < today || undefined}
+                          onClick={() => setSelectedDay(day)}
+                        >
+                          <span className="week-day-name">
+                            {formatDay(day, { weekday: 'short' })}
+                            <span className="week-day-date">
+                              {formatDay(day, { day: 'numeric' })}
                             </span>
-                          </button>
-                        </div>
-                        <div className="week-strip">
-                          {segmentWeek(
-                            days.map(
-                              (date, index): DayPresence => ({
-                                date,
-                                status: statusOn(person, index),
-                              })
-                            )
-                          ).map((segment) => (
-                            <WeekCell
-                              key={segment.start}
-                              segment={segment}
-                              days={days}
-                              today={today}
-                              hideInOffice
-                              onPlan={person.userId === userId ? plan : undefined}
+                            {day === today && <em>Today</em>}
+                          </span>
+                          <span className="week-day-count">
+                            <strong>{people.length - officeCounts[index]}</strong> out of office
+                          </span>
+                          <span className="week-day-meter" aria-hidden="true">
+                            <i
+                              style={{
+                                width: `${share(officeCounts[index], people.length) * 100}%`,
+                                background: `hsl(${Math.round(share(officeCounts[index], people.length) * 120)} 55% 40%)`,
+                              }}
                             />
-                          ))}
-                        </div>
+                          </span>
+                        </button>
                       </div>
                     ))}
                   </div>
                 </div>
               </div>
-            ))}
-            {!visible.length && (
-              <p className="week-empty">
-                {!people.length
-                  ? 'No colleagues to show yet.'
-                  : needle
-                    ? 'No colleagues match your search.'
-                    : 'No attendance exceptions to show.'}
-              </p>
-            )}
-          </div>
+              {groups.map(({ key, label, tone, members }) => (
+                <div role="rowgroup" className="week-status-group" aria-label={label} key={key}>
+                  <div role="row" className="week-status-heading">
+                    <div role="cell" aria-colspan={days.length + 1}>
+                      <h2>
+                        <button
+                          type="button"
+                          className="week-group-toggle"
+                          aria-expanded={!collapsedGroups.has(key)}
+                          onClick={(event) => toggleGroup(key, event.detail)}
+                        >
+                          <ChevronDown size={16} className="group-chevron" aria-hidden="true" />
+                          <i className="tone-dot tone" data-tone={tone} aria-hidden="true" />
+                          {label}{' '}
+                          <span>
+                            {members.length} {collapsedGroups.has(key) ? 'hidden' : 'shown'}
+                          </span>
+                        </button>
+                      </h2>
+                    </div>
+                  </div>
+                  <div
+                    role="none"
+                    className="group-collapse"
+                    data-collapsed={collapsedGroups.has(key) || undefined}
+                  >
+                    <div role="none">
+                      {members.map((person) => (
+                        <div role="row" className="week-row week-person-row" key={person.userId}>
+                          <div role="rowheader" className="week-person-cell">
+                            <button
+                              className="week-person"
+                              onClick={() => setOpenId(person.userId)}
+                            >
+                              <Avatar person={person} />
+                              <span className="week-person-name">
+                                <span className="week-person-name-line">
+                                  <span className="week-person-name-text">
+                                    {personName(person)}
+                                  </span>
+                                  {person.userId === userId && <em>You</em>}
+                                </span>
+                                {person.userId === userId ? (
+                                  <small>Click a day to plan it</small>
+                                ) : (
+                                  person.organisationRoles?.[0] && (
+                                    <small>{person.organisationRoles[0]}</small>
+                                  )
+                                )}
+                              </span>
+                            </button>
+                          </div>
+                          <div className="week-strip">
+                            {segmentWeek(
+                              days.map(
+                                (date, index): DayPresence => ({
+                                  date,
+                                  status: statusOn(person, index),
+                                })
+                              )
+                            ).map((segment) => (
+                              <WeekCell
+                                key={segment.start}
+                                segment={segment}
+                                days={days}
+                                today={today}
+                                hideInOffice
+                                onPlan={person.userId === userId ? plan : undefined}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
+              {!visible.length && (
+                <p className="week-empty">
+                  {!people.length
+                    ? 'No colleagues to show yet.'
+                    : needle
+                      ? 'No colleagues match your search.'
+                      : 'No attendance exceptions to show.'}
+                </p>
+              )}
+            </div>
+          )}
         </main>
-        {panelOpen && (
+        {panelOpen && loading && <DayPanelSkeleton />}
+        {panelOpen && !loading && (
           <aside
             id="day-panel"
             className="day-panel"

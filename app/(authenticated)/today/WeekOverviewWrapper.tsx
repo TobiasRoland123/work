@@ -7,16 +7,31 @@ import { pinColleagueAction, unpinColleagueAction } from '@/app/actions/pinActio
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabaseClient';
 import { copenhagenDate } from '@/lib/status/active';
-import { workWeekStart } from '@/lib/status/week';
+import { resolveWeekView, workWeekDays, workWeekStart } from '@/lib/status/week';
 import type { UpcomingStatus } from '@/lib/status/plan';
 import { WeekOverview } from '@/components/week/WeekOverview';
 import { isInOffice, personName } from '@/components/week/presence';
+
+/** `week` is a work week's Monday; without it the view is one day, and no day means today. */
+type View = { week?: string; day?: string };
+
+const sameView = (a: View, b: View) => a.week === b.week && a.day === b.day;
+const viewKey = (view: View, today: string) =>
+  view.week ? `week:${view.week}` : `day:${view.day ?? today}`;
+
+function viewFromHref(href: string): View | null {
+  const url = new URL(href, window.location.origin);
+  if (url.pathname !== '/today') return null;
+  return resolveWeekView({
+    week: url.searchParams.get('week'),
+    day: url.searchParams.get('day'),
+  });
+}
 
 export const WeekOverviewWrapper = ({
   initialProfiles,
   userId,
   weekStart,
-  currentWeekStart,
   days,
   day,
   today: initialToday,
@@ -27,7 +42,6 @@ export const WeekOverviewWrapper = ({
   initialProfiles: UserWithExtras[];
   userId: string;
   weekStart: string;
-  currentWeekStart: string;
   days: string[];
   day?: string;
   today: string;
@@ -35,26 +49,62 @@ export const WeekOverviewWrapper = ({
   initialPinnedIds: string[];
   initialPanelOpen?: boolean;
 }) => {
-  const todayOnly = days.length === 1;
+  const [initialView] = useState<View>(() => ({
+    week: days.length === 1 ? undefined : weekStart,
+    day,
+  }));
+  const [view, setView] = useState(initialView);
+  const [loadedKey, setLoadedKey] = useState(() => viewKey(initialView, initialToday));
+  const [panelOpen, setPanelOpen] = useState(initialPanelOpen);
   const [profiles, setProfiles] = useState(initialProfiles);
   const [plans, setPlans] = useState(initialPlans);
   const [pinnedIds, setPinnedIds] = useState(initialPinnedIds);
   const [today, setToday] = useState(initialToday);
   const [arrival, setArrival] = useState<string | null>(null);
   const [syncError, setSyncError] = useState(false);
+  const viewRef = useRef(initialView);
+  const todayRef = useRef(initialToday);
+  // Attendance already fetched per view, so revisiting one shows it before the refresh lands.
+  const cache = useRef(new Map([[viewKey(initialView, initialToday), initialProfiles]]));
+  const inflight = useRef(new Map<string, Promise<UserWithExtras[] | undefined>>());
   const previous = useRef(initialProfiles);
   const pending = useRef(false);
   const mounted = useRef(false);
   const arrivalTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const updateToday = useCallback((date: string) => {
+    todayRef.current = date;
+    setToday(date);
+  }, []);
+
+  const fetchView = useCallback((target: View) => {
+    const key = viewKey(target, todayRef.current);
+    let request = inflight.current.get(key);
+    if (!request) {
+      request = getWeekOverviewAction(target.week, target.day)
+        .then((users) => {
+          // The server resolved "today" itself, so file it under the date it is now.
+          if (users) cache.current.set(viewKey(target, copenhagenDate()), users);
+          return users;
+        })
+        .finally(() => inflight.current.delete(key));
+      inflight.current.set(key, request);
+    }
+    return request;
+  }, []);
+
   const refetchProfiles = useCallback(async () => {
     if (pending.current) return;
     pending.current = true;
+    const target = viewRef.current;
     try {
       const [users, upcoming] = await Promise.all([
-        getWeekOverviewAction(todayOnly ? undefined : weekStart, day),
+        fetchView(target),
         getMyUpcomingStatusesAction(),
       ]);
       if (!mounted.current || !users) return;
+      setPlans(upcoming);
+      // The visitor may have moved on while this was loading; that move applies its own data.
+      if (!sameView(viewRef.current, target)) return;
       const before = new Set(previous.current.filter(isInOffice).map((person) => person.userId));
       const arrivals = users.filter((person) => isInOffice(person) && !before.has(person.userId));
       if (arrivals.length) {
@@ -66,17 +116,66 @@ export const WeekOverviewWrapper = ({
         if (arrivalTimer.current) clearTimeout(arrivalTimer.current);
         arrivalTimer.current = setTimeout(() => setArrival(null), 7000);
       }
+      const now = copenhagenDate();
       previous.current = users;
       setProfiles(users);
-      setPlans(upcoming);
-      setToday(copenhagenDate());
+      updateToday(now);
+      setLoadedKey(viewKey(target, now));
       setSyncError(false);
     } catch {
       if (mounted.current) setSyncError(true);
     } finally {
       pending.current = false;
     }
-  }, [weekStart, todayOnly, day]);
+  }, [fetchView, updateToday]);
+
+  // Switching day or week updates the page at once. Cached attendance is shown immediately and
+  // refreshed; otherwise placeholders stand in until the server answers.
+  const show = useCallback(
+    (next: View, fallbackHref: string) => {
+      viewRef.current = next;
+      setView(next);
+      const key = viewKey(next, todayRef.current);
+      const apply = (users: UserWithExtras[]) => {
+        if (!mounted.current || !sameView(viewRef.current, next)) return;
+        previous.current = users;
+        setProfiles(users);
+        setLoadedKey(key);
+        setSyncError(false);
+      };
+      const cached = cache.current.get(key);
+      if (cached) apply(cached);
+      fetchView(next)
+        .then((users) => users && apply(users))
+        .catch(() => {
+          if (!mounted.current || !sameView(viewRef.current, next)) return;
+          if (cached) setSyncError(true);
+          else window.location.assign(fallbackHref);
+        });
+    },
+    [fetchView]
+  );
+
+  const navigate = useCallback(
+    (href: string) => {
+      const next = viewFromHref(href);
+      if (!next) return window.location.assign(href);
+      if (href !== window.location.pathname + window.location.search) {
+        window.history.pushState(null, '', href);
+      }
+      show(next, href);
+    },
+    [show]
+  );
+
+  const prefetch = useCallback(
+    (href: string) => {
+      const next = viewFromHref(href);
+      if (!next || cache.current.has(viewKey(next, todayRef.current))) return;
+      fetchView(next).catch(() => {});
+    },
+    [fetchView]
+  );
 
   // Pins change instantly and roll back when the server refuses them. They are not polled, so
   // the list cannot flicker back to an older state while a change is on its way.
@@ -106,28 +205,41 @@ export const WeekOverviewWrapper = ({
       .subscribe();
     const timer = window.setInterval(refresh, 15_000);
     document.addEventListener('visibilitychange', refresh);
+    const onPopState = () => {
+      const next = viewFromHref(window.location.href);
+      if (next && !sameView(next, viewRef.current)) show(next, window.location.href);
+    };
+    window.addEventListener('popstate', onPopState);
     return () => {
+      window.removeEventListener('popstate', onPopState);
       mounted.current = false;
       clearInterval(timer);
       if (arrivalTimer.current) clearTimeout(arrivalTimer.current);
       document.removeEventListener('visibilitychange', refresh);
       if (channel) void supabase?.removeChannel(channel);
     };
-  }, [refetchProfiles]);
+  }, [refetchProfiles, show]);
+
+  const todayOnly = !view.week;
+  const viewDays = view.week ? workWeekDays(view.week) : [view.day ?? today];
   return (
     <WeekOverview
-      key={todayOnly ? (day ?? today) : weekStart}
+      key={todayOnly ? viewDays[0] : view.week}
       profiles={profiles}
       userId={userId}
-      days={todayOnly ? [day ?? today] : days}
+      days={viewDays}
       today={today}
-      weekStart={todayOnly ? workWeekStart(day ?? today) : weekStart}
-      currentWeekStart={todayOnly ? workWeekStart(today) : currentWeekStart}
+      weekStart={view.week ?? workWeekStart(viewDays[0])}
+      currentWeekStart={workWeekStart(today)}
       arrival={arrival}
       syncError={syncError}
+      loading={loadedKey !== viewKey(view, today)}
       plans={plans}
       pinnedIds={pinnedIds}
-      initialPanelOpen={initialPanelOpen}
+      initialPanelOpen={panelOpen}
+      onPanelChange={setPanelOpen}
+      onNavigate={navigate}
+      onPrefetch={prefetch}
       onPinChange={(id, pinned) => void changePin(id, pinned)}
       onStatusSaved={() => void refetchProfiles()}
     />

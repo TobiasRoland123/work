@@ -20,6 +20,118 @@ const rows = [
 
 const panelGroups = [{ heading: 'w-20', people: ['w-28', 'w-36', 'w-24', 'w-32', 'w-20'] }];
 
+/** Placeholder for the attendance board while a day or week loads. */
+export function WeekBoardSkeleton() {
+  return (
+    <div
+      className="week-board"
+      aria-hidden="true"
+      // No day is selected yet, so skip the selected-day column highlight.
+      style={{ '--from': '0%', '--to': '0%' } as CSSProperties}
+    >
+      <div className="week-head">
+        <div className="week-row">
+          <div className="week-person-head">Colleagues</div>
+          <div className="week-strip">
+            {Array.from({ length: 5 }, (_, day) => (
+              <div key={day} className="week-day">
+                <span className="week-day-name">
+                  <SkeletonText className="w-12" />
+                </span>
+                <span className="week-day-count">
+                  <SkeletonText className="w-16" />
+                </span>
+                <span className={`week-day-meter ${pulse}`} />
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+      <div>
+        {rows.map((row, index) => {
+          let column = 0;
+          return (
+            <div key={index} className="week-row week-person-row">
+              <div className="week-person-cell">
+                <div className="week-person">
+                  <Skeleton className="size-8 shrink-0 rounded-full" />
+                  <span className="week-person-name">
+                    <SkeletonText className={row.name} />
+                    {row.role && (
+                      <small>
+                        <SkeletonText className={row.role} />
+                      </small>
+                    )}
+                  </span>
+                </div>
+              </div>
+              <div className="week-strip">
+                {row.segments.map((span) => {
+                  const start = column;
+                  column += span;
+                  return (
+                    <div
+                      key={start}
+                      className={`week-cell tone ${pulse}`}
+                      style={{ gridColumn: `${start + 1} / span ${span}` }}
+                    >
+                      <SkeletonText className={span > 1 ? 'w-20' : 'w-12'} />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/** Placeholder for the side panel while a day or week loads. */
+export function DayPanelSkeleton() {
+  return (
+    <aside className="day-panel" aria-hidden="true">
+      <div className="day-panel-inner">
+        <header className="day-panel-header">
+          <p className="day-panel-eyebrow">
+            <SkeletonText className="w-12" />
+            <SkeletonText className="w-10" />
+          </p>
+          <h2>
+            <SkeletonText className="w-56" />
+          </h2>
+          <p className="day-panel-total">
+            <strong className="block">
+              <SkeletonText className="w-40" />
+            </strong>
+          </p>
+        </header>
+        {panelGroups.map((group, index) => (
+          <section key={index} className="day-panel-group">
+            <h3>
+              <SkeletonText className={group.heading} />
+            </h3>
+            <ul>
+              {group.people.map((name, person) => (
+                <li key={person} className="flex items-center gap-[10px] px-[6px] py-[7px]">
+                  <Skeleton className="size-8 shrink-0 rounded-full" />
+                  <span className="day-panel-person">
+                    <SkeletonText className={name} />
+                    <small>
+                      <SkeletonText className="w-16" />
+                    </small>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </section>
+        ))}
+      </div>
+    </aside>
+  );
+}
+
 /** Placeholder for WeekOverview while the week's attendance loads. */
 export function WeekOverviewSkeleton() {
   return (
@@ -45,107 +157,9 @@ export function WeekOverviewSkeleton() {
               ))}
             </div>
           </div>
-          <div
-            className="week-board"
-            aria-hidden="true"
-            // No day is selected yet, so skip the selected-day column highlight.
-            style={{ '--from': '0%', '--to': '0%' } as CSSProperties}
-          >
-            <div className="week-head">
-              <div className="week-row">
-                <div className="week-person-head">Colleagues</div>
-                <div className="week-strip">
-                  {Array.from({ length: 5 }, (_, day) => (
-                    <div key={day} className="week-day">
-                      <span className="week-day-name">
-                        <SkeletonText className="w-12" />
-                      </span>
-                      <span className="week-day-count">
-                        <SkeletonText className="w-16" />
-                      </span>
-                      <span className={`week-day-meter ${pulse}`} />
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-            <div>
-              {rows.map((row, index) => {
-                let column = 0;
-                return (
-                  <div key={index} className="week-row week-person-row">
-                    <div className="week-person-cell">
-                      <div className="week-person">
-                        <Skeleton className="size-8 shrink-0 rounded-full" />
-                        <span className="week-person-name">
-                          <SkeletonText className={row.name} />
-                          {row.role && (
-                            <small>
-                              <SkeletonText className={row.role} />
-                            </small>
-                          )}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="week-strip">
-                      {row.segments.map((span) => {
-                        const start = column;
-                        column += span;
-                        return (
-                          <div
-                            key={start}
-                            className={`week-cell tone ${pulse}`}
-                            style={{ gridColumn: `${start + 1} / span ${span}` }}
-                          >
-                            <SkeletonText className={span > 1 ? 'w-20' : 'w-12'} />
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          <WeekBoardSkeleton />
         </main>
-        <aside className="day-panel" aria-hidden="true">
-          <div className="day-panel-inner">
-            <header className="day-panel-header">
-              <p className="day-panel-eyebrow">
-                <SkeletonText className="w-12" />
-                <SkeletonText className="w-10" />
-              </p>
-              <h2>
-                <SkeletonText className="w-56" />
-              </h2>
-              <p className="day-panel-total">
-                <strong className="block">
-                  <SkeletonText className="w-40" />
-                </strong>
-              </p>
-            </header>
-            {panelGroups.map((group, index) => (
-              <section key={index} className="day-panel-group">
-                <h3>
-                  <SkeletonText className={group.heading} />
-                </h3>
-                <ul>
-                  {group.people.map((name, person) => (
-                    <li key={person} className="flex items-center gap-[10px] px-[6px] py-[7px]">
-                      <Skeleton className="size-8 shrink-0 rounded-full" />
-                      <span className="day-panel-person">
-                        <SkeletonText className={name} />
-                        <small>
-                          <SkeletonText className="w-16" />
-                        </small>
-                      </span>
-                    </li>
-                  ))}
-                </ul>
-              </section>
-            ))}
-          </div>
-        </aside>
+        <DayPanelSkeleton />
       </div>
     </div>
   );
