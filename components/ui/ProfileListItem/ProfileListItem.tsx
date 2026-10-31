@@ -109,7 +109,13 @@ export function ProfileListItem({ user, showStatus = false }: ProfileListItemPro
               </p>
             ))}
 
-          {showStatus && user.status && <Status status={user.status.status} />}
+          {showStatus && user.status && (
+            <Status
+              status={user.status.status}
+              emoji={user.status.emoji}
+              details={user.status.details}
+            />
+          )}
           {formattedActionTime && user.status && !formattedInterval ? (
             <Status status={user.status.status}>{formattedActionTime}</Status>
           ) : null}

@@ -12,6 +12,7 @@ const imported: Status = {
   id: 7,
   userID: 'person',
   status: 'FROM_HOME',
+  emoji: null,
   details: 'hjemme resten af ugen',
   time: null,
   fromDate: '2026-09-21',

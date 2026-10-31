@@ -12,6 +12,7 @@ const row = (values: Partial<Status> = {}): Status => ({
   id: 1,
   userID: 'person',
   status: 'VACATION',
+  emoji: null,
   details: null,
   time: null,
   fromDate: '2026-09-22',

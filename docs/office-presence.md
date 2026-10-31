@@ -8,6 +8,12 @@ The board, sidebar and day-by-day person details retain the latest announcement 
 
 Office totals and the person's Right now status still use resolved presence. Today's presence is live, so an arrival at 09:30 counts as in office from 09:30 even while the late announcement stays visible. Other days use 09:00 Copenhagen time, the start of the workday, for office counts. Ordinary office attendance and workday defaults remain omitted from exception rows. `lib/status/week.ts` supplies both the daily declaration and resolved presence.
 
+## Status emojis
+
+Attendance labels show an automatic emoji in the board, selected-day list and person details. The text label remains visible, and screen readers read that label without repeating the decorative emoji. Manual declarations and existing attendance get a suitable default, such as 🏠 for working from home.
+
+Slack import keeps the first recognized emoji that matches each declared status, including known Slack shortcodes. For example, “Vacation today and tomorrow 🌴” keeps 🌴 beside Vacation. Unrelated emojis and custom Slack emojis do not replace the default. Notes without an attendance status have no automatic emoji. The choice is automatic; there is no emoji picker yet.
+
 ## Planning ahead
 
 People announce days ahead from the same status form, in Slack, or straight from the board. On the board, the signed-in person's own cells from today onward are buttons: clicking one opens the form with that day selected, and clicking a multi-day bar selects its remaining days. The form's "When" section offers the weekdays of the viewed week and the week after as toggles, so non-adjacent days (home on Monday and Thursday) take one save. "Longer period" switches to from/to dates and is the default for vacation and leave. In late and leaving early always use individual days, and the chosen time applies to each of them.

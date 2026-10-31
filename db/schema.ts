@@ -102,6 +102,7 @@ export const status = pgTable(
     // Null allows a Slack description when no attendance status fits.
     status: userStatus('status').default('IN_OFFICE'),
     details: text('details'),
+    emoji: text('emoji'),
     time: timestamp('time'),
     fromDate: date('from_date'),
     toDate: date('to_date'),

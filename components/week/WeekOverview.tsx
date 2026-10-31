@@ -18,6 +18,7 @@ import type { DayPresence, UserWithExtras } from '@/db/types';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatusDialog } from '@/components/layout/StatusDialog';
 import { ProfileListItem } from '@/components/ui/ProfileListItem/ProfileListItem';
+import { StatusEmoji } from '@/components/ui/Status/StatusEmoji';
 import { deleteStatusByIdAction } from '@/app/actions/statusActions';
 import { getSlackImageUrl } from '@/lib/slack/image';
 import type { UpcomingStatus } from '@/lib/status/plan';
@@ -103,7 +104,14 @@ function WeekCell({
     <span className="sr-only">No exception</span>
   ) : (
     <>
-      <strong>{label}</strong>
+      <strong>
+        <StatusEmoji
+          status={segment.status?.status ?? null}
+          emoji={segment.status?.emoji}
+          details={segment.status?.details}
+        />
+        {label}
+      </strong>
       {note && <small>{note}</small>}
       {assumed && <span className="sr-only"> (assumed)</span>}
     </>
@@ -158,6 +166,7 @@ function UpcomingPlans({
             </span>
             <span className="person-sheet-status">
               <span className="week-chip tone" data-tone={tone}>
+                <StatusEmoji status={plan.status} emoji={plan.emoji} details={plan.details} />
                 {label}
               </span>
               {note && <small>{note}</small>}
@@ -247,6 +256,11 @@ function PersonSheet({
                               data-tone={tone}
                               data-assumed={isAssumed(status) || undefined}
                             >
+                              <StatusEmoji
+                                status={status?.status ?? null}
+                                emoji={status?.emoji}
+                                details={status?.details}
+                              />
                               {label}
                               {isAssumed(status) && ' (assumed)'}
                             </span>
@@ -659,7 +673,16 @@ export function WeekOverview({
                               <Avatar person={person} size={28} />
                               <span className="day-panel-person">
                                 <span>{personName(person)}</span>
-                                {detail && <small>{detail}</small>}
+                                {detail && (
+                                  <small>
+                                    <StatusEmoji
+                                      status={status?.status ?? null}
+                                      emoji={status?.emoji}
+                                      details={status?.details}
+                                    />
+                                    {detail}
+                                  </small>
+                                )}
                               </span>
                               <i className="tone-dot tone" data-tone={tone} aria-hidden="true" />
                             </button>
