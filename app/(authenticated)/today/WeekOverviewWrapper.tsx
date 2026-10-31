@@ -7,7 +7,13 @@ import { pinColleagueAction, unpinColleagueAction } from '@/app/actions/pinActio
 import { toast } from 'sonner';
 import { supabase } from '@/lib/supabaseClient';
 import { copenhagenDate } from '@/lib/status/active';
-import { resolveWeekView, workWeekDays, workWeekStart } from '@/lib/status/week';
+import {
+  addDays,
+  resolveWeekView,
+  shiftWorkWeek,
+  workWeekDays,
+  workWeekStart,
+} from '@/lib/status/week';
 import type { UpcomingStatus } from '@/lib/status/plan';
 import { WeekOverview } from '@/components/week/WeekOverview';
 import { isInOffice, personName } from '@/components/week/presence';
@@ -168,13 +174,23 @@ export const WeekOverviewWrapper = ({
     [show]
   );
 
+  const prefetchView = useCallback(
+    (next: View) => {
+      if (cache.current.has(viewKey(next, todayRef.current))) return Promise.resolve();
+      return fetchView(next).then(
+        () => undefined,
+        () => undefined
+      );
+    },
+    [fetchView]
+  );
+
   const prefetch = useCallback(
     (href: string) => {
       const next = viewFromHref(href);
-      if (!next || cache.current.has(viewKey(next, todayRef.current))) return;
-      fetchView(next).catch(() => {});
+      if (next) void prefetchView(next);
     },
-    [fetchView]
+    [prefetchView]
   );
 
   // Pins change instantly and roll back when the server refuses them. They are not polled, so
@@ -222,6 +238,43 @@ export const WeekOverviewWrapper = ({
 
   const todayOnly = !view.week;
   const viewDays = view.week ? workWeekDays(view.week) : [view.day ?? today];
+  const loading = loadedKey !== viewKey(view, today);
+
+  // Once the current view is on screen, quietly fetch every view its buttons lead to, one at a
+  // time and only when the browser is idle, so the next click is usually answered from the cache.
+  useEffect(() => {
+    if (loading) return;
+    const targets: View[] = view.week
+      ? [
+          { week: shiftWorkWeek(view.week, 1) },
+          { week: shiftWorkWeek(view.week, -1) },
+          {},
+          { week: workWeekStart(todayRef.current) },
+        ]
+      : [
+          { day: addDays(viewDays[0], 1) },
+          { day: addDays(viewDays[0], -1) },
+          { week: workWeekStart(todayRef.current) },
+          {},
+        ];
+    let cancelled = false;
+    const run = async () => {
+      for (const target of targets) {
+        if (cancelled || document.visibilityState !== 'visible') return;
+        await prefetchView(target);
+      }
+    };
+    const idle =
+      window.requestIdleCallback ?? ((callback: () => void) => window.setTimeout(callback, 200));
+    const cancelIdle = window.cancelIdleCallback ?? window.clearTimeout;
+    const handle = idle(() => void run());
+    return () => {
+      cancelled = true;
+      cancelIdle(handle);
+    };
+    // viewDays follows the view and today, both already covered by these dependencies.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [loading, view, today, prefetchView]);
   return (
     <WeekOverview
       key={todayOnly ? viewDays[0] : view.week}
@@ -233,7 +286,7 @@ export const WeekOverviewWrapper = ({
       currentWeekStart={workWeekStart(today)}
       arrival={arrival}
       syncError={syncError}
-      loading={loadedKey !== viewKey(view, today)}
+      loading={loading}
       plans={plans}
       pinnedIds={pinnedIds}
       initialPanelOpen={panelOpen}
