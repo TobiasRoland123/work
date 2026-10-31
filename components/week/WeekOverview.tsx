@@ -554,8 +554,8 @@ export function WeekOverview({
                           <button className="week-person" onClick={() => setOpenId(person.userId)}>
                             <Avatar person={person} />
                             <span className="week-person-name">
-                              <span>
-                                {personName(person)}
+                              <span className="week-person-name-line">
+                                <span className="week-person-name-text">{personName(person)}</span>
                                 {person.userId === userId && <em>You</em>}
                               </span>
                               {person.userId === userId ? (
