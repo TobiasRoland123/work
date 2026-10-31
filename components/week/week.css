@@ -323,7 +323,7 @@
   padding: 8px 16px;
   text-align: left;
 }
-.week-person:hover .week-person-name > span {
+.week-person:hover .week-person-name-text {
   text-decoration: underline;
 }
 .week-avatar {
@@ -346,8 +346,15 @@
   min-width: 0;
   font-size: 13px;
 }
-.week-person-name > span,
+.week-person-name-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+.week-person-name-text,
 .week-person-name small {
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -357,7 +364,7 @@
   font-size: 11px;
 }
 .week-person-name em {
-  margin-left: 6px;
+  flex-shrink: 0;
   padding: 0 6px;
   border-radius: 99px;
   background: #a5cdf0;
