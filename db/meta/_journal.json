@@ -327,8 +327,15 @@
     {
       "idx": 46,
       "version": "7",
-      "when": 1793407340270,
-      "tag": "0046_employee_stats_access",
+      "when": 1793407392036,
+      "tag": "0046_pinned_colleagues",
+      "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1793430787362,
+      "tag": "0047_employee_stats_access",
       "breakpoints": true
     }
   ]

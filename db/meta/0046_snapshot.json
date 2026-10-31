@@ -1,5 +1,5 @@
 {
-  "id": "b76e32f1-dbd6-4ad4-9cfa-4454cc159e9c",
+  "id": "90b1aeec-9f2e-44c5-b924-1af196d12d98",
   "prevId": "320b7bb4-0f86-4747-94f4-6fa517197ede",
   "version": "7",
   "dialect": "postgresql",
@@ -28,65 +28,6 @@
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
-    },
-    "public.employee_stats_access": {
-      "name": "employee_stats_access",
-      "schema": "",
-      "columns": {
-        "user_id": {
-          "name": "user_id",
-          "type": "varchar(36)",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "granted_by_user_id": {
-          "name": "granted_by_user_id",
-          "type": "varchar(36)",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "granted_at": {
-          "name": "granted_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {},
-      "foreignKeys": {
-        "employee_stats_access_user_id_users_user_id_fk": {
-          "name": "employee_stats_access_user_id_users_user_id_fk",
-          "tableFrom": "employee_stats_access",
-          "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "user_id"
-          ],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        },
-        "employee_stats_access_granted_by_user_id_users_user_id_fk": {
-          "name": "employee_stats_access_granted_by_user_id_users_user_id_fk",
-          "tableFrom": "employee_stats_access",
-          "tableTo": "users",
-          "columnsFrom": [
-            "granted_by_user_id"
-          ],
-          "columnsTo": [
-            "user_id"
-          ],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": true
     },
     "public.learned_shorthands": {
       "name": "learned_shorthands",
@@ -247,6 +188,78 @@
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
+    },
+    "public.pinned_colleagues": {
+      "name": "pinned_colleagues",
+      "schema": "",
+      "columns": {
+        "user_id": {
+          "name": "user_id",
+          "type": "varchar(36)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "colleague_user_id": {
+          "name": "colleague_user_id",
+          "type": "varchar(36)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "pinned_colleagues_user_id_users_user_id_fk": {
+          "name": "pinned_colleagues_user_id_users_user_id_fk",
+          "tableFrom": "pinned_colleagues",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "user_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "pinned_colleagues_colleague_user_id_users_user_id_fk": {
+          "name": "pinned_colleagues_colleague_user_id_users_user_id_fk",
+          "tableFrom": "pinned_colleagues",
+          "tableTo": "users",
+          "columnsFrom": [
+            "colleague_user_id"
+          ],
+          "columnsTo": [
+            "user_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {
+        "pinned_colleagues_user_id_colleague_user_id_pk": {
+          "name": "pinned_colleagues_user_id_colleague_user_id_pk",
+          "columns": [
+            "user_id",
+            "colleague_user_id"
+          ]
+        }
+      },
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {
+        "pinned_colleagues_not_self": {
+          "name": "pinned_colleagues_not_self",
+          "value": "\"pinned_colleagues\".\"user_id\" <> \"pinned_colleagues\".\"colleague_user_id\""
+        }
+      },
+      "isRLSEnabled": true
     },
     "public.shorthand_observations": {
       "name": "shorthand_observations",

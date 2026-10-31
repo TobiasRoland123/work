@@ -69,4 +69,4 @@ Sick days are sensitive, so grant access only to people who need it.
 
 ## Migration
 
-The feature adds the `employee_stats_access` table (`db/0046_employee_stats_access.sql`). Apply it before deploying, in the same way as other migrations (`pnpm db:migrate` against the intended database). It has row level security enabled like the other tables and cascades when a user is deleted.
+The feature adds the `employee_stats_access` table (`db/0047_employee_stats_access.sql`). Apply it before deploying, in the same way as other migrations (`pnpm db:migrate` against the intended database). It has row level security enabled like the other tables and cascades when a user is deleted.
