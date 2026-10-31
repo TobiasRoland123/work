@@ -934,13 +934,9 @@
   .week-body {
     grid-template-columns: minmax(0, 1fr);
   }
+  .week-panel-toggle,
   .day-panel {
-    border-top: 1px solid var(--office-border-soft);
-    border-left: 0;
-  }
-  .day-panel-inner {
-    position: static;
-    max-height: none;
+    display: none;
   }
   .office-header:has(.week-nav) {
     flex-wrap: wrap;
