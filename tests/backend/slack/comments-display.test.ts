@@ -119,6 +119,7 @@ describe('sender comment display', () => {
             createdAt: '2026-09-07T07:00:00Z',
             announcedAt: new Date('2026-09-07T07:00:00Z'),
             sourceMessageKey: 'T:C:1788766200.000001',
+            ...{ emoji: null },
           },
         },
       })
