@@ -1,3 +1,4 @@
+import { invalidateWeekOverview } from '@/lib/services/weekOverviewCache';
 import { getSlackImageUrl } from './image';
 import { randomUUID } from 'node:crypto';
 import { and, eq, sql } from 'drizzle-orm';
@@ -82,7 +83,7 @@ export function validateSlackProfile(profile: Record<string, unknown>): TrustedS
   };
 }
 export async function resolveSlackIdentity(identity: TrustedSlackIdentity) {
-  return db.transaction(async (tx) => {
+  const result = await db.transaction(async (tx) => {
     // Lock both lookup keys independently in deterministic order. Two Slack
     // accounts racing to claim one old email must not overwrite each other.
     for (const key of [
@@ -141,6 +142,8 @@ export async function resolveSlackIdentity(identity: TrustedSlackIdentity) {
       .returning();
     return created;
   });
+  invalidateWeekOverview();
+  return result;
 }
 export async function resolveSlackUser(user: SlackUser) {
   const profile = user.profile ?? {};

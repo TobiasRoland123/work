@@ -1,3 +1,4 @@
+import { invalidateWeekOverview } from '@/lib/services/weekOverviewCache';
 import { and, eq, lte, sql } from 'drizzle-orm';
 import { db } from '@/db';
 import {
@@ -35,7 +36,7 @@ export async function enqueueSlackEvent(input: unknown) {
   );
   if (!inspected.event) return { outcome: 'ignored' as const, reason: inspected.reason };
   const event = inspected.event;
-  const changed = await db.transaction(async (tx) => {
+  const { changed, statusChanged } = await db.transaction(async (tx) => {
     const [changed] = await tx
       .insert(slackMessages)
       .values({
@@ -63,10 +64,15 @@ export async function enqueueSlackEvent(input: unknown) {
         setWhere: sql`${slackMessages.revision}::numeric < ${event.revision}::numeric`,
       })
       .returning({ key: slackMessages.messageKey });
+    let statusChanged = false;
     if (changed) {
       // Only explicit deletion withdraws valid status before re-extraction.
       if (event.state === 'deleted') {
-        await tx.delete(status).where(eq(status.sourceMessageKey, event.messageKey));
+        const deleted = await tx
+          .delete(status)
+          .where(eq(status.sourceMessageKey, event.messageKey))
+          .returning({ id: status.id });
+        statusChanged = deleted.length > 0;
         await tx
           .delete(slackMessageFeedback)
           .where(eq(slackMessageFeedback.messageKey, event.messageKey));
@@ -87,8 +93,9 @@ export async function enqueueSlackEvent(input: unknown) {
           .where(eq(slackMessages.messageKey, event.messageKey));
       }
     }
-    return Boolean(changed);
+    return { changed: Boolean(changed), statusChanged };
   });
+  if (statusChanged) invalidateWeekOverview();
   return {
     outcome: !changed
       ? ('duplicate_or_stale' as const)
@@ -310,6 +317,7 @@ export async function processSlackInbox(limit = 2, messageKey?: string, revision
     }
   }
   if (counts.applied) {
+    invalidateWeekOverview();
     // A failed broadcast must not turn a successfully committed import into a retry.
     try {
       await broadcastSlackStatus();
@@ -328,7 +336,7 @@ export class SlackMessagePendingError extends Error {
 }
 
 export async function processQueuedSlackMessage(messageKey: string, revision: string) {
-  await processSlackInbox(1, messageKey, revision);
+  const counts = await processSlackInbox(1, messageKey, revision);
   const [job] = await db
     .select({
       state: slackMessages.state,
@@ -345,5 +353,9 @@ export async function processQueuedSlackMessage(messageKey: string, revision: st
       Math.max(1, Math.ceil((job.nextAttemptAt.getTime() - Date.now()) / 1000))
     );
   }
-  if (job.state === 'deleted') await broadcastSlackStatus();
+  if (job.state === 'deleted' || (job.state === 'applied' && !counts.applied)) {
+    // Repeat invalidation on queue retries before notifying open browsers.
+    invalidateWeekOverview();
+    await broadcastSlackStatus();
+  }
 }

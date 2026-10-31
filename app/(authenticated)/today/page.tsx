@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers';
 import { requirePageUserId } from '@/lib/auth/require-user';
-import { userService } from '@/lib/services/userService';
+import { getWeekOverview } from '@/lib/services/weekOverviewQuery';
 import { statusService } from '@/lib/services/statusService';
 import { pinService } from '@/lib/services/pinService';
 import { copenhagenDate } from '@/lib/status/active';
@@ -21,7 +21,7 @@ export default async function WeekPage({
   const weekStart = week ? parseWorkWeekStart(week, now) : workWeekStart(day ?? today);
   const days = week ? workWeekDays(weekStart) : [day ?? today];
   const [users, plans, pinnedIds, cookieStore] = await Promise.all([
-    userService.getAllUsers(false, days),
+    getWeekOverview(days),
     statusService.getUpcomingStatusesByUserUserId(userId),
     pinService.listPinnedIds(userId),
     cookies(),
