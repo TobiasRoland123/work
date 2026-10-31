@@ -80,6 +80,52 @@ describe('sender comment display', () => {
     expect(html).not.toContain('<script>');
     expect(html).toContain('&lt;script&gt;');
   });
+  it('shows the identified KMD office/city in attendance details for AT_CLIENT', () => {
+    const message = 'Working from Aalborg today';
+    const [row] = statusRows(
+      validateExtraction(
+        {
+          decision: 'apply',
+          reason: 'clear',
+          intervals: [
+            {
+              status: 'AT_CLIENT',
+              fromDate: '2026-09-07',
+              toDate: '2026-09-07',
+              startTime: null,
+              endTime: null,
+              startApproximate: false,
+              endApproximate: false,
+              comment: message,
+            },
+          ],
+        },
+        new Date('2026-09-07T07:00:00Z'),
+        message
+      )
+    );
+    const html = renderToStaticMarkup(
+      React.createElement(ProfileListItem, {
+        showStatus: true,
+        user: {
+          userId: 'local-user',
+          email: 'synthetic@example.com',
+          firstName: 'Test',
+          lastName: 'Person',
+          status: {
+            ...row,
+            id: 1,
+            userID: 'local-user',
+            createdAt: '2026-09-07T07:00:00Z',
+            announcedAt: new Date('2026-09-07T07:00:00Z'),
+            sourceMessageKey: 'T:C:1788766200.000001',
+          },
+        },
+      })
+    );
+    expect(html).toContain('At client');
+    expect(html).toContain('Working from Aalborg today');
+  });
 });
 
 describe('unclassified attendance descriptions', () => {

@@ -205,7 +205,7 @@ describe('attendance AI adapter with mocked structured replies', () => {
   });
 
   it('maps multi-day remote declarations via AI to REMOTE with full message details', async () => {
-    const message = 'Working remotely from Odense Tuesday through Thursday';
+    const message = 'Working remotely from Roskilde Tuesday through Thursday';
     const request = vi.fn().mockResolvedValue(
       reply({
         ...output,
@@ -215,7 +215,7 @@ describe('attendance AI adapter with mocked structured replies', () => {
             status: 'REMOTE',
             fromDate: '2026-09-08',
             toDate: '2026-09-10',
-            comment: 'Working remotely from Odense',
+            comment: 'Working remotely from Roskilde',
           },
         ],
       })
@@ -241,6 +241,42 @@ describe('attendance AI adapter with mocked structured replies', () => {
     expect(
       payload.response_format.json_schema.schema.properties.intervals.items.properties.status.enum
     ).toContain('REMOTE');
+  });
+
+  it('maps multi-day KMD office city declarations via AI to AT_CLIENT with full message details', async () => {
+    const message = 'In Odense Tuesday through Thursday';
+    const request = vi.fn().mockResolvedValue(
+      reply({
+        ...output,
+        intervals: [
+          {
+            ...interval,
+            status: 'AT_CLIENT',
+            fromDate: '2026-09-08',
+            toDate: '2026-09-10',
+            comment: 'In Odense',
+          },
+        ],
+      })
+    );
+    vi.stubGlobal('fetch', request);
+    const result = await extractAttendance(message, sent);
+    expect(result.intervals[0]).toMatchObject({
+      status: 'AT_CLIENT',
+      fromDate: '2026-09-08',
+      toDate: '2026-09-10',
+      comment: message,
+    });
+    expect(statusRows(result)[0]).toMatchObject({
+      status: 'AT_CLIENT',
+      fromDate: '2026-09-08',
+      toDate: '2026-09-10',
+      details: message,
+    });
+    const payload = JSON.parse(request.mock.calls[0][1].body);
+    const systemPrompt = payload.messages[0].content;
+    expect(systemPrompt).toContain('KMD Odense');
+    expect(systemPrompt).toContain('AT_CLIENT');
   });
 
   it('requires review rather than inferring REMOTE for "not in the office" alone', async () => {
