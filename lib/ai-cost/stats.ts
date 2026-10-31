@@ -15,6 +15,8 @@ export type AiUsageTotals = {
 
 export type DailyAiUsage = AiUsageTotals & { date: string };
 export type ModelAiUsage = AiUsageTotals & { model: string };
+export type MessageCounts = { ai: number; withoutAi: number; total: number };
+export type DailyMessageCounts = MessageCounts & { date: string };
 
 /** Raw aggregate row from PostgreSQL, where sums of numeric and bigint arrive as strings. */
 export type AiUsageRow = {

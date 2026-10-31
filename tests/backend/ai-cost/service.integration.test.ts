@@ -78,6 +78,26 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')('AI cost on isolated Pos
       ]);
     const data = await getAiCostDashboard({ days: '7' }, now);
     expect(data.messages).toEqual({ ai: 1, withoutAi: 1, total: 2 });
+    expect(data.dailyMessages).toEqual([
+      { date: '2026-10-10', ai: 1, withoutAi: 0, total: 1 },
+      ...['11', '12', '13', '14', '15'].map((day) => ({
+        date: `2026-10-${day}`,
+        ai: 0,
+        withoutAi: 0,
+        total: 0,
+      })),
+      { date: '2026-10-16', ai: 0, withoutAi: 1, total: 1 },
+    ]);
+    expect(
+      data.dailyMessages.reduce(
+        (sum, day) => ({
+          ai: sum.ai + day.ai,
+          withoutAi: sum.withoutAi + day.withoutAi,
+          total: sum.total + day.total,
+        }),
+        { ai: 0, withoutAi: 0, total: 0 }
+      )
+    ).toEqual(data.messages);
     expect(data.totals.calls).toBe(3);
     await db
       .delete(slackMessageProcessing)
@@ -101,11 +121,60 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')('AI cost on isolated Pos
         startedAt: new Date('2026-10-16T09:00:00Z'),
       })
     );
-    expect((await getAiCostDashboard({ days: '7' }, now)).messages).toEqual({
+    const data = await getAiCostDashboard({ days: '7' }, now);
+    expect(data.messages).toEqual({
       ai: 1,
       withoutAi: 0,
       total: 1,
     });
+    expect(data.dailyMessages.find((day) => day.date === '2026-10-14')).toEqual({
+      date: '2026-10-14',
+      ai: 1,
+      withoutAi: 0,
+      total: 1,
+    });
+    expect(data.dailyMessages.find((day) => day.date === '2026-10-16')?.total).toBe(0);
+  });
+
+  it.each(['7', '30', '90'])(
+    'returns every selected day with zero counts for %s days',
+    async (days) => {
+      const data = await getAiCostDashboard({ days }, now);
+      expect(data.dailyMessages).toHaveLength(Number(days));
+      expect(data.dailyMessages[0].date).toBe(data.startDate);
+      expect(data.dailyMessages.at(-1)?.date).toBe(data.endDate);
+      expect(
+        data.dailyMessages.every((day) => day.total === 0 && day.ai === 0 && day.withoutAi === 0)
+      ).toBe(true);
+      expect(data.messages).toEqual({ ai: 0, withoutAi: 0, total: 0 });
+    }
+  );
+
+  it('groups both repeated daylight-saving hours into the same Copenhagen calendar day', async () => {
+    await db.insert(slackMessageProcessing).values([
+      {
+        messageKey: `${team}:${channel}:summer-hour`,
+        teamId: team,
+        channelId: channel,
+        usedAi: true,
+        handledAt: new Date('2026-10-25T00:30:00Z'),
+      },
+      {
+        messageKey: `${team}:${channel}:winter-hour`,
+        teamId: team,
+        channelId: channel,
+        usedAi: false,
+        handledAt: new Date('2026-10-25T01:30:00Z'),
+      },
+    ]);
+    const data = await getAiCostDashboard({ days: '7' }, new Date('2026-10-26T10:00:00Z'));
+    expect(data.dailyMessages.find((day) => day.date === '2026-10-25')).toEqual({
+      date: '2026-10-25',
+      ai: 1,
+      withoutAi: 1,
+      total: 2,
+    });
+    expect(data.messages).toEqual({ ai: 1, withoutAi: 1, total: 2 });
   });
 
   it('does not infer historical handling from AI calls or invent non-AI counts', async () => {

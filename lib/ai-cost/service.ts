@@ -12,8 +12,21 @@ import {
   periodDays,
   shiftDate,
 } from './stats';
-import type { AiUsageTotals, DailyAiUsage, ModelAiUsage } from './stats';
-export type { AiCostPeriod, AiUsageTotals, DailyAiUsage, ModelAiUsage } from './stats';
+import type {
+  AiUsageTotals,
+  DailyAiUsage,
+  DailyMessageCounts,
+  MessageCounts,
+  ModelAiUsage,
+} from './stats';
+export type {
+  AiCostPeriod,
+  AiUsageTotals,
+  DailyAiUsage,
+  DailyMessageCounts,
+  MessageCounts,
+  ModelAiUsage,
+} from './stats';
 
 const usageColumns = {
   costUsd: sql<string | null>`sum(${slackAiUsage.costUsd})`,
@@ -32,6 +45,7 @@ const messageUsedAi = sql`(${slackMessageProcessing.usedAi} or exists (
 
 const usageDay = sql<string>`to_char(${slackAiUsage.startedAt} at time zone 'Europe/Copenhagen', 'YYYY-MM-DD')`;
 const usageMonth = sql<string>`to_char(${slackAiUsage.startedAt} at time zone 'Europe/Copenhagen', 'YYYY-MM-01')`;
+const messageDay = sql<string>`to_char(${slackMessageProcessing.handledAt} at time zone 'Europe/Copenhagen', 'YYYY-MM-DD')`;
 
 /** Requests started on or after the start day and before the end day, in Copenhagen time. */
 function startedBetween(start: string, end: string): SQL {
@@ -52,7 +66,7 @@ export async function getAiCostDashboard(input: { days?: string } = {}, now: Dat
   );
   const periodScope = and(scope, startedBetween(dates[0], tomorrow));
 
-  const [dailyRows, modelRows, monthRows, [messageRow]] = await Promise.all([
+  const [dailyRows, modelRows, monthRows, messageRows] = await Promise.all([
     db
       .select({ date: usageDay, ...usageColumns })
       .from(slackAiUsage)
@@ -71,6 +85,7 @@ export async function getAiCostDashboard(input: { days?: string } = {}, now: Dat
       .groupBy(usageMonth),
     db
       .select({
+        date: messageDay,
         ai: sql<number>`count(*) filter (where ${messageUsedAi})::integer`,
         withoutAi: sql<number>`count(*) filter (where not ${messageUsedAi})::integer`,
         total: sql<number>`count(*)::integer`,
@@ -83,7 +98,8 @@ export async function getAiCostDashboard(input: { days?: string } = {}, now: Dat
           sql`${slackMessageProcessing.handledAt} >= (${dates[0]}::date::timestamp at time zone 'Europe/Copenhagen')
           and ${slackMessageProcessing.handledAt} < (${tomorrow}::date::timestamp at time zone 'Europe/Copenhagen')`
         )
-      ),
+      )
+      .groupBy(messageDay),
   ]);
 
   const byDay = new Map(dailyRows.map((row) => [row.date, aiUsageFromRow(row)]));
@@ -97,13 +113,32 @@ export async function getAiCostDashboard(input: { days?: string } = {}, now: Dat
   }));
   const byMonth = new Map(monthRows.map((row) => [row.month, aiUsageFromRow(row)]));
   const totals: AiUsageTotals = daily.reduce<AiUsageTotals>(addAiUsage, emptyAiUsage());
+  const messagesByDay = new Map(messageRows.map((row) => [row.date, row]));
+  const dailyMessages: DailyMessageCounts[] = dates.map((date) => {
+    const row = messagesByDay.get(date);
+    return {
+      date,
+      ai: Number(row?.ai ?? 0),
+      withoutAi: Number(row?.withoutAi ?? 0),
+      total: Number(row?.total ?? 0),
+    };
+  });
+  const messages = dailyMessages.reduce<MessageCounts>(
+    (total, day) => ({
+      ai: total.ai + day.ai,
+      withoutAi: total.withoutAi + day.withoutAi,
+      total: total.total + day.total,
+    }),
+    { ai: 0, withoutAi: 0, total: 0 }
+  );
 
   return {
     days,
     startDate: dates[0],
     endDate: months.today,
     totals,
-    messages: messageRow ?? { ai: 0, withoutAi: 0, total: 0 },
+    messages,
+    dailyMessages,
     daily,
     models,
     currentMonth: { start: months.current, ...(byMonth.get(months.current) ?? emptyAiUsage()) },
