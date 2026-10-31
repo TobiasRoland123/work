@@ -1,11 +1,5 @@
-const INITIAL_MESSAGE_REVIEWER = {
-  teamId: 'T02HKL21R',
-  slackUserId: 'U05NP1NF3QB',
-};
+import { ADMIN_SLACK_IDENTITY } from './admin-identity';
 
 export function isInitialMessageReviewer(teamId: string, slackUserId: string): boolean {
-  return (
-    teamId === INITIAL_MESSAGE_REVIEWER.teamId &&
-    slackUserId === INITIAL_MESSAGE_REVIEWER.slackUserId
-  );
+  return teamId === ADMIN_SLACK_IDENTITY.teamId && slackUserId === ADMIN_SLACK_IDENTITY.slackUserId;
 }

@@ -7,14 +7,34 @@ type StatusLike = Pick<Status, 'createdAt' | 'fromDate' | 'toDate' | 'startsAt' 
   announcedAt?: Date | string | null;
 };
 
+// Building a formatter is far costlier than using one, and the employee stats resolve thousands of
+// days per request. The options are fixed, so the instances are shared.
+const copenhagenDateFormat = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Europe/Copenhagen',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+const copenhagenWeekdayFormat = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Europe/Copenhagen',
+  weekday: 'short',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+const copenhagenWallClockFormat = new Intl.DateTimeFormat('sv-SE', {
+  timeZone: 'Europe/Copenhagen',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+});
+
 /** Copenhagen's calendar date, independent of the server's local timezone. */
 export function copenhagenDate(value: Date = new Date()): string {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Europe/Copenhagen',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  }).formatToParts(value);
+  const parts = copenhagenDateFormat.formatToParts(value);
   const get = (type: string) => parts.find((part) => part.type === type)?.value ?? '';
   return `${get('year')}-${get('month')}-${get('day')}`;
 }
@@ -33,15 +53,7 @@ function announcement(status: StatusLike): number | null {
   // database. Preserve that Copenhagen wall-clock interpretation on any host.
   const normalized = value.replace(' ', 'T');
   const guess = Date.parse(`${normalized}Z`);
-  const formatter = new Intl.DateTimeFormat('sv-SE', {
-    timeZone: 'Europe/Copenhagen',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23',
-  });
+  const formatter = copenhagenWallClockFormat;
   for (const offset of [1, 2]) {
     const candidate = guess - offset * 3600000;
     if (
@@ -54,13 +66,7 @@ function announcement(status: StatusLike): number | null {
 }
 
 function localParts(value: Date) {
-  return new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Europe/Copenhagen',
-    weekday: 'short',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-  })
+  return copenhagenWeekdayFormat
     .formatToParts(value)
     .reduce<Record<string, string>>((parts, part) => {
       parts[part.type] = part.value;
@@ -77,15 +83,7 @@ export function copenhagenWallClock(day: string, hour: number, minute: number): 
     hour,
     minute
   );
-  const formatter = new Intl.DateTimeFormat('sv-SE', {
-    timeZone: 'Europe/Copenhagen',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23',
-  });
+  const formatter = copenhagenWallClockFormat;
   for (const offset of [1, 2]) {
     const candidate = new Date(guess - offset * 3600000);
     if (

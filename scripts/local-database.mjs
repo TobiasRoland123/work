@@ -12,6 +12,7 @@ const requiredSchema = {
   slack_messages: ['review_text', 'converted_to_status', 'processed_at'],
   slack_ai_usage: ['cost_usd'],
   slack_message_feedback: ['preferred_status', 'revision', 'note'],
+  employee_stats_access: ['user_id', 'granted_by_user_id', 'granted_at'],
 };
 
 export function validateDatabaseEnv(env) {

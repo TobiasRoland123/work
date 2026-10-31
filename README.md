@@ -4,6 +4,8 @@ Slack login, directory sync and #wørk attendance import are configured in [Slac
 
 The restricted [message quality review](docs/message-quality.md) explains weekly import conversion, missed messages and reviewer access.
 
+The restricted [employee stats](docs/employee-stats.md) pages show attendance statistics for everyone and for each person, against the team norm and over the full history, and explain how the admin chooses who can see them.
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 # Getting Started

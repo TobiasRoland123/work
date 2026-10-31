@@ -323,6 +323,13 @@
       "when": 1793405718809,
       "tag": "0045_status_emoji",
       "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1793407340270,
+      "tag": "0046_employee_stats_access",
+      "breakpoints": true
     }
   ]
 }

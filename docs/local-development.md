@@ -106,6 +106,11 @@ or `pnpm message-review:access revoke <user-id>` to manage other real-workspace 
 the intended environment's database configuration. See
 [Message quality review](message-quality.md) for access requirements and what the dashboard retains.
 
+**Employee stats.** `/employee-stats` is restricted: Tobias Roland (the admin) always has access
+and grants or revokes it for others on `/employee-stats/access`. The Local Sandbox has no real
+admin, so Anna Attendee (`U_LOCAL_ANNA`) stands in: sign in as Anna, grant Mads or Freja, then sign
+in as them to see the difference. See [Employee stats](employee-stats.md).
+
 **Reset.** Deletes `status` rows of `T_LOCAL` profiles and `slack_messages` rows of team
 `T_LOCAL` (including any retained `review_text`), then clears the browser list. Profiles
 are kept. Both deletes are scoped and `tests/backend/sandbox/reset.test.ts` asserts the
