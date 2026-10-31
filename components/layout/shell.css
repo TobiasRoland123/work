@@ -2,8 +2,8 @@
   display: grid;
   grid-template-columns: 84px minmax(0, 1fr);
   min-height: 100dvh;
-  color: #0b1014;
-  background: #f6f6f0;
+  color: var(--office-ink);
+  background: var(--office-canvas);
 }
 .app-shell-content {
   min-width: 0;
@@ -20,7 +20,7 @@
   transform: translateY(-200%);
   z-index: 100;
   padding: 12px;
-  background: white;
+  background: var(--office-surface);
 }
 .skip-navigation:focus {
   transform: translateY(0);
@@ -29,7 +29,7 @@
   min-height: 100dvh;
 }
 .content-page > .office-header {
-  background: white;
+  background: var(--office-surface);
 }
 .content-page-body {
   padding: 32px;
@@ -48,11 +48,11 @@
   cursor: default;
 }
 .app-shell :is(button, a, input):focus-visible {
-  outline: 2px solid #2d6ea8;
+  outline: 2px solid var(--office-link);
   outline-offset: 3px;
 }
 .office-rail {
-  background: #090b0c;
+  background: var(--office-rail);
   color: white;
   display: flex;
   align-items: center;
@@ -81,11 +81,12 @@
   font-size: 13px;
 }
 .office-nav-links a[aria-current] {
-  background: #a5cdf0;
-  color: #0b1014;
+  background: var(--office-accent);
+  color: var(--office-accent-ink);
 }
+
 .office-nav-links a:hover {
-  background: #263541;
+  background: var(--office-rail-hover);
   color: white;
 }
 /* Desktop: special items sit inline with the other links. */
@@ -106,8 +107,8 @@
   max-width: 100%;
 }
 .office-me > span {
-  background: #d1d0bd;
-  color: #0b1014;
+  background: var(--office-rail-avatar);
+  color: var(--office-accent-ink);
   border-radius: 50%;
   width: 34px;
   height: 34px;
@@ -128,7 +129,7 @@
   align-items: center;
   justify-content: space-between;
   gap: 18px;
-  border-bottom: 1px solid #e6e6e2;
+  border-bottom: 1px solid var(--office-border-soft);
 }
 .office-header h1 {
   font-size: 42px;
@@ -137,7 +138,7 @@
   font-weight: 600;
 }
 .office-header p {
-  color: #737775;
+  color: var(--office-muted);
   margin-top: 5px;
   font-size: 17px;
 }
@@ -152,12 +153,12 @@
   place-items: center;
   width: 38px;
   height: 38px;
-  border: 1px solid #deded8;
+  border: 1px solid var(--office-border);
   border-radius: 5px;
-  color: #0b1014;
+  color: var(--office-ink);
 }
 .theme-toggle:hover {
-  background: #f2f5f6;
+  background: var(--office-hover);
 }
 .theme-toggle-sun {
   display: none;
@@ -169,14 +170,14 @@
   display: block;
 }
 .office-header time {
-  color: #737775;
+  color: var(--office-muted);
   font-size: 14px;
   white-space: nowrap;
 }
 .set-status-button {
   padding: 12px 17px;
-  background: #0b1014;
-  color: white;
+  background: var(--office-primary);
+  color: var(--office-primary-ink);
   border-radius: 5px;
   font-size: 14px;
   white-space: nowrap;
@@ -195,8 +196,8 @@
   width: min(440px, 100%);
   padding: 28px 24px 24px;
   z-index: 41;
-  background: white;
-  color: #0b1014;
+  background: var(--office-surface);
+  color: var(--office-ink);
   display: flex;
   flex-direction: column;
   gap: 28px;
@@ -216,7 +217,7 @@
 .status-form-eyebrow {
   display: block;
   margin-bottom: 9px;
-  color: #6a7063;
+  color: var(--office-subtle);
   font:
     11px/1.2 var(--font-ibx-mono),
     monospace;
@@ -243,7 +244,7 @@
   border-radius: 5px;
 }
 .status-form-close:hover {
-  background: #f2f5f6;
+  background: var(--office-hover);
 }
 .status-form-body,
 .status-form {
@@ -255,7 +256,7 @@
   gap: 28px;
 }
 .status-options {
-  border: 1px solid #deded8;
+  border: 1px solid var(--office-border);
   border-radius: 7px;
 }
 .office-status-dialog .status-option {
@@ -264,9 +265,9 @@
   height: 58px;
   padding: 0 17px;
   border-radius: 0;
-  border-bottom: 1px solid #e7e8e4;
-  background: white;
-  color: #0b1014;
+  border-bottom: 1px solid var(--office-border-soft);
+  background: var(--office-surface);
+  color: var(--office-ink);
   font-family: var(--font-monument-grotesk), sans-serif;
   font-size: 16px;
   font-weight: 400;
@@ -283,17 +284,17 @@
   border-radius: 0 0 6px 6px;
 }
 .office-status-dialog .status-option:hover {
-  background: #f2f5f6;
+  background: var(--office-hover);
 }
 .office-status-dialog .status-option:active {
-  background: #e4eff9;
+  background: var(--office-hover-blue);
 }
 .status-option svg {
-  color: #747972;
+  color: var(--office-subtle);
 }
 .office-status-dialog .status-option-more {
-  background: #f6f6f0;
-  color: #2d6ea8;
+  background: var(--office-raised-soft);
+  color: var(--office-link);
 }
 .status-details {
   display: flex;
@@ -306,7 +307,7 @@
   gap: 10px;
   margin-top: auto;
   padding-top: 24px;
-  border-top: 1px solid #e7e8e4;
+  border-top: 1px solid var(--office-border-soft);
 }
 .office-status-dialog .status-form-actions > button {
   width: 100%;
@@ -317,31 +318,31 @@
   font-weight: 600;
 }
 .office-status-dialog .status-form-save {
-  background: #0b1014;
-  color: white;
+  background: var(--office-primary);
+  color: var(--office-primary-ink);
 }
 .office-status-dialog .status-form-save:hover {
-  background: #263541;
+  background: var(--office-primary-hover);
 }
 .office-status-dialog .status-form-save:active {
-  background: #3d5261;
+  background: var(--office-primary-active);
 }
 .office-status-dialog .status-form-save svg {
-  color: white;
+  color: var(--office-primary-ink);
 }
 .office-status-dialog .status-form-back {
-  border: 1px solid #deded8;
-  background: white;
-  color: #0b1014;
+  border: 1px solid var(--office-border);
+  background: var(--office-surface);
+  color: var(--office-ink);
 }
 .office-status-dialog .status-form-back:hover {
-  background: #f2f5f6;
+  background: var(--office-hover);
 }
 .office-status-dialog .status-form-back:active {
-  background: #e4eff9;
+  background: var(--office-hover-blue);
 }
 .office-status-dialog :is(button, input):focus-visible {
-  outline: 2px solid #2d6ea8;
+  outline: 2px solid var(--office-link);
   outline-offset: 2px;
 }
 
@@ -403,12 +404,12 @@
     height: 20px;
   }
   .office-nav-more:hover {
-    background: #263541;
+    background: var(--office-rail-hover);
   }
   .office-nav-more[data-current],
   .office-nav-more:has(+ .office-nav-special:popover-open) {
-    background: #a5cdf0;
-    color: #0b1014;
+    background: var(--office-accent);
+    color: var(--office-accent-ink);
   }
   .office-nav-special {
     display: none;
@@ -421,9 +422,9 @@
     min-width: 180px;
     margin: 0;
     padding: 6px;
-    border: 1px solid #263541;
+    border: 1px solid var(--office-rail-hover);
     border-radius: 7px;
-    background: #090b0c;
+    background: var(--office-rail);
     color: white;
     box-shadow: 0 -8px 30px #0000004d;
   }

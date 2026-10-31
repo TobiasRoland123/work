@@ -1,11 +1,11 @@
 .ai-cost-page {
-  --ai-cost-surface: var(--office-surface, #fff);
-  --ai-cost-ink: var(--office-ink, #0b1014);
-  --ai-cost-muted: var(--office-muted, #656c6a);
-  --ai-cost-border: var(--office-border, #deded8);
-  --ai-cost-border-soft: var(--office-border-soft, #e7e8e4);
-  --ai-cost-link: var(--office-link, #2d6ea8);
-  --ai-cost-raised: var(--office-raised, #e7e8e4);
+  --ai-cost-surface: var(--office-surface);
+  --ai-cost-ink: var(--office-ink);
+  --ai-cost-muted: var(--office-muted);
+  --ai-cost-border: var(--office-border);
+  --ai-cost-border-soft: var(--office-border-soft);
+  --ai-cost-link: var(--office-link);
+  --ai-cost-raised: var(--office-inset);
 }
 .ai-cost-body {
   display: grid;

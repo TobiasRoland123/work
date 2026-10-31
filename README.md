@@ -6,6 +6,8 @@ The restricted [message quality review](docs/message-quality.md) explains weekly
 
 The restricted [employee stats](docs/employee-stats.md) pages show attendance statistics for everyone and for each person, against the team norm and over the full history, and explain how the admin chooses who can see them.
 
+Colour palettes (Default, Ocean, Sunset, Lavender), each in light and dark, are picked on the profile page and described in [Theming](docs/theming.md).
+
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 # Getting Started

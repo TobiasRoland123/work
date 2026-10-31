@@ -1,7 +1,7 @@
 import { cn } from '@/lib/className';
 
 const skeletonClass =
-  'animate-pulse rounded-[4px] bg-[#e4e3d8] motion-reduce:animate-none dark:bg-(--office-border-soft)';
+  'animate-pulse rounded-[4px] bg-(--office-border-soft) motion-reduce:animate-none';
 
 /** A placeholder block with an explicit size, such as an avatar or a button. */
 function Skeleton({ className, ...props }: React.ComponentProps<'div'>) {
