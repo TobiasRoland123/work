@@ -372,6 +372,7 @@
   font-style: normal;
 }
 .week-cell {
+  position: relative;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -430,6 +431,18 @@
 }
 .week-cell strong {
   font-weight: 600;
+}
+/* Leave the top-right corner free for the provenance icon. */
+.week-cell[data-ai-assisted] {
+  padding-right: 24px;
+}
+.week-cell[data-ai-assisted][data-plannable] {
+  padding: 0;
+}
+.week-cell[data-ai-assisted] .week-cell-plan-icon {
+  top: auto;
+  bottom: 4px;
+  transform: none;
 }
 .week-cell strong,
 .week-cell small {
@@ -644,6 +657,7 @@
   text-decoration: underline;
 }
 .week-chip {
+  position: relative;
   padding: 2px 8px;
   border: 1px solid var(--tone-border);
   border-radius: 5px;
@@ -651,6 +665,9 @@
   color: var(--tone-ink);
   font-size: 12px;
   font-weight: 500;
+}
+.week-chip[data-ai-assisted] {
+  padding-right: 22px;
 }
 .week-chip[data-assumed] {
   border-style: dashed;

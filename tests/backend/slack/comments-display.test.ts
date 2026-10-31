@@ -69,6 +69,7 @@ describe('sender comment display', () => {
       expect(html).not.toContain('00:00');
       expect(html).not.toContain('>00.00<');
       expect(html).toContain('View Slack message');
+      expect(html).toContain('aria-label="AI-assisted"');
     }
   );
   it('keeps approximate timing separate from comment wording', () => {

@@ -17,6 +17,7 @@ import { toast } from 'sonner';
 import type { DayPresence, UserWithExtras } from '@/db/types';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { StatusDialog } from '@/components/layout/StatusDialog';
+import { AIIndicator } from '@/components/ui/Status/AIIndicator';
 import { ProfileListItem } from '@/components/ui/ProfileListItem/ProfileListItem';
 import { StatusEmoji } from '@/components/ui/Status/StatusEmoji';
 import { deleteStatusByIdAction } from '@/app/actions/statusActions';
@@ -96,7 +97,14 @@ function WeekCell({
       ? dayNote(segment.status)
       : segmentNote(segment, days);
   const lastDay = days[segment.start + segment.span - 1];
-  const title = [label, note, assumed && 'assumed, nothing announced'].filter(Boolean).join(' · ');
+  const title = [
+    label,
+    note,
+    assumed && 'assumed, nothing announced',
+    !hiddenOffice && segment.status?.sourceMessageKey && 'AI-assisted',
+  ]
+    .filter(Boolean)
+    .join(' · ');
   const plannable = onPlan
     ? days.slice(segment.start, segment.start + segment.span).filter((day) => day >= today)
     : [];
@@ -122,6 +130,7 @@ function WeekCell({
       aria-colspan={segment.span > 1 ? segment.span : undefined}
       className="week-cell tone"
       data-tone={tone}
+      data-ai-assisted={(!hiddenOffice && Boolean(segment.status?.sourceMessageKey)) || undefined}
       data-assumed={assumed || undefined}
       data-past={lastDay < today || undefined}
       data-plannable={plannable.length > 0 || undefined}
@@ -139,6 +148,9 @@ function WeekCell({
         </button>
       ) : (
         content
+      )}
+      {!hiddenOffice && (
+        <AIIndicator sourceMessageKey={segment.status?.sourceMessageKey} position="corner" />
       )}
     </div>
   );
@@ -165,9 +177,14 @@ function UpcomingPlans({
                 : `${shortDay(plan.firstDay)} – ${shortDay(plan.lastDay)}`}
             </span>
             <span className="person-sheet-status">
-              <span className="week-chip tone" data-tone={tone}>
+              <span
+                className="week-chip tone"
+                data-tone={tone}
+                data-ai-assisted={Boolean(plan.sourceMessageKey) || undefined}
+              >
                 <StatusEmoji status={plan.status} emoji={plan.emoji} details={plan.details} />
                 {label}
+                <AIIndicator sourceMessageKey={plan.sourceMessageKey} position="corner" />
               </span>
               {note && <small>{note}</small>}
             </span>
@@ -254,6 +271,7 @@ function PersonSheet({
                             <span
                               className="week-chip tone"
                               data-tone={tone}
+                              data-ai-assisted={Boolean(status?.sourceMessageKey) || undefined}
                               data-assumed={isAssumed(status) || undefined}
                             >
                               <StatusEmoji
@@ -263,6 +281,10 @@ function PersonSheet({
                               />
                               {label}
                               {isAssumed(status) && ' (assumed)'}
+                              <AIIndicator
+                                sourceMessageKey={status?.sourceMessageKey}
+                                position="corner"
+                              />
                             </span>
                             {note && <small>{note}</small>}
                             {status?.sourceMessageKey && (

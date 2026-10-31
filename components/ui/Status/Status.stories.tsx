@@ -61,3 +61,10 @@ export const Vacation: Story = {
     status: 'VACATION',
   },
 };
+
+export const AIAssisted: Story = {
+  args: {
+    status: 'FROM_HOME',
+    sourceMessageKey: 'example:channel:message',
+  },
+};
