@@ -65,6 +65,18 @@ Text entered in the Local Sandbox on behalf of an Author, which enters the same 
 path a Slack message would. It is a genuine inbox row, not a simulation of one.
 _Avoid_: Fake message, test message, mock event
 
+### Appearance
+
+**Palette**:
+A named set of interface colours chosen on the profile page's Appearance settings. Every
+Palette exists in a light and a dark variant, so it is independent of the Mode. The
+original look is the Palette called `default`. Stored in the browser, not per person.
+_Avoid_: Theme (that word is used for light/dark in the code), skin, colour scheme
+
+**Mode**:
+Light or dark, toggled in the page header or on the profile page. Applies to every Palette.
+_Avoid_: Theme, appearance
+
 ## Flagged ambiguities
 
 **"Profile" unqualified** — in the Local Sandbox this is ambiguous between the person a

@@ -1,13 +1,13 @@
 .quality-page {
-  --quality-surface: var(--office-surface, #fff);
-  --quality-ink: var(--office-ink, #0b1014);
-  --quality-muted: var(--office-muted, #656c6a);
-  --quality-border: var(--office-border, #deded8);
-  --quality-border-soft: var(--office-border-soft, #e7e8e4);
-  --quality-link: var(--office-link, #2d6ea8);
-  --quality-raised: var(--office-raised, #e7e8e4);
-  --quality-primary: var(--office-primary, #0b1014);
-  --quality-primary-ink: var(--office-primary-ink, #fff);
+  --quality-surface: var(--office-surface);
+  --quality-ink: var(--office-ink);
+  --quality-muted: var(--office-muted);
+  --quality-border: var(--office-border);
+  --quality-border-soft: var(--office-border-soft);
+  --quality-link: var(--office-link);
+  --quality-raised: var(--office-inset);
+  --quality-primary: var(--office-primary);
+  --quality-primary-ink: var(--office-primary-ink);
 }
 .quality-body {
   display: grid;

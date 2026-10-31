@@ -1,0 +1,310 @@
+/*
+ * Colour palettes for the WØRK interface.
+ *
+ * Each palette defines the same --office-* tokens twice: once for light mode and once for dark mode.
+ * Light/dark is the `dark` class on <html> (next-themes); the palette is the `data-palette` attribute
+ * (components/theme/PaletteProvider). "default" has no attribute rule: it is the :root / html.dark sets.
+ * Every block is also scoped to `[data-palette-preview='<id>']` so the settings page can render a
+ * live sample of any palette in the current mode.
+ *
+ * To add a palette: copy a pair of blocks below, register the id in lib/theme/palettes.ts and run the
+ * theme tests, which check completeness and text contrast for every palette in both modes.
+ *
+ * Status tones (in office, remote, sick, ...) are semantic and deliberately not part of a palette.
+ */
+
+/* default · light */
+:root,
+[data-palette-preview='default'] {
+  --office-canvas: #f6f6f0;
+  --office-page: #f1f0e7;
+  --office-surface: #ffffff;
+  --office-raised: #f1f0e7;
+  --office-raised-soft: #fafaf6;
+  --office-inset: #ebeae2;
+  --office-ink: #0b1014;
+  --office-muted-strong: #4c4e40;
+  --office-muted: #666b64;
+  --office-subtle: #717670;
+  --office-faint: #858a88;
+  --office-marker: #0b1014;
+  --office-border: #deded8;
+  --office-border-strong: #d1d3cb;
+  --office-border-soft: #e8e8e2;
+  --office-hover: #f2f5f6;
+  --office-hover-blue: #e4eff9;
+  --office-selected: #e4eff9;
+  --office-chip: #ebf1f4;
+  --office-avatar: #d1d0bd;
+  --office-avatar-soft: #e7e6db;
+  --office-link: #2d6ea8;
+  --office-accent: #a5cdf0;
+  --office-accent-ink: #0b1014;
+  --office-primary: #0b1014;
+  --office-primary-ink: #ffffff;
+  --office-primary-hover: #263541;
+  --office-primary-active: #3d5261;
+  --office-rail: #090b0c;
+  --office-rail-hover: #263541;
+  --office-rail-avatar: #d1d0bd;
+}
+
+/* default · dark */
+html.dark,
+html.dark [data-palette-preview='default'] {
+  --office-canvas: #111a20;
+  --office-page: #152027;
+  --office-surface: #1d2930;
+  --office-raised: #26353e;
+  --office-raised-soft: #26353e;
+  --office-inset: #26353e;
+  --office-ink: #edf3f6;
+  --office-muted-strong: #b4c2c9;
+  --office-muted: #b4c2c9;
+  --office-subtle: #91a3ad;
+  --office-faint: #91a3ad;
+  --office-marker: #9acbf1;
+  --office-border: #43535c;
+  --office-border-strong: #43535c;
+  --office-border-soft: #35454e;
+  --office-hover: #2b3a43;
+  --office-hover-blue: #27465b;
+  --office-selected: #213d51;
+  --office-chip: #2a414c;
+  --office-avatar: #3a4d56;
+  --office-avatar-soft: #3a4d56;
+  --office-link: #9acbf1;
+  --office-accent: #a5cdf0;
+  --office-accent-ink: #0b1014;
+  --office-primary: #a5cdf0;
+  --office-primary-ink: #0b1014;
+  --office-primary-hover: #c4dff5;
+  --office-primary-active: #82b5e0;
+  --office-rail: #090b0c;
+  --office-rail-hover: #263541;
+  --office-rail-avatar: #d1d0bd;
+  color-scheme: dark;
+}
+
+/* ocean · light */
+html[data-palette='ocean'],
+[data-palette-preview='ocean'] {
+  --office-canvas: #eef8f9;
+  --office-page: #e8f2f3;
+  --office-surface: #ffffff;
+  --office-raised: #e8f2f3;
+  --office-raised-soft: #f2fcfd;
+  --office-inset: #e2eced;
+  --office-ink: #081112;
+  --office-muted-strong: #454f50;
+  --office-muted: #5b6667;
+  --office-subtle: #687476;
+  --office-faint: #7e8a8c;
+  --office-marker: #081112;
+  --office-border: #d2e1e3;
+  --office-border-strong: #c7d5d7;
+  --office-border-soft: #dfeaeb;
+  --office-hover: #edf7f8;
+  --office-hover-blue: #daf3f4;
+  --office-selected: #daf3f4;
+  --office-chip: #e3f4f5;
+  --office-avatar: #c3d2d4;
+  --office-avatar-soft: #dee8e9;
+  --office-link: #076e8b;
+  --office-accent: #95e1e0;
+  --office-accent-ink: #091112;
+  --office-primary: #071a19;
+  --office-primary-ink: #ffffff;
+  --office-primary-hover: #193c3c;
+  --office-primary-active: #2b5858;
+  --office-rail: #050d0f;
+  --office-rail-hover: #1c373e;
+  --office-rail-avatar: #b4d5d9;
+}
+
+/* ocean · dark */
+html.dark[data-palette='ocean'],
+html.dark [data-palette-preview='ocean'] {
+  --office-canvas: #041c22;
+  --office-page: #0a2228;
+  --office-surface: #132b31;
+  --office-raised: #1f373d;
+  --office-raised-soft: #1f373d;
+  --office-inset: #1f373d;
+  --office-ink: #eef9fc;
+  --office-muted-strong: #a9cbd4;
+  --office-muted: #a9cbd4;
+  --office-subtle: #85acb6;
+  --office-faint: #85acb6;
+  --office-marker: #81d8e2;
+  --office-border: #3a565c;
+  --office-border-strong: #3a565c;
+  --office-border-soft: #2e474d;
+  --office-hover: #243c42;
+  --office-hover-blue: #1c4a4f;
+  --office-selected: #124146;
+  --office-chip: #264346;
+  --office-avatar: #334f56;
+  --office-avatar-soft: #334f56;
+  --office-link: #81d8e2;
+  --office-accent: #88e0df;
+  --office-accent-ink: #091113;
+  --office-primary: #88e0df;
+  --office-primary-ink: #091113;
+  --office-primary-hover: #bce8e7;
+  --office-primary-active: #64c3c3;
+  --office-rail: #050d0f;
+  --office-rail-hover: #1c373e;
+  --office-rail-avatar: #b4d5d9;
+}
+
+/* sunset · light */
+html[data-palette='sunset'],
+[data-palette-preview='sunset'] {
+  --office-canvas: #fcf4ed;
+  --office-page: #f6eee7;
+  --office-surface: #ffffff;
+  --office-raised: #f6eee7;
+  --office-raised-soft: #fff8f3;
+  --office-inset: #f0e8e1;
+  --office-ink: #140e09;
+  --office-muted-strong: #534b44;
+  --office-muted: #6a625a;
+  --office-subtle: #797067;
+  --office-faint: #8f867d;
+  --office-marker: #140e09;
+  --office-border: #e7dbd0;
+  --office-border-strong: #dcd0c5;
+  --office-border-soft: #efe6dd;
+  --office-hover: #fbf3ec;
+  --office-hover-blue: #fde9da;
+  --office-selected: #fde9da;
+  --office-chip: #fbede2;
+  --office-avatar: #d8ccc2;
+  --office-avatar-soft: #ece4dd;
+  --office-link: #9e4421;
+  --office-accent: #ffb98a;
+  --office-accent-ink: #130e0a;
+  --office-primary: #1f130b;
+  --office-primary-ink: #ffffff;
+  --office-primary-hover: #463021;
+  --office-primary-active: #654935;
+  --office-rail: #110907;
+  --office-rail-hover: #432d25;
+  --office-rail-avatar: #decab6;
+}
+
+/* sunset · dark */
+html.dark[data-palette='sunset'],
+html.dark [data-palette-preview='sunset'] {
+  --office-canvas: #24150e;
+  --office-page: #2a1a13;
+  --office-surface: #33231c;
+  --office-raised: #3f2e27;
+  --office-raised-soft: #3f2e27;
+  --office-inset: #3f2e27;
+  --office-ink: #f9efeb;
+  --office-muted-strong: #d8beb3;
+  --office-muted: #d8beb3;
+  --office-subtle: #bb9d91;
+  --office-faint: #bb9d91;
+  --office-marker: #fab780;
+  --office-border: #614b41;
+  --office-border-strong: #614b41;
+  --office-border-soft: #503e36;
+  --office-hover: #44332c;
+  --office-hover-blue: #563b2c;
+  --office-selected: #4d3324;
+  --office-chip: #4b392f;
+  --office-avatar: #5a443b;
+  --office-avatar-soft: #5a443b;
+  --office-link: #fab780;
+  --office-accent: #ffb079;
+  --office-accent-ink: #140e0b;
+  --office-primary: #ffb079;
+  --office-primary-ink: #140e0b;
+  --office-primary-hover: #f7d7c2;
+  --office-primary-active: #dea279;
+  --office-rail: #110907;
+  --office-rail-hover: #432d25;
+  --office-rail-avatar: #decab6;
+}
+
+/* lavender · light */
+html[data-palette='lavender'],
+[data-palette-preview='lavender'] {
+  --office-canvas: #f7f4fd;
+  --office-page: #f1eef7;
+  --office-surface: #ffffff;
+  --office-raised: #f1eef7;
+  --office-raised-soft: #faf9ff;
+  --office-inset: #ebe8f1;
+  --office-ink: #100e15;
+  --office-muted-strong: #4e4b54;
+  --office-muted: #64626a;
+  --office-subtle: #736f7a;
+  --office-faint: #888690;
+  --office-marker: #100e15;
+  --office-border: #dfdbe8;
+  --office-border-strong: #d3d0dc;
+  --office-border-soft: #e9e6ef;
+  --office-hover: #f5f3fc;
+  --office-hover-blue: #f0e9ff;
+  --office-selected: #f0e9ff;
+  --office-chip: #f2edfc;
+  --office-avatar: #d0ccd9;
+  --office-avatar-soft: #e6e4ec;
+  --office-link: #5d53ae;
+  --office-accent: #d5c3f8;
+  --office-accent-ink: #100e14;
+  --office-primary: #181320;
+  --office-primary-ink: #ffffff;
+  --office-primary-hover: #383147;
+  --office-primary-active: #544a67;
+  --office-rail: #0c0a11;
+  --office-rail-hover: #342f43;
+  --office-rail-avatar: #d1c9e2;
+}
+
+/* lavender · dark */
+html.dark[data-palette='lavender'],
+html.dark [data-palette-preview='lavender'] {
+  --office-canvas: #1a1625;
+  --office-page: #1f1c2b;
+  --office-surface: #282434;
+  --office-raised: #343041;
+  --office-raised-soft: #343041;
+  --office-inset: #343041;
+  --office-ink: #f2f0f9;
+  --office-muted-strong: #c5c0da;
+  --office-muted: #c5c0da;
+  --office-subtle: #a6a0bd;
+  --office-faint: #a6a0bd;
+  --office-marker: #d0bafc;
+  --office-border: #514d62;
+  --office-border-strong: #514d62;
+  --office-border-soft: #433f51;
+  --office-hover: #393546;
+  --office-hover-blue: #463c59;
+  --office-selected: #3e3450;
+  --office-chip: #40394d;
+  --office-avatar: #4b465b;
+  --office-avatar-soft: #4b465b;
+  --office-link: #d0bafc;
+  --office-accent: #d6c1ff;
+  --office-accent-ink: #100e14;
+  --office-primary: #d6c1ff;
+  --office-primary-ink: #100e14;
+  --office-primary-hover: #e2d8f8;
+  --office-primary-active: #baa4e2;
+  --office-rail: #0c0a11;
+  --office-rail-hover: #342f43;
+  --office-rail-avatar: #d1c9e2;
+}
+
+/* The legacy design colours follow the active palette. */
+:root,
+html.dark {
+  --link-blue: var(--office-link);
+  --white-blue: var(--office-chip);
+}
