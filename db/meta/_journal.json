@@ -337,6 +337,13 @@
       "when": 1793430787362,
       "tag": "0047_employee_stats_access",
       "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1793474308586,
+      "tag": "0048_application_roles",
+      "breakpoints": true
     }
   ]
 }

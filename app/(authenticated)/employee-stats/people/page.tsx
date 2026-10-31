@@ -29,8 +29,8 @@ export default async function EmployeeDirectoryPage({
         subtitle="Search an employee to see their own stats"
         actions={
           isAdmin ? (
-            <Link href="/employee-stats/access" className="stats-header-link">
-              Manage access
+            <Link href="/admin/roles" className="stats-header-link">
+              Manage roles
             </Link>
           ) : undefined
         }

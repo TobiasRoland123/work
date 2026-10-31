@@ -17,18 +17,19 @@ import {
 const mocked = vi.hoisted(() => ({
   requirePageUserId: vi.fn(),
   requireEmployeeStatsViewer: vi.fn(),
-  requireEmployeeStatsAdmin: vi.fn(),
+  requireAdmin: vi.fn(),
   isEmployeeStatsAdmin: vi.fn(),
   getEmployeeStats: vi.fn(),
   listEmployees: vi.fn(),
   getEmployeeProfile: vi.fn(),
-  listEmployeeStatsAccess: vi.fn(),
+  redirect: vi.fn((path: string) => {
+    throw new Error(`REDIRECT:${path}`);
+  }),
 }));
 
 vi.mock('@/lib/auth/require-user', () => ({ requirePageUserId: mocked.requirePageUserId }));
 vi.mock('@/lib/auth/employee-stats', () => ({
   requireEmployeeStatsViewer: mocked.requireEmployeeStatsViewer,
-  requireEmployeeStatsAdmin: mocked.requireEmployeeStatsAdmin,
   isEmployeeStatsAdmin: mocked.isEmployeeStatsAdmin,
 }));
 vi.mock('@/lib/employee-stats/service', () => ({
@@ -41,17 +42,13 @@ vi.mock('next/navigation', () => ({
     throw new Error('NOT_FOUND');
   },
   useRouter: () => ({ push: vi.fn() }),
+  redirect: mocked.redirect,
 }));
-vi.mock('@/lib/employee-stats/access', () => ({
-  listEmployeeStatsAccess: mocked.listEmployeeStatsAccess,
-}));
+vi.mock('@/lib/auth/roles', () => ({ requireAdmin: mocked.requireAdmin }));
 vi.mock('@/components/layout/PageHeader', () => ({
   PageHeader: ({ actions }: { actions?: React.ReactNode }) => actions ?? null,
 }));
 vi.mock('@/app/(authenticated)/employee-stats/employee-stats.css', () => ({}));
-vi.mock('@/app/(authenticated)/employee-stats/access/AccessManager', () => ({
-  AccessManager: () => null,
-}));
 vi.mock('next/link', async () => {
   const React = await import('react');
   return {
@@ -127,12 +124,12 @@ const profile = (compare: 'norm' | 'alone' = 'norm', range: number | 'all' = 30)
 beforeEach(() => {
   mocked.requirePageUserId.mockReset().mockResolvedValue('viewer-user');
   mocked.requireEmployeeStatsViewer.mockReset().mockResolvedValue('viewer-user');
-  mocked.requireEmployeeStatsAdmin.mockReset().mockResolvedValue('admin-user');
+  mocked.requireAdmin.mockReset().mockResolvedValue('admin-user');
   mocked.isEmployeeStatsAdmin.mockReset().mockResolvedValue(false);
   mocked.getEmployeeStats.mockReset().mockResolvedValue(stats());
   mocked.listEmployees.mockReset().mockResolvedValue(directory);
   mocked.getEmployeeProfile.mockReset().mockResolvedValue(profile());
-  mocked.listEmployeeStatsAccess.mockReset().mockResolvedValue([]);
+  mocked.redirect.mockClear();
 });
 
 describe('employee stats page authorization', () => {
@@ -177,9 +174,9 @@ describe('employee stats page content', () => {
   });
 
   it('links to the access controls only for the admin', async () => {
-    expect(await render()).not.toContain('/employee-stats/access');
+    expect(await render()).not.toContain('/admin/roles');
     mocked.isEmployeeStatsAdmin.mockResolvedValue(true);
-    expect(await render()).toContain('href="/employee-stats/access"');
+    expect(await render()).toContain('href="/admin/roles"');
     expect(mocked.isEmployeeStatsAdmin).toHaveBeenLastCalledWith('viewer-user');
   });
 
@@ -274,9 +271,9 @@ describe('employee directory page', () => {
   });
 
   it('shows the access link only to the admin', async () => {
-    expect(await renderDirectory()).not.toContain('/employee-stats/access');
+    expect(await renderDirectory()).not.toContain('/admin/roles');
     mocked.isEmployeeStatsAdmin.mockResolvedValue(true);
-    expect(await renderDirectory()).toContain('href="/employee-stats/access"');
+    expect(await renderDirectory()).toContain('href="/admin/roles"');
   });
 });
 
@@ -379,24 +376,22 @@ describe('employee profile page', () => {
   });
 });
 
-describe('employee stats access page authorization', () => {
-  it('does not list people without a session', async () => {
+describe('legacy stats access page', () => {
+  it('requires a session before checking the admin role', async () => {
     mocked.requirePageUserId.mockRejectedValueOnce(new Error('LOGIN'));
     await expect(EmployeeStatsAccessPage()).rejects.toThrow('LOGIN');
-    expect(mocked.requireEmployeeStatsAdmin).not.toHaveBeenCalled();
-    expect(mocked.listEmployeeStatsAccess).not.toHaveBeenCalled();
+    expect(mocked.requireAdmin).not.toHaveBeenCalled();
+    expect(mocked.redirect).not.toHaveBeenCalled();
   });
 
-  it('does not list people for a viewer who is not the admin', async () => {
-    mocked.requireEmployeeStatsAdmin.mockRejectedValueOnce(new Error('NOT_FOUND'));
+  it('rejects managers and employees before redirecting', async () => {
+    mocked.requireAdmin.mockRejectedValueOnce(new Error('NOT_FOUND'));
     await expect(EmployeeStatsAccessPage()).rejects.toThrow('NOT_FOUND');
-    expect(mocked.listEmployeeStatsAccess).not.toHaveBeenCalled();
-    expect(mocked.requireEmployeeStatsViewer).not.toHaveBeenCalled();
+    expect(mocked.redirect).not.toHaveBeenCalled();
   });
 
-  it('lists people for the admin', async () => {
-    const html = renderToStaticMarkup(await EmployeeStatsAccessPage());
-    expect(mocked.listEmployeeStatsAccess).toHaveBeenCalledOnce();
-    expect(html).toContain('href="/employee-stats"');
+  it('redirects admins to application role management', async () => {
+    await expect(EmployeeStatsAccessPage()).rejects.toThrow('REDIRECT:/admin/roles');
+    expect(mocked.redirect).toHaveBeenCalledWith('/admin/roles');
   });
 });

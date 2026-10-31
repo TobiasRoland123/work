@@ -16,7 +16,7 @@ export const SANDBOX_FIXTURES = [
     lastName: 'Attendee',
     email: 'anna@sandbox.local',
     slackDeactivated: false,
-    note: 'Plain attendee who writes in English. Stands in as the employee stats admin.',
+    note: 'Writes in English. Starts as the sandbox admin.',
   },
   {
     userId: 'sandbox-mads',
@@ -85,7 +85,12 @@ export async function seedSandboxProfiles() {
     void note;
     await db
       .insert(users)
-      .values({ ...profile, slackTeamId: SANDBOX_TEAM_ID, organisationId: organisation.id })
+      .values({
+        ...profile,
+        slackTeamId: SANDBOX_TEAM_ID,
+        organisationId: organisation.id,
+        systemRole: profile.slackUserId === 'U_LOCAL_ANNA' ? 'ADMIN' : 'EMPLOYEE',
+      })
       .onConflictDoUpdate({
         target: users.userId,
         set: {

@@ -20,7 +20,7 @@ describe('UserService Tests', () => {
     firstName: 'Test',
     lastName: 'User',
     email: 'testuuser@example.com',
-    systemRole: 'USER',
+    systemRole: 'EMPLOYEE',
   };
 
   beforeAll(async () => {
@@ -153,7 +153,7 @@ describe('UserService Tests', () => {
         firstName: 'New',
         lastName: 'User',
         email: 'new-user@test.com',
-        systemRole: 'USER',
+        systemRole: 'EMPLOYEE',
       };
       const createdUser = await userService.createUser(newUser);
       expect(createdUser).toBeDefined();
@@ -169,7 +169,7 @@ describe('UserService Tests', () => {
         firstName: 'Existing',
         lastName: 'User',
         email: 'new-user@test.com',
-        systemRole: 'USER',
+        systemRole: 'EMPLOYEE',
       };
       await db.insert(users).values(existingUser).onConflictDoNothing?.();
       await expect(userService.createUser(existingUser)).rejects.toThrow('User already exists');

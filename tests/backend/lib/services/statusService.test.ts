@@ -25,7 +25,7 @@ describe('StatusService Tests', () => {
     firstName: 'Test',
     lastName: 'User',
     email: 'testuserBE@example.com',
-    systemRole: 'USER',
+    systemRole: 'EMPLOYEE',
   };
 
   const testStatus: NewStatus = {

@@ -48,14 +48,14 @@ const employeeStatsLink = {
   prefetch: null,
 };
 
-const statsAccessLink = {
-  href: '/employee-stats/access',
-  label: 'Stats access',
+const rolesLink = {
+  href: '/admin/roles',
+  label: 'Roles',
   Icon: ShieldCheck,
   prefetch: null,
 };
 
-// The stats pages live under /employee-stats, but the access controls are their own link.
+// Keep Stats selected on individual employee pages. Roles has its own navigation entry.
 export const isCurrentPath = (pathname: string | null, href: string) =>
   pathname === href ||
   (href === '/employee-stats' && !!pathname?.startsWith('/employee-stats/people'));
@@ -65,20 +65,20 @@ export function AppShell({
   firstName,
   showMessageQuality = false,
   showEmployeeStats = false,
-  showEmployeeStatsAdmin = false,
+  showRoleManagement = false,
 }: {
   children: ReactNode;
   firstName?: string | null;
   showMessageQuality?: boolean;
   showEmployeeStats?: boolean;
-  showEmployeeStatsAdmin?: boolean;
+  showRoleManagement?: boolean;
 }) {
   const pathname = usePathname();
   const moreMenuRef = useRef<HTMLDivElement>(null);
   const special = [
     ...(showMessageQuality ? [reviewLink, aiCostLink] : []),
     ...(showEmployeeStats ? [employeeStatsLink] : []),
-    ...(showEmployeeStatsAdmin ? [statsAccessLink] : []),
+    ...(showRoleManagement ? [rolesLink] : []),
     ...specialLinks,
   ];
   const specialIsCurrent = special.some(({ href }) => isCurrentPath(pathname, href));

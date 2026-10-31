@@ -18,7 +18,7 @@ import {
   check,
 } from 'drizzle-orm/pg-core';
 
-export const systemRole = pgEnum('system_role', ['ADMIN', 'USER', 'GUEST']);
+export const systemRole = pgEnum('system_role', ['ADMIN', 'MANAGER', 'EMPLOYEE']);
 export const userStatus = pgEnum('user_status', [
   'IN_OFFICE',
   'FROM_HOME',
@@ -46,7 +46,8 @@ export const users = pgTable(
     firstName: varchar('first_name', { length: 60 }),
     lastName: varchar('last_name', { length: 255 }),
     email: varchar({ length: 100 }).notNull(),
-    systemRole: systemRole('system_role').default('USER').notNull(),
+    systemRole: systemRole('system_role').default('EMPLOYEE').notNull(),
+    // Legacy data retained for migration history. Authorization uses systemRole only.
     canReviewMessages: boolean('can_review_messages').default(false).notNull(),
     createdAt: timestamp('created_at', { mode: 'string' }).defaultNow().notNull(),
     organisationId: integer('organisation_id').references(() => organisations.id, {
@@ -62,11 +63,11 @@ export const users = pgTable(
     unique('users_email_unique').on(table.email),
     unique('users_slack_identity_unique').on(table.slackTeamId, table.slackUserId),
   ]
-);
+).enableRLS();
 
-// People the stats admin has allowed to view employee statistics. The admin is identified by
-// Slack identity in code, never by a row here. No public RLS policies: only the server database
-// role may access this table, and no profile or user-update action may touch it.
+// Legacy stats grants retained for migration history. Migration 0048 turns these viewers into
+// managers; runtime authorization uses users.systemRole and never consults this table.
+// No public RLS policies: only the server database role may access this table.
 export const employeeStatsAccess = pgTable('employee_stats_access', {
   userId: varchar('user_id', { length: 36 })
     .primaryKey()

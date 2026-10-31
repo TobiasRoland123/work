@@ -26,19 +26,8 @@ The dashboard reads the same `slack_ai_usage` records as the cost figures above,
 
 ## Access
 
-In real workspaces, an authenticated Slack session alone does not grant review access. The server checks the live `users.can_review_messages` flag, an active Slack identity and `SLACK_TEAM_ID` for every request. The review service performs the same check before reading inbox data. People without access see neither the navigation link nor the page. There is no public review API. The flag is not editable through profile or user-update actions.
+Message quality review and AI costs are available only to the **Admin** application role. Managers have employee stats but do not have these operational pages. Employees have neither. The same rule applies in the local sandbox, where Anna is the initial admin.
 
-The initial reviewer is Tobias Roland, identified by Slack team `T02HKL21R`, Slack user `U05NP1NF3QB` and email `tru@charlietango.dk`. The migration grants his existing mapped account, and the Slack identity import grants him when it first creates his account in another environment. Later sign-ins and directory syncs preserve the stored flag, so an explicit revocation remains effective. Other real accounts start without review access unless an operator grants it.
+The server checks the current stored role, active Slack mapping and configured workspace on each request. The page, data service and feedback action each enforce authorization. People without access see neither the navigation link nor the page. Changing an admin to manager or employee removes review access on the next request.
 
-In the local sandbox workspace, all active mapped sandbox accounts can review messages. This exception requires both a nonproduction build and `SLACK_TEAM_ID=T_LOCAL`. A production or preview build still needs the database grant, even if its team setting were accidentally `T_LOCAL`. A development build pointed at a real workspace also needs the grant.
-
-Apply the database migration before using this feature. To select a reviewer, first find their exact internal `users.user_id` in the intended database and confirm their Slack mapping. Then run one of these commands with the target environment's database configuration:
-
-```sh
-pnpm message-review:access grant <exact-user-id>
-pnpm message-review:access revoke <exact-user-id>
-```
-
-The command changes only the exact internal user ID. Granting fails if the user is deactivated, has no Slack user ID or belongs to a different configured team. Both commands read the row back and print the resulting permission and identity so the operator can verify the target. There are no automatic database grants for other real accounts, including admins. Local sandbox access follows the exception above. For production, run with `NODE_ENV=production`, the production `DATABASE_URL` and the matching `SLACK_TEAM_ID` set in the operator's private environment. Do not paste the connection string into a shared command log.
-
-Revocation takes effect on the next server request in a real workspace. The page uses server rendering and does not expose inbox rows through client data requests. Real workspace access is available in each environment only to accounts explicitly granted in that environment's database.
+Admins manage roles at **More → Roles** (`/admin/roles`). The old `can_review_messages` flag and `message-review:access` script no longer control access. See [Application access](access-control.md) for the role hierarchy and migration.
