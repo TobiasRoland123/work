@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { eq } from 'drizzle-orm';
 import { db, pool } from '@/db';
-import { slackAiUsage } from '@/db/schema';
+import { slackAiUsage, slackMessageProcessing } from '@/db/schema';
 import { getAiCostDashboard } from '@/lib/ai-cost/service';
 import { requireMessageReviewer } from '@/lib/auth/message-review';
 
@@ -33,10 +33,12 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')('AI cost on isolated Pos
   });
   beforeEach(async () => {
     await db.delete(slackAiUsage).where(eq(slackAiUsage.teamId, team));
+    await db.delete(slackMessageProcessing).where(eq(slackMessageProcessing.teamId, team));
     vi.mocked(requireMessageReviewer).mockReset().mockResolvedValue('reviewer');
   });
   afterAll(async () => {
     await db.delete(slackAiUsage).where(eq(slackAiUsage.teamId, team));
+    await db.delete(slackMessageProcessing).where(eq(slackMessageProcessing.teamId, team));
     vi.unstubAllEnvs();
     await pool.end();
   });
@@ -47,6 +49,72 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')('AI cost on isolated Pos
     await expect(getAiCostDashboard({}, now)).rejects.toThrow('Forbidden');
     expect(select).not.toHaveBeenCalled();
     select.mockRestore();
+  });
+
+  it('counts tracked unique messages by first handling day and configured channel', async () => {
+    const tracked = (id: string, usedAi: boolean, handledAt: string, channelId = channel) => ({
+      messageKey: `${team}:${channelId}:${id}`,
+      teamId: team,
+      channelId,
+      usedAi,
+      handledAt: new Date(handledAt),
+    });
+    await db.insert(slackMessageProcessing).values([
+      // The Copenhagen start boundary is 22:00 UTC on the previous day.
+      tracked('ai', true, '2026-10-09T22:00:00Z'),
+      tracked('shorthand', false, '2026-10-15T22:30:00Z'),
+      tracked('old', false, '2026-10-09T21:59:59Z'),
+      tracked('future', true, '2026-10-16T22:00:00Z'),
+      tracked('other-channel', false, '2026-10-14T09:00:00Z', 'OTHER'),
+      { ...tracked('other-team', true, '2026-10-14T09:00:00Z'), teamId: `${team}_OTHER` },
+    ]);
+    // Calls and retries are separate from tracked successful messages.
+    await db
+      .insert(slackAiUsage)
+      .values([
+        usage({ startedAt: new Date('2026-10-14T09:00:00Z') }),
+        usage({ startedAt: new Date('2026-10-14T09:01:00Z'), state: 'failed' }),
+        usage({ startedAt: new Date('2026-10-14T09:02:00Z') }),
+      ]);
+    const data = await getAiCostDashboard({ days: '7' }, now);
+    expect(data.messages).toEqual({ ai: 1, withoutAi: 1, total: 2 });
+    expect(data.totals.calls).toBe(3);
+    await db
+      .delete(slackMessageProcessing)
+      .where(eq(slackMessageProcessing.teamId, `${team}_OTHER`));
+  });
+
+  it('classifies later AI attempts without moving or recounting the message', async () => {
+    const messageKey = `${team}:${channel}:later-edit`;
+    await db.insert(slackMessageProcessing).values({
+      messageKey,
+      teamId: team,
+      channelId: channel,
+      usedAi: false,
+      handledAt: new Date('2026-10-14T09:00:00Z'),
+    });
+    await db.insert(slackAiUsage).values(
+      usage({
+        messageKey,
+        revision: '2',
+        state: 'failed',
+        startedAt: new Date('2026-10-16T09:00:00Z'),
+      })
+    );
+    expect((await getAiCostDashboard({ days: '7' }, now)).messages).toEqual({
+      ai: 1,
+      withoutAi: 0,
+      total: 1,
+    });
+  });
+
+  it('does not infer historical handling from AI calls or invent non-AI counts', async () => {
+    await db.insert(slackAiUsage).values(usage({ startedAt: new Date('2026-10-14T09:00:00Z') }));
+    expect((await getAiCostDashboard({ days: '7' }, now)).messages).toEqual({
+      ai: 0,
+      withoutAi: 0,
+      total: 0,
+    });
   });
 
   it('totals the period by Copenhagen day and model, scoped to the channel', async () => {

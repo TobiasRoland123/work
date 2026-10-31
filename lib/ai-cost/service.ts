@@ -1,7 +1,7 @@
 import { and, eq, sql } from 'drizzle-orm';
 import type { SQL } from 'drizzle-orm';
 import { db } from '@/db';
-import { slackAiUsage } from '@/db/schema';
+import { slackAiUsage, slackMessageProcessing } from '@/db/schema';
 import { requireMessageReviewer } from '@/lib/auth/message-review';
 import {
   addAiUsage,
@@ -23,6 +23,12 @@ const usageColumns = {
   inputTokens: sql<string | null>`sum(${slackAiUsage.inputTokens})`,
   outputTokens: sql<string | null>`sum(${slackAiUsage.outputTokens})`,
 };
+
+// A later failed edit can use AI after a message was first handled without it.
+const messageUsedAi = sql`(${slackMessageProcessing.usedAi} or exists (
+  select 1 from ${slackAiUsage}
+  where ${slackAiUsage.messageKey} = ${slackMessageProcessing.messageKey}
+))`;
 
 const usageDay = sql<string>`to_char(${slackAiUsage.startedAt} at time zone 'Europe/Copenhagen', 'YYYY-MM-DD')`;
 const usageMonth = sql<string>`to_char(${slackAiUsage.startedAt} at time zone 'Europe/Copenhagen', 'YYYY-MM-01')`;
@@ -46,7 +52,7 @@ export async function getAiCostDashboard(input: { days?: string } = {}, now: Dat
   );
   const periodScope = and(scope, startedBetween(dates[0], tomorrow));
 
-  const [dailyRows, modelRows, monthRows] = await Promise.all([
+  const [dailyRows, modelRows, monthRows, [messageRow]] = await Promise.all([
     db
       .select({ date: usageDay, ...usageColumns })
       .from(slackAiUsage)
@@ -63,6 +69,21 @@ export async function getAiCostDashboard(input: { days?: string } = {}, now: Dat
       .from(slackAiUsage)
       .where(and(scope, startedBetween(months.previous, tomorrow)))
       .groupBy(usageMonth),
+    db
+      .select({
+        ai: sql<number>`count(*) filter (where ${messageUsedAi})::integer`,
+        withoutAi: sql<number>`count(*) filter (where not ${messageUsedAi})::integer`,
+        total: sql<number>`count(*)::integer`,
+      })
+      .from(slackMessageProcessing)
+      .where(
+        and(
+          eq(slackMessageProcessing.teamId, process.env.SLACK_TEAM_ID ?? ''),
+          eq(slackMessageProcessing.channelId, process.env.SLACK_CHANNEL_ID ?? ''),
+          sql`${slackMessageProcessing.handledAt} >= (${dates[0]}::date::timestamp at time zone 'Europe/Copenhagen')
+          and ${slackMessageProcessing.handledAt} < (${tomorrow}::date::timestamp at time zone 'Europe/Copenhagen')`
+        )
+      ),
   ]);
 
   const byDay = new Map(dailyRows.map((row) => [row.date, aiUsageFromRow(row)]));
@@ -82,6 +103,7 @@ export async function getAiCostDashboard(input: { days?: string } = {}, now: Dat
     startDate: dates[0],
     endDate: months.today,
     totals,
+    messages: messageRow ?? { ai: 0, withoutAi: 0, total: 0 },
     daily,
     models,
     currentMonth: { start: months.current, ...(byMonth.get(months.current) ?? emptyAiUsage()) },
