@@ -14,6 +14,8 @@ import {
   planCorrection,
 } from '@/lib/status/correction';
 import { blockCorrectedShorthand } from '@/lib/slack/learned-shorthand';
+import { pushConfigured } from '@/lib/notifications/push';
+import { notificationService } from '@/lib/services/notificationService';
 
 export const statusService = {
   // GET METHODS
@@ -40,6 +42,7 @@ export const statusService = {
 
   // POST METHODS
   async createNewStatus(newStatus: NewStatus) {
+    const before = pushConfigured() ? await this.getStatusByUserUserId(newStatus.userID) : [];
     const createdStatus = await db
       .insert(status)
       .values({ ...newStatus, announcedAt: new Date() })
@@ -51,6 +54,7 @@ export const statusService = {
         payload: {},
       });
     }
+    if (pushConfigured()) await notificationService.notifyArrival(newStatus.userID, before);
     // Re-fetch the updated user with extras
     return createdStatus[0];
   },

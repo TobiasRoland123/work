@@ -14,6 +14,19 @@ const nextConfig: NextConfig = {
     },
   },
 
+  async headers() {
+    return [
+      {
+        // A stale service worker would keep serving old push handling, so always revalidate it.
+        source: '/sw.js',
+        headers: [
+          { key: 'Cache-Control', value: 'no-cache, no-store, must-revalidate' },
+          { key: 'Content-Type', value: 'application/javascript; charset=utf-8' },
+        ],
+      },
+    ];
+  },
+
   /* config options here */
   images: {
     domains: ['picsum.photos'],

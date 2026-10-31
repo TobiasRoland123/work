@@ -35,3 +35,22 @@ describe('/sandbox in middleware', () => {
     expect(response.status).toBe(401);
   });
 });
+
+describe('PWA files in middleware', () => {
+  it('serves the digest cron endpoint without a session so its own secret check runs', async () => {
+    vi.stubEnv('NODE_ENV', 'production');
+    auth.mockResolvedValue(null);
+    const response = await middleware(request('/api/notifications/pinned-digest'));
+    expect(response.status).toBe(200);
+    expect(auth).not.toHaveBeenCalled();
+  });
+
+  it('leaves the manifest and service worker out of the session check', async () => {
+    const { config } = await import('@/middleware');
+    const matcher = new RegExp(`^${config.matcher[0]}$`);
+    expect(matcher.test('/today')).toBe(true);
+    expect(matcher.test('/sw.js')).toBe(false);
+    expect(matcher.test('/manifest.webmanifest')).toBe(false);
+    expect(matcher.test('/icons/icon-192.png')).toBe(false);
+  });
+});

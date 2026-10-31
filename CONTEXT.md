@@ -41,6 +41,18 @@ to the person who pinned them, stored per person, never a symmetric relationship
 never pinning yourself.
 _Avoid_: Favourite, follow, watchlist, buddy
 
+**Notification**:
+A push message to a person's own devices about attendance of their Pinned Colleagues. Each
+kind (a pinned colleague arriving, the morning summary of who is in) is opted into or out
+of per person, while turning push on or off is per device. Nothing is sent about
+colleagues the person has not pinned.
+_Avoid_: Alert, reminder, ping
+
+**Arrival**:
+A Declaration that changes someone's Resolved Status to in the office at the moment it is
+written. The Workday Default alone is never an Arrival, since it needs no announcement.
+_Avoid_: Check-in, clock-in
+
 ### Local Sandbox
 
 The Local Sandbox replaces the Slack workspace during local development. It runs only

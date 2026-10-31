@@ -344,6 +344,13 @@
       "when": 1793474308586,
       "tag": "0048_application_roles",
       "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1793486395558,
+      "tag": "0049_push_notifications",
+      "breakpoints": true
     }
   ]
 }

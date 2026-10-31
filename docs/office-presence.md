@@ -16,6 +16,17 @@ The side panel shows the signed-in person's pinned colleagues, a short list of t
 
 The panel can be hidden with the side-panel button beside the Today and Week switch, which gives the board the full width. The choice is remembered per browser in the `week-panel` cookie, which the server reads so the page loads in the right layout without a flash. The panel is open until it is closed.
 
+## Installing the app and push notifications
+
+WØRK is an installable PWA. `app/manifest.ts` serves the web app manifest (starts at `/today`, standalone display, icons in `public/icons/`), and `public/sw.js`, registered on every page, makes browsers offer installation and shows push messages. The service worker caches nothing, so attendance is always read fresh. On iPhone and iPad, push only works once the app has been added to the Home Screen. The manifest and service worker are excluded from the login redirect in `middleware.ts`, because browsers fetch them without a session.
+
+The Profile page has a **Notifications** section. **Turn on for this device** asks the browser for permission and saves its push subscription in `push_subscriptions` (one row per browser, so signing in as someone else on the same browser moves it). Below it, each kind is opted into or out of per person in `notification_preferences`; with no row a kind is on, but nothing is sent until a device is subscribed.
+
+- **Pinned colleague arrived** is sent when a Declaration moves a pinned colleague into the office at that moment. Resolved Status is never stored, so `notifyArrival` compares it before and after the new Declarations are written, whether they come from the status form or from Slack import. The Workday Default alone is never an arrival.
+- **Pinned colleagues in today** is a summary sent at 09:00 Copenhagen time on weekdays, listing pinned colleagues who are in the office and who arrive later. Vercel cron calls `/api/notifications/pinned-digest` at 07:00 and 08:00 UTC; only the run that lands in the 09:00 Copenhagen hour sends, so summer and winter time both work. The endpoint requires `CRON_SECRET`, like the other cron routes.
+
+Push needs a VAPID key pair: `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` and `VAPID_SUBJECT` (a `mailto:` address). Create one with `npx web-push generate-vapid-keys`. Without them the Profile page says notifications are not set up and nothing is sent. A failed push never blocks saving a status, and devices whose subscription the push service reports as gone are deleted.
+
 ## Status emojis
 
 Attendance labels show an automatic emoji in the board, selected-day list and person details. The text label remains visible, and screen readers read that label without repeating the decorative emoji. Manual declarations and existing attendance get a suitable default, such as 🏠 for working from home.

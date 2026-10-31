@@ -4,6 +4,14 @@
     {
       "path": "/api/check-users",
       "schedule": "0 0 * * *"
+    },
+    {
+      "path": "/api/notifications/pinned-digest",
+      "schedule": "0 7 * * 1-5"
+    },
+    {
+      "path": "/api/notifications/pinned-digest",
+      "schedule": "0 8 * * 1-5"
     }
   ],
   "functions": {

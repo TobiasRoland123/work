@@ -20,6 +20,8 @@ import {
 } from './learned-shorthand';
 import { statusEmoji } from '@/lib/status/emoji';
 import { supabase } from '@/lib/supabaseClient';
+import { pushConfigured } from '@/lib/notifications/push';
+import { notificationService } from '@/lib/services/notificationService';
 
 const MAX_REVIEW_TEXT_LENGTH = 12000;
 
@@ -215,6 +217,10 @@ export async function processSlackInbox(limit = 2, messageKey?: string, revision
           : descriptionRows(extraction, job.text ?? '', messageInstant);
       const hasRows = rows.length > 0;
       failureReason = 'status_write_failed';
+      const before =
+        hasRows && pushConfigured()
+          ? await db.select().from(status).where(eq(status.userID, user.id))
+          : [];
       const applied = await db.transaction(async (tx) => {
         const [current] = await tx
           .select()
@@ -267,6 +273,7 @@ export async function processSlackInbox(limit = 2, messageKey?: string, revision
         else await forgetShorthandObservation(tx, job.messageKey);
         return true;
       });
+      if (applied && hasRows) await notificationService.notifyArrival(user.id, before);
       if (!applied) counts.superseded++;
       else if (hasRows) counts.applied++;
       else if (extraction.decision === 'review') counts.review++;

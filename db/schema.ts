@@ -160,6 +160,42 @@ export const pinnedColleagues = pgTable(
   ]
 ).enableRLS();
 
+// One row per browser or device a person allowed push notifications on. The endpoint is the
+// push service's address for that browser, so it identifies the device across sign-ins.
+// No public RLS policies: only the server database role may access this table.
+export const pushSubscriptions = pgTable(
+  'push_subscriptions',
+  {
+    id: serial().primaryKey().notNull(),
+    userId: varchar('user_id', { length: 36 })
+      .notNull()
+      .references(() => users.userId, { onDelete: 'cascade' }),
+    endpoint: text().notNull(),
+    p256dh: text().notNull(),
+    auth: text().notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    unique('push_subscriptions_endpoint_unique').on(table.endpoint),
+    index('push_subscriptions_user_idx').on(table.userId),
+  ]
+).enableRLS();
+
+// A person's opt-in or opt-out per notification type. A missing row means the type's default.
+// No public RLS policies: only the server database role may access this table.
+export const notificationPreferences = pgTable(
+  'notification_preferences',
+  {
+    userId: varchar('user_id', { length: 36 })
+      .notNull()
+      .references(() => users.userId, { onDelete: 'cascade' }),
+    type: text().notNull(),
+    enabled: boolean().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.userId, table.type] })]
+).enableRLS();
+
 // Durable inbox. Raw processing text is cleared at terminal outcomes; reviewText retains
 // bounded input only when the latest revision did not create an attendance status.
 // No public RLS policies: only the server database role may access this table.
