@@ -93,6 +93,11 @@ After restoring the paused database, production login reached PostgreSQL but fai
 
 Migrations `0034`, `0035`, and `0036` were applied in order in one transaction. Existing row counts remained unchanged at 71 users and 60 attendance records. Post-commit checks passed for the Slack identity lookup, transaction advisory lock, `AWAY` enum, attendance columns, and inbox RLS. These migrations must not be applied again. No historical migration journal was fabricated. A fresh browser sign-in remains the end-to-end verification step.
 
+### Production login repair, 31 October 2026
+
+After login, `/today` failed with digest `3915557996` because `pinned_colleagues` did not exist. Structural inspection confirmed migrations `0043` through `0048` were entirely absent and the database still had no Drizzle migration journal. A PostgreSQL custom-format backup was created outside the repository and verified before the repair. The pre-repair baseline was 75 users and 121 attendance records.
+
+The existing migrations `0043` through `0048` were applied in order through Supabase MCP, each in its own transaction. Post-repair checks passed for all 16 application table queries and the pinned-colleagues service query, with counts unchanged at 75 users and 121 attendance records. The Supabase migration ledger now records these six migrations; the historical Drizzle journal remains absent. Do not apply them again or replay the full historical chain with `pnpm db:migrate`. A fresh browser sign-in remains the end-to-end verification step.
 
 Take a database backup and verify which migrations the target has applied. The repository's earliest historical migration is an introspection baseline and cannot initialize a blank database by replaying the complete history.
 
