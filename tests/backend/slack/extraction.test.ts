@@ -98,7 +98,7 @@ describe('attendance extraction boundary', () => {
     const message = '  In Aarhus for a meeting with Daniel. See you tomorrow. 👋\n  ';
     const parsed = validateExtraction(
       extract([
-        { ...interval, status: 'AWAY', comment: 'In Aarhus for a meeting' },
+        { ...interval, status: 'AT_CLIENT', comment: 'In Aarhus for a meeting' },
         { ...interval, status: 'IN_OFFICE', fromDate: '2026-09-08', toDate: '2026-09-08' },
       ]),
       sent,
