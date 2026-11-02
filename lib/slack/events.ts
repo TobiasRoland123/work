@@ -7,6 +7,7 @@ const message = z.object({
   text: z.string().optional(),
   bot_id: z.string().optional(),
   subtype: z.string().optional(),
+  thread_ts: ts.optional(),
   edited: z.object({ ts }).optional(),
 });
 const envelope = z.object({
@@ -22,6 +23,7 @@ const envelope = z.object({
     text: z.string().optional(),
     bot_id: z.string().optional(),
     subtype: z.string().optional(),
+    thread_ts: ts.optional(),
     message: message.optional(),
     previous_message: message.optional(),
     deleted_ts: ts.optional(),
@@ -59,6 +61,8 @@ export function inspectSlackEvent(input: unknown, teamId: string, channelId: str
   if (!item) return { reason: 'incomplete_message' as const };
   if (item.bot_id) return { reason: 'bot_message' as const };
   if (item.subtype) return { reason: 'unsupported_subtype' as const };
+  // Thread replies are conversation, never a status announcement, even in your own thread.
+  if (item.thread_ts && item.thread_ts !== item.ts) return { reason: 'thread_reply' as const };
   const messageTs = item.ts;
   const revision = edited ? (event.message?.edited?.ts ?? event.event_ts) : item.ts;
   if (!messageTs || !revision || !item.user || !item.text)
