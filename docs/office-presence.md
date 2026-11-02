@@ -8,6 +8,12 @@ The board and day-by-day person details retain the latest announcement for each 
 
 Office totals and the person's Right now status still use resolved presence. Today's presence is live, so an arrival at 09:30 counts as in office from 09:30 even while the late announcement stays visible. Other days use 09:00 Copenhagen time, the start of the workday, for office counts. Ordinary office attendance and workday defaults remain omitted from exception rows. `lib/status/week.ts` supplies both the daily declaration and resolved presence.
 
+## New announcements and board order
+
+A **New since you last looked** group leads the table with colleagues whose attendance exceptions on the displayed days were announced after the signed-in person last looked at the page, newest first, each with its announcement time. They also stay in their status group. The signed-in person's own announcements, Workday Defaults and in-office declarations never count as new. "Last looked" is the last moment the page was on screen in this browser: it is saved in local storage per person when the page is hidden or left and every 15 seconds while it is in view, and the comparison is refreshed each time the page comes back into view, so announcements arriving live stay marked until then. **Mark as seen** clears the group at once. A first visit has nothing to compare with and shows no group.
+
+**By status** and **By time** in the toolbar switch the table between status groups and one list ordered by each colleague's newest exception announcement on the displayed days. By time keeps the new group on top and lists everyone else under Earlier, or under Newest first when nothing is new. The choice is saved in the `week-layout` cookie, so the server renders it without a flash, and it persists across day and week navigation.
+
 ## Pinned colleagues
 
 The side panel shows the signed-in person's pinned colleagues, a short list of the people they work with most, so they can see at a glance whether those people are in. Each row shows the status for the selected day, with its note and arrival time, and rows are ordered In office, In late, then the other statuses in the usual order, keeping pin order within a status. People with no status yet come last. The footer counts how many pinned colleagues are in the office, and how many of them arrive later. Today's counts follow resolved presence, so they match the header; a day shown from the Workday Default is marked as assumed for screen readers.

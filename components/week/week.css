@@ -125,7 +125,8 @@
   border-radius: 8px;
   background: var(--office-inset);
 }
-.week-filters a {
+.week-filters a,
+.week-filters button {
   padding: 7px 12px;
   border-radius: 6px;
   font-size: 13px;
@@ -133,7 +134,21 @@
   color: var(--office-muted);
   white-space: nowrap;
 }
-.week-filters a[aria-current='page'] {
+.week-filters button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.week-filters button:hover {
+  color: var(--office-ink);
+}
+.week-filters button:focus-visible {
+  outline: 2px solid var(--office-link);
+  outline-offset: -2px;
+}
+.week-filters a[aria-current='page'],
+.week-filters button[aria-pressed='true'] {
   background: var(--office-surface);
   color: var(--office-ink);
   box-shadow: 0 1px 2px #0000001a;
@@ -337,6 +352,40 @@
 .week-status-heading h2 span {
   color: var(--office-subtle);
   font-weight: 400;
+}
+.tone[data-tone='new'] {
+  --tone-border: var(--office-link);
+}
+/* Announcements made since the person last looked lead the board. */
+.week-status-group[data-new] .week-status-heading {
+  background: color-mix(in srgb, var(--office-link) 9%, var(--office-raised));
+}
+.week-status-group[data-new] .week-status-heading > [role='cell'] {
+  display: flex;
+  align-items: center;
+}
+.week-status-group[data-new] .week-status-heading h2 {
+  flex: 1;
+  min-width: 0;
+}
+.week-status-group[data-new] .week-person-cell {
+  box-shadow: inset 3px 0 0 var(--office-link);
+}
+.week-group-action {
+  flex-shrink: 0;
+  margin-right: 12px;
+  padding: 5px 10px;
+  border-radius: 6px;
+  color: var(--office-link);
+  font-size: 12px;
+  font-weight: 500;
+}
+.week-group-action:hover {
+  background: var(--office-hover);
+}
+.week-group-action:focus-visible {
+  outline: 2px solid var(--office-link);
+  outline-offset: -2px;
 }
 .week-person-row:hover .week-person-cell {
   background: var(--office-hover);
@@ -994,7 +1043,8 @@
   .week-filters {
     flex: 1;
   }
-  .week-filters a {
+  .week-filters a,
+  .week-filters button {
     flex: 1;
     padding-inline: 6px;
   }

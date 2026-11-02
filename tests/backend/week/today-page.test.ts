@@ -114,6 +114,17 @@ describe('/today page days', () => {
     expect(closed.props.initialPanelOpen).toBe(false);
   });
 
+  it('starts grouped unless the visitor chose the chronological list', async () => {
+    const grouped = await WeekPage({ searchParams: Promise.resolve({}) });
+    expect(grouped.props.initialLayout).toBe('grouped');
+
+    mocked.cookies.mockResolvedValue({
+      get: (name: string) => (name === 'week-layout' ? { value: 'chronological' } : undefined),
+    });
+    const chronological = await WeekPage({ searchParams: Promise.resolve({}) });
+    expect(chronological.props.initialLayout).toBe('chronological');
+  });
+
   it('keeps week mode when both query parameters are present', async () => {
     const element = await WeekPage({
       searchParams: Promise.resolve({ week: '2026-09-21', day: '2026-10-13' }),

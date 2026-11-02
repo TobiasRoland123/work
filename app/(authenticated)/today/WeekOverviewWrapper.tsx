@@ -17,6 +17,8 @@ import {
 import type { UpcomingStatus } from '@/lib/status/plan';
 import { WeekOverview } from '@/components/week/WeekOverview';
 import { isInOffice, personName } from '@/components/week/presence';
+import { useLastSeen } from '@/components/week/lastSeen';
+import type { WeekLayout } from '@/components/week/layoutPreference';
 
 /** `week` is a work week's Monday; without it the view is one day, and no day means today. */
 type View = { week?: string; day?: string };
@@ -44,6 +46,7 @@ export const WeekOverviewWrapper = ({
   initialPlans,
   initialPinnedIds,
   initialPanelOpen = true,
+  initialLayout = 'grouped',
   canSetColleagueStatus = false,
 }: {
   initialProfiles: UserWithExtras[];
@@ -55,6 +58,7 @@ export const WeekOverviewWrapper = ({
   initialPlans: UpcomingStatus[];
   initialPinnedIds: string[];
   initialPanelOpen?: boolean;
+  initialLayout?: WeekLayout;
   canSetColleagueStatus?: boolean;
 }) => {
   const [initialView] = useState<View>(() => ({
@@ -64,6 +68,7 @@ export const WeekOverviewWrapper = ({
   const [view, setView] = useState(initialView);
   const [loadedKey, setLoadedKey] = useState(() => viewKey(initialView, initialToday));
   const [panelOpen, setPanelOpen] = useState(initialPanelOpen);
+  const [layout, setLayout] = useState(initialLayout);
   const [profiles, setProfiles] = useState(initialProfiles);
   const [plans, setPlans] = useState(initialPlans);
   const [pinnedIds, setPinnedIds] = useState(initialPinnedIds);
@@ -79,6 +84,7 @@ export const WeekOverviewWrapper = ({
   const pending = useRef(false);
   const mounted = useRef(false);
   const arrivalTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { seenSince, markSeen } = useLastSeen(userId);
   const updateToday = useCallback((date: string) => {
     todayRef.current = date;
     setToday(date);
@@ -293,11 +299,15 @@ export const WeekOverviewWrapper = ({
       pinnedIds={pinnedIds}
       initialPanelOpen={panelOpen}
       onPanelChange={setPanelOpen}
+      initialLayout={layout}
+      onLayoutChange={setLayout}
       onNavigate={navigate}
       onPrefetch={prefetch}
       onPinChange={(id, pinned) => void changePin(id, pinned)}
       onStatusSaved={() => void refetchProfiles()}
       canSetColleagueStatus={canSetColleagueStatus}
+      seenSince={seenSince}
+      onMarkSeen={markSeen}
     />
   );
 };
