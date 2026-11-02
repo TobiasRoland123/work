@@ -8,6 +8,8 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Clock,
+  LayoutList,
   Pencil,
   PanelRightClose,
   PanelRightOpen,
@@ -24,7 +26,9 @@ import { StatusEmoji } from '@/components/ui/Status/StatusEmoji';
 import { deleteStatusByIdAction } from '@/app/actions/statusActions';
 import type { UpcomingStatus } from '@/lib/status/plan';
 import { addDays, formatDay, isoWeekNumber, shiftWorkWeek } from '@/lib/status/week';
+import { copenhagenDate } from '@/lib/status/active';
 import {
+  announcedSince,
   dayAnnouncement,
   dayNote,
   groupAttendance,
@@ -37,6 +41,7 @@ import {
 } from './presence';
 import { Avatar } from './Avatar';
 import { rememberWeekPanel } from './panelPreference';
+import { rememberWeekLayout, type WeekLayout } from './layoutPreference';
 import { PinnedColleagues } from './PinnedColleagues';
 import { StatusCorrection } from './StatusCorrection';
 import { DayPanelSkeleton, WeekBoardSkeleton } from './WeekOverviewSkeleton';
@@ -351,6 +356,26 @@ function PersonSheet({
   );
 }
 
+const NEW_GROUP = 'new';
+
+const clockTime = new Intl.DateTimeFormat('en-GB', {
+  timeZone: 'Europe/Copenhagen',
+  hour: '2-digit',
+  minute: '2-digit',
+  hourCycle: 'h23',
+});
+
+/** "Announced 10:42", or with the day when it was before today. */
+function announcedLabel(at: number, today: string) {
+  const date = new Date(at);
+  const day = copenhagenDate(date);
+  const when =
+    day === today
+      ? clockTime.format(date)
+      : `${formatDay(day, { weekday: 'short', day: 'numeric', month: 'short' })}, ${clockTime.format(date)}`;
+  return `Announced ${when}`;
+}
+
 // Share of colleagues in the office, 0–1. The meter shifts from red (0) to green (1).
 const share = (inOffice: number, total: number) => (total ? inOffice / total : 0);
 
@@ -371,8 +396,12 @@ export function WeekOverview({
   canSetColleagueStatus = false,
   initialPanelOpen = true,
   onPanelChange,
+  initialLayout = 'grouped',
+  onLayoutChange,
   onNavigate,
   onPrefetch,
+  seenSince = null,
+  onMarkSeen,
 }: {
   profiles: UserWithExtras[];
   userId: string;
@@ -394,13 +423,21 @@ export function WeekOverview({
   /** Whether the side panel starts open; the visitor's last choice, read on the server. */
   initialPanelOpen?: boolean;
   onPanelChange?: (open: boolean) => void;
+  /** Whether the board starts grouped by status or as one newest-first list; read on the server. */
+  initialLayout?: WeekLayout;
+  onLayoutChange?: (layout: WeekLayout) => void;
   /** Handles a plain click on a day or week link without waiting for a server round trip. */
   onNavigate?: (href: string) => void;
   /** Warms the data behind a link when it is hovered, focused, or touched. */
   onPrefetch?: (href: string) => void;
+  /** When the person last looked at this page; colleagues' exceptions announced later are new. */
+  seenSince?: number | null;
+  /** Clears the new announcements group. */
+  onMarkSeen?: () => void;
 }) {
   const todayOnly = days.length === 1;
   const [panelOpen, setPanelOpen] = useState(initialPanelOpen);
+  const [layout, setLayout] = useState(initialLayout);
   const [query, setQuery] = useState('');
   const [selectedDay, setSelectedDay] = useState(days.includes(today) ? today : days[0]);
   const [openId, setOpenId] = useState<string | null>(null);
@@ -414,7 +451,7 @@ export function WeekOverview({
       const next = new Set(current);
       if (clicks === 3) {
         const collapse = !current.has(key);
-        for (const group of groups) {
+        for (const group of shownGroups) {
           if (collapse) next.add(group.key);
           else next.delete(group.key);
         }
@@ -422,6 +459,12 @@ export function WeekOverview({
       else next.add(key);
       return next;
     });
+  };
+
+  const chooseLayout = (next: WeekLayout) => {
+    setLayout(next);
+    onLayoutChange?.(next);
+    rememberWeekLayout(next);
   };
 
   const togglePanel = () => {
@@ -502,7 +545,42 @@ export function WeekOverview({
       .toLocaleLowerCase();
     return searchable.includes(needle) && days.some((_, index) => hasExceptionOn(person, index));
   });
-  const groups = groupAttendance(visible, days[dayIndex]);
+  const chronological = layout === 'chronological';
+  // Each colleague's newest exception announcement on the shown days, newest first.
+  const announced = new Map<string, number>();
+  for (const person of visible) {
+    const at = announcedSince(person, days);
+    if (at !== null) announced.set(person.userId, at);
+  }
+  const byTime = [...visible].sort(
+    (a, b) => (announced.get(b.userId) ?? 0) - (announced.get(a.userId) ?? 0)
+  );
+  // Colleagues with exceptions announced since the last look. Grouped, they also stay in their
+  // status group, so the groups below remain complete.
+  const isFresh = (person: UserWithExtras) =>
+    seenSince !== null &&
+    person.userId !== userId &&
+    (announced.get(person.userId) ?? -Infinity) > seenSince;
+  const fresh = byTime.filter(isFresh);
+  const newGroup = fresh.length
+    ? [{ key: NEW_GROUP, label: 'New since you last looked', tone: 'new', members: fresh }]
+    : [];
+  const earlier = byTime.filter((person) => !isFresh(person));
+  const shownGroups = chronological
+    ? [
+        ...newGroup,
+        ...(earlier.length
+          ? [
+              {
+                key: 'earlier',
+                label: fresh.length ? 'Earlier' : 'Newest first',
+                tone: 'none',
+                members: earlier,
+              },
+            ]
+          : []),
+      ]
+    : [...newGroup, ...groupAttendance(visible, days[dayIndex])];
   const colleagues = people.filter((person) => person.userId !== userId);
   const previousHref = todayOnly
     ? `/today?day=${addDays(days[0], -1)}`
@@ -581,6 +659,26 @@ export function WeekOverview({
                   Week
                 </Link>
               </div>
+              <div className="week-filters" role="group" aria-label="Board order">
+                <button
+                  type="button"
+                  aria-pressed={!chronological}
+                  title="Group colleagues by status"
+                  onClick={() => chooseLayout('grouped')}
+                >
+                  <LayoutList size={15} aria-hidden="true" />
+                  By status
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={chronological}
+                  title="List colleagues by when they announced, newest first"
+                  onClick={() => chooseLayout('chronological')}
+                >
+                  <Clock size={15} aria-hidden="true" />
+                  By time
+                </button>
+              </div>
               <button
                 type="button"
                 className="week-panel-toggle"
@@ -600,8 +698,15 @@ export function WeekOverview({
           </div>
           {!todayOnly && (
             <p className="week-grouping-note" id="week-grouping-note">
-              Grouped by{' '}
-              {formatDay(days[dayIndex], { weekday: 'long', day: 'numeric', month: 'long' })}.{' '}
+              {chronological ? (
+                'Newest announcement first. '
+              ) : (
+                <>
+                  Grouped by{' '}
+                  {formatDay(days[dayIndex], { weekday: 'long', day: 'numeric', month: 'long' })}
+                  .{' '}
+                </>
+              )}
               Showing colleagues with an attendance exception this week.
             </p>
           )}
@@ -657,8 +762,14 @@ export function WeekOverview({
                   </div>
                 </div>
               </div>
-              {groups.map(({ key, label, tone, members }) => (
-                <div role="rowgroup" className="week-status-group" aria-label={label} key={key}>
+              {shownGroups.map(({ key, label, tone, members }) => (
+                <div
+                  role="rowgroup"
+                  className="week-status-group"
+                  aria-label={label}
+                  key={key}
+                  data-new={key === NEW_GROUP || undefined}
+                >
                   <div role="row" className="week-status-heading">
                     <div role="cell" aria-colspan={days.length + 1}>
                       <h2>
@@ -676,6 +787,11 @@ export function WeekOverview({
                           </span>
                         </button>
                       </h2>
+                      {key === NEW_GROUP && onMarkSeen && (
+                        <button type="button" className="week-group-action" onClick={onMarkSeen}>
+                          Mark as seen
+                        </button>
+                      )}
                     </div>
                   </div>
                   <div
@@ -699,7 +815,12 @@ export function WeekOverview({
                                   </span>
                                   {person.userId === userId && <em>You</em>}
                                 </span>
-                                {person.userId === userId ? (
+                                {(key === NEW_GROUP || chronological) &&
+                                announced.has(person.userId) ? (
+                                  <small>
+                                    {announcedLabel(announced.get(person.userId)!, today)}
+                                  </small>
+                                ) : person.userId === userId ? (
                                   <small>Click a day to plan it</small>
                                 ) : (
                                   person.organisationRoles?.[0] && (

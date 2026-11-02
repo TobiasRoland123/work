@@ -1,5 +1,6 @@
 import type { DayPresence, Status, UserWithExtras } from '@/db/types';
 import type { StatusType } from '@/components/ui/Status/Status';
+import { announcement } from '@/lib/status/active';
 
 export type Tone = 'office' | 'partial' | 'remote' | 'sick' | 'off' | 'away' | 'note' | 'none';
 export type DayGroup = 'office' | 'elsewhere' | 'out' | 'unknown';
@@ -42,6 +43,26 @@ export const statusLabel = (status: StatusType) => presence[status].label;
 
 /** A Workday Default: nobody announced anything, so the office is assumed. */
 export const isAssumed = (status: Status | null) => status?.id === 0;
+
+/**
+ * When the colleague most recently announced an exception for one of `days` after `since`
+ * (epoch milliseconds), or null when nothing on those days is newer. Without `since`, the newest
+ * such announcement at all. Workday Defaults and in-office declarations are not news.
+ */
+export function announcedSince(
+  person: UserWithExtras,
+  days: readonly string[],
+  since = -Infinity
+): number | null {
+  let newest: number | null = null;
+  for (const date of days) {
+    const status = dayAnnouncement(person.week?.find((day) => day.date === date));
+    if (!status || isAssumed(status) || status.status === 'IN_OFFICE') continue;
+    const at = announcement(status);
+    if (at !== null && at > since && (newest === null || at > newest)) newest = at;
+  }
+  return newest;
+}
 
 export function presenceOf(status: Status | null): { label: string; tone: Tone; group: DayGroup } {
   if (!status) return { label: 'No status', tone: 'none', group: 'unknown' };

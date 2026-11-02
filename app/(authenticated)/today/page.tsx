@@ -7,6 +7,7 @@ import { pinService } from '@/lib/services/pinService';
 import { copenhagenDate } from '@/lib/status/active';
 import { parseDay, parseWorkWeekStart, workWeekDays, workWeekStart } from '@/lib/status/week';
 import { WEEK_PANEL_COOKIE, isWeekPanelOpen } from '@/components/week/panelPreference';
+import { WEEK_LAYOUT_COOKIE, weekLayout } from '@/components/week/layoutPreference';
 import { WeekOverviewWrapper } from './WeekOverviewWrapper';
 
 export default async function WeekPage({
@@ -41,6 +42,7 @@ export default async function WeekPage({
       initialPlans={plans}
       initialPinnedIds={pinnedIds}
       initialPanelOpen={isWeekPanelOpen(cookieStore.get(WEEK_PANEL_COOKIE)?.value)}
+      initialLayout={weekLayout(cookieStore.get(WEEK_LAYOUT_COOKIE)?.value)}
       canSetColleagueStatus={admin}
     />
   );

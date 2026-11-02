@@ -45,7 +45,8 @@ function instant(value: Date | string | null | undefined): number | null {
   return Number.isNaN(parsed) ? null : parsed;
 }
 
-function announcement(status: StatusLike): number | null {
+/** When a Declaration was announced, as epoch milliseconds; null when unknown. */
+export function announcement(status: StatusLike): number | null {
   if (status.announcedAt) return instant(status.announcedAt);
   const value = status.createdAt;
   if (!value || /(?:Z|[+-]\d{2}:?\d{2})$/i.test(value)) return instant(value);
