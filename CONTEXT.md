@@ -10,7 +10,8 @@ announcements and shows the resulting presence on a shared week overview and dir
 
 **Declaration**:
 An announcement a person makes about their own attendance, in their own words.
-One Declaration can cover several days or several intervals.
+One Declaration can cover several days or several intervals. Only top-level channel
+messages are Declarations; thread replies never are, even in the person's own thread.
 _Avoid_: Status update, message, post
 
 **Resolved Status**:

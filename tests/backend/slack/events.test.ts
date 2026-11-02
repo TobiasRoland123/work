@@ -75,6 +75,44 @@ describe('Slack event security and normalization', () => {
   });
 });
 
+describe('Slack thread replies', () => {
+  const reply = {
+    ...original,
+    event: {
+      ...original.event,
+      ts: '1788766300.000001',
+      thread_ts: original.event.ts,
+      parent_user_id: 'U999',
+      text: 'Enjoy your day off!',
+    },
+  };
+  it.each([
+    ['someone else', 'U999'],
+    ['yourself', 'U123'],
+    ['an unknown author', undefined],
+  ])('ignores replies to %s, including their edits', (_, parentUserId) => {
+    const event = { ...reply.event, parent_user_id: parentUserId };
+    expect(inspectSlackEvent({ ...reply, event }, 'T123', 'C123')).toEqual({
+      reason: 'thread_reply',
+    });
+    const edited = {
+      ...original,
+      event: {
+        type: 'message',
+        subtype: 'message_changed',
+        channel: 'C123',
+        event_ts: '1788766500.000001',
+        message: { ...event, edited: { ts: '1788766500.000001' } },
+      },
+    };
+    expect(inspectSlackEvent(edited, 'T123', 'C123')).toEqual({ reason: 'thread_reply' });
+  });
+  it('keeps thread parents', () => {
+    const parent = { ...original, event: { ...original.event, thread_ts: original.event.ts } };
+    expect(normalizeSlackEvent(parent, 'T123', 'C123')).toMatchObject({ text: 'WFH today' });
+  });
+});
+
 describe('Slack intake diagnostics', () => {
   it.each([
     ['wrong_workspace', { ...original, team_id: 'OTHER' }],
