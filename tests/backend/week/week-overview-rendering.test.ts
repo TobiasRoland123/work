@@ -230,6 +230,41 @@ describe('status labels in the week grid and the sidebar', () => {
     expect(grid).toMatch(/aria-label="Plan [^"]+\. Currently: No exception"/);
   });
 
+  it('shows No status for past days but leaves upcoming days without a status blank', () => {
+    const html = renderToStaticMarkup(
+      React.createElement(WeekOverview, {
+        profiles: [
+          {
+            userId: 'anna',
+            email: 'anna@example.com',
+            firstName: 'Anna',
+            lastName: 'Attendee',
+            status: null,
+            week: days.map((date, index) => ({
+              date,
+              status:
+                index === 1 ? status({ status: 'VACATION', fromDate: date, toDate: date }) : null,
+            })),
+          },
+        ],
+        userId: 'ben',
+        days,
+        today: days[1],
+        weekStart: days[0],
+        currentWeekStart: days[0],
+        arrival: null,
+        syncError: false,
+        plans: [],
+        onStatusSaved: vi.fn(),
+        pinnedIds: [],
+        onPinChange: vi.fn(),
+      })
+    );
+    const grid = html.match(/<div class="week-board"[\s\S]*?<\/main>/)?.[0] ?? '';
+    expect(grid.match(/<strong>No status<\/strong>/g)).toHaveLength(1);
+    expect(grid).toContain('<span class="sr-only">No status</span>');
+  });
+
   it('groups late arrivals and early departures separately', () => {
     const late = renderWeek(status({ status: 'IN_LATE' }));
     expect(late.grid).toContain('aria-label="In late"');

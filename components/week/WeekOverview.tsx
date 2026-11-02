@@ -88,6 +88,8 @@ function WeekCell({
   hideInOffice?: boolean;
 }) {
   const hiddenOffice = hideInOffice && segment.status?.status === 'IN_OFFICE';
+  /** Nothing announced yet for days still ahead: leave the cell blank rather than say "No status". */
+  const upcomingBlank = !segment.status && days[segment.start] > today;
   const { label, tone } = hiddenOffice
     ? { label: 'No exception', tone: 'none' }
     : presenceOf(segment.status);
@@ -111,6 +113,8 @@ function WeekCell({
     : [];
   const content = hiddenOffice ? (
     <span className="sr-only">No exception</span>
+  ) : upcomingBlank ? (
+    <span className="sr-only">{label}</span>
   ) : (
     <>
       <strong>
