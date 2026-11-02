@@ -2,13 +2,17 @@
 
 All signed-in people must be active Slack members of the configured workspace. The current `users.system_role` value determines access. Roles are read from the database per request, never trusted from a session or supplied by a profile update.
 
-| Role     | Attendance and colleagues | Employee stats | Message review and AI costs | Change other people's roles |
-| -------- | ------------------------- | -------------- | --------------------------- | --------------------------- |
-| Admin    | Yes                       | Yes            | Yes                         | Yes                         |
-| Manager  | Yes                       | Yes            | No                          | No                          |
-| Employee | Yes                       | No             | No                          | No                          |
+| Role     | Attendance and colleagues | Set other people's status | Employee stats | Message review and AI costs | Change other people's roles |
+| -------- | ------------------------- | ------------------------- | -------------- | --------------------------- | --------------------------- |
+| Admin    | Yes                       | Yes                       | Yes            | Yes                         | Yes                         |
+| Manager  | Yes                       | No                        | Yes            | No                          | No                          |
+| Employee | Yes                       | No                        | No             | No                          | No                          |
 
-For example, changing an employee to manager adds the overview and individual statistics without exposing message review or role management. Changing a manager to admin adds all remaining features. Admins still edit their own attendance through the normal attendance controls; the role does not add an interface for impersonating colleagues.
+For example, changing an employee to manager adds the overview and individual statistics without exposing message review or role management. Changing a manager to admin adds all remaining features.
+
+## Setting a colleague's status
+
+On the Week page an admin can click any colleague's day cell, or open the colleague and choose **Set status**, to save a status on their behalf with the normal status form. It is saved as a manual announcement for that colleague, so the newest announcement for a day wins as usual, including over an imported Slack announcement. The server rechecks that the caller is an admin and that the colleague is an active workspace member on every save. Admins cannot remove or correct a colleague's existing announcements, and the announcement does not record which admin saved it.
 
 ## Managing roles
 

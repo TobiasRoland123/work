@@ -3,6 +3,7 @@ import { ZodError } from 'zod';
 import { NewStatus } from '@/db/types';
 import { statusService } from '@/lib/services/statusService';
 import { requireUserId } from '@/lib/auth/require-user';
+import { getUserRole, isAdmin } from '@/lib/auth/roles';
 import { manualStatus } from '@/lib/status/manual';
 import { PlanError, planStatuses } from '@/lib/status/plan';
 import { CorrectionError } from '@/lib/status/correction';
@@ -22,7 +23,20 @@ export async function createNewStatusAction(newStatus: NewStatus) {
 
 /** Save a status for today or days ahead, as one Declaration per run of days. */
 export async function planStatusAction(input: unknown) {
-  const userID = await requireUserId();
+  return savePlan(await requireUserId(), input);
+}
+
+/** Let an admin save a status on behalf of another active member of the workspace. */
+export async function planColleagueStatusAction(colleagueUserId: unknown, input: unknown) {
+  const adminUserId = await requireUserId();
+  if (!(await isAdmin(adminUserId)))
+    return { ok: false as const, error: 'Only admins can change a colleague’s status.' };
+  if (typeof colleagueUserId !== 'string' || !(await getUserRole(colleagueUserId)))
+    return { ok: false as const, error: 'That person is not an active member of the workspace.' };
+  return savePlan(colleagueUserId, input);
+}
+
+async function savePlan(userID: string, input: unknown) {
   try {
     const planned = planStatuses(input);
     for (const row of planned) await statusService.createNewStatus({ ...row, userID });

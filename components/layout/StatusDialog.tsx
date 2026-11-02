@@ -16,6 +16,8 @@ export type StatusDialogProps = {
   /** First week offered in the planner. */
   weekStart?: string;
   trigger?: ReactNode;
+  /** Set when an admin sets the status on behalf of this colleague. */
+  colleague?: { userId: string; name: string };
 };
 
 export function StatusDialog({
@@ -26,6 +28,7 @@ export function StatusDialog({
   initialDays,
   weekStart,
   trigger,
+  colleague,
 }: StatusDialogProps) {
   const router = useRouter();
   const [step, setStep] = useState(1);
@@ -39,9 +42,13 @@ export function StatusDialog({
       <Dialog.Portal>
         <Dialog.Overlay className="office-dialog-overlay" />
         <Dialog.Content className="office-status-dialog">
-          <Dialog.Title className="sr-only">Set my status</Dialog.Title>
+          <Dialog.Title className="sr-only">
+            {colleague ? `Set status for ${colleague.name}` : 'Set my status'}
+          </Dialog.Title>
           <Dialog.Description className="sr-only">
-            Tell your colleagues where you will be working, today or on days ahead.
+            {colleague
+              ? `Tell colleagues where ${colleague.name} will be working, today or on days ahead.`
+              : 'Tell your colleagues where you will be working, today or on days ahead.'}
           </Dialog.Description>
           <StatusForm
             key={open ? 'open' : 'closed'}
@@ -50,6 +57,7 @@ export function StatusDialog({
             setCurrentStep={setStep}
             initialDays={initialDays}
             weekStart={weekStart}
+            colleague={colleague}
             onSaved={() => {
               changeOpen(false);
               onSaved?.();

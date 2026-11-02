@@ -67,13 +67,19 @@ function WeekCell({
   days,
   today,
   onPlan,
+  planFor,
   hideInOffice = false,
 }: {
   segment: Segment;
   days: readonly string[];
   today: string;
-  /** Present in the signed-in person's row; receives the segment's days from today on. */
+  /**
+   * Present in the signed-in person's row, or in every row for an admin; receives the
+   * segment's days from today on.
+   */
   onPlan?: (days: string[]) => void;
+  /** The colleague an admin plans for; omitted for the signed-in person's own row. */
+  planFor?: string;
   hideInOffice?: boolean;
 }) {
   const hiddenOffice = hideInOffice && segment.status?.status === 'IN_OFFICE';
@@ -131,7 +137,7 @@ function WeekCell({
         <button
           className="week-cell-plan"
           onClick={() => onPlan(plannable)}
-          aria-label={`Plan ${plannable.map(shortDay).join(', ')}. Currently: ${title}`}
+          aria-label={`${planFor ? `Set status for ${planFor} on` : 'Plan'} ${plannable.map(shortDay).join(', ')}. Currently: ${title}`}
         >
           {content}
           <Pencil size={13} className="week-cell-plan-icon" aria-hidden="true" />
@@ -212,6 +218,7 @@ function PersonSheet({
   onPlan,
   onRemove,
   onCorrected,
+  onSetColleagueStatus,
 }: {
   person: UserWithExtras | undefined;
   days: readonly string[];
@@ -223,6 +230,8 @@ function PersonSheet({
   onRemove?: (id: number) => void;
   /** Set only for the signed-in person, who may correct their own imported statuses. */
   onCorrected?: () => void;
+  /** Set only when an admin views a colleague. */
+  onSetColleagueStatus?: () => void;
 }) {
   return (
     <Dialog.Root open={Boolean(person)} onOpenChange={(open) => !open && onClose()}>
@@ -301,6 +310,21 @@ function PersonSheet({
                   )}
                 </ol>
               </section>
+              {onSetColleagueStatus && (
+                <section>
+                  <div className="person-sheet-heading-row">
+                    <h3 className="person-sheet-heading">Admin</h3>
+                    <button className="person-sheet-plan-button" onClick={onSetColleagueStatus}>
+                      <CalendarPlus size={16} aria-hidden="true" />
+                      Set status
+                    </button>
+                  </div>
+                  <p className="person-sheet-hint">
+                    Saves an announcement on {person.firstName || personName(person)}’s behalf. The
+                    newest announcement for a day wins.
+                  </p>
+                </section>
+              )}
               {plans && onRemove && (
                 <section>
                   <div className="person-sheet-heading-row">
@@ -344,6 +368,7 @@ export function WeekOverview({
   pinnedIds,
   onPinChange,
   onStatusSaved,
+  canSetColleagueStatus = false,
   initialPanelOpen = true,
   onPanelChange,
   onNavigate,
@@ -364,6 +389,8 @@ export function WeekOverview({
   pinnedIds: string[];
   onPinChange: (colleagueUserId: string, pinned: boolean) => void;
   onStatusSaved: () => void;
+  /** Admins may set a status on behalf of any colleague. */
+  canSetColleagueStatus?: boolean;
   /** Whether the side panel starts open; the visitor's last choice, read on the server. */
   initialPanelOpen?: boolean;
   onPanelChange?: (open: boolean) => void;
@@ -378,6 +405,7 @@ export function WeekOverview({
   const [selectedDay, setSelectedDay] = useState(days.includes(today) ? today : days[0]);
   const [openId, setOpenId] = useState<string | null>(null);
   const [planDays, setPlanDays] = useState<string[] | null>(null);
+  const [planFor, setPlanFor] = useState(userId);
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(() => new Set());
 
   // A triple click applies the clicked group's toggled state to every group.
@@ -425,10 +453,13 @@ export function WeekOverview({
         }
       : {};
 
-  const plan = (planned: string[]) => {
+  const plan = (planned: string[], forUserId = userId) => {
     setOpenId(null);
+    setPlanFor(forUserId);
     setPlanDays(planned);
   };
+  const canPlanFor = (person: UserWithExtras) => person.userId === userId || canSetColleagueStatus;
+  const planPerson = profiles.find((person) => person.userId === planFor);
   async function removePlan(id: number) {
     try {
       await deleteStatusByIdAction(id);
@@ -693,7 +724,12 @@ export function WeekOverview({
                                 days={days}
                                 today={today}
                                 hideInOffice
-                                onPlan={person.userId === userId ? plan : undefined}
+                                onPlan={
+                                  canPlanFor(person)
+                                    ? (planned) => plan(planned, person.userId)
+                                    : undefined
+                                }
+                                planFor={person.userId === userId ? undefined : personName(person)}
                               />
                             ))}
                           </div>
@@ -764,6 +800,11 @@ export function WeekOverview({
         onPlan={() => plan(days.filter((day) => day >= today).slice(0, 1))}
         onRemove={removePlan}
         onCorrected={openId === userId ? onStatusSaved : undefined}
+        onSetColleagueStatus={
+          canSetColleagueStatus && openId && openId !== userId
+            ? () => plan(days.filter((day) => day >= today).slice(0, 1), openId)
+            : undefined
+        }
       />
       <StatusDialog
         userId={userId}
@@ -772,6 +813,11 @@ export function WeekOverview({
         initialDays={planDays ?? undefined}
         weekStart={weekStart}
         onSaved={onStatusSaved}
+        colleague={
+          planFor !== userId && planPerson
+            ? { userId: planFor, name: personName(planPerson) }
+            : undefined
+        }
       />
     </div>
   );

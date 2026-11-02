@@ -1,5 +1,6 @@
 import { cookies } from 'next/headers';
 import { requirePageUserId } from '@/lib/auth/require-user';
+import { isAdmin } from '@/lib/auth/roles';
 import { getWeekOverview } from '@/lib/services/weekOverviewQuery';
 import { statusService } from '@/lib/services/statusService';
 import { pinService } from '@/lib/services/pinService';
@@ -20,11 +21,12 @@ export default async function WeekPage({
   const day = !week && requestedDay ? parseDay(requestedDay, now) : undefined;
   const weekStart = week ? parseWorkWeekStart(week, now) : workWeekStart(day ?? today);
   const days = week ? workWeekDays(weekStart) : [day ?? today];
-  const [users, plans, pinnedIds, cookieStore] = await Promise.all([
+  const [users, plans, pinnedIds, cookieStore, admin] = await Promise.all([
     getWeekOverview(days),
     statusService.getUpcomingStatusesByUserUserId(userId),
     pinService.listPinnedIds(userId),
     cookies(),
+    isAdmin(userId),
   ]);
 
   return (
@@ -39,6 +41,7 @@ export default async function WeekPage({
       initialPlans={plans}
       initialPinnedIds={pinnedIds}
       initialPanelOpen={isWeekPanelOpen(cookieStore.get(WEEK_PANEL_COOKIE)?.value)}
+      canSetColleagueStatus={admin}
     />
   );
 }
