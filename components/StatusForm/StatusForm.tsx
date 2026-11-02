@@ -8,7 +8,7 @@ import React, { useState } from 'react';
 import { userStatus } from '@/db/schema';
 import { SetStatusStep } from '@/components/StatusForm/SetStatusStep/SetStatusStep';
 import { SetDetailsStep } from '@/components/StatusForm/SetDetailsStep/SetDetailsStep';
-import { planStatusAction } from '@/app/actions/statusActions';
+import { planColleagueStatusAction, planStatusAction } from '@/app/actions/statusActions';
 import { Status } from '@/components/ui/Status/Status';
 import { Button } from '@/components/ui/Button/Button';
 import { toast } from 'sonner';
@@ -86,6 +86,8 @@ type StatusFormProps = {
   initialDays?: string[];
   /** First week offered in the day picker; earlier weeks fall back to the current week. */
   weekStart?: string;
+  /** Set when an admin sets the status on behalf of this colleague. */
+  colleague?: { userId: string; name: string };
 };
 
 /** Today on weekdays, otherwise the coming Monday. */
@@ -113,6 +115,7 @@ export function StatusForm({
   onSaved,
   initialDays,
   weekStart,
+  colleague,
 }: StatusFormProps) {
   const currentWeek = workWeekStart(copenhagenDate());
   const firstWeek = weekStart && weekStart > currentWeek ? weekStart : currentWeek;
@@ -146,7 +149,7 @@ export function StatusForm({
 
     try {
       setIsLoading(true);
-      const result = await planStatusAction({
+      const plan = {
         status: values.status,
         details: values.status === 'SICK' ? undefined : values.detailsString,
         time:
@@ -157,12 +160,19 @@ export function StatusForm({
           values.whenKind === 'range'
             ? { kind: 'range', from: values.dateRange?.from, to: values.dateRange?.to }
             : { kind: 'days', days: values.days },
-      });
+      };
+      const result = colleague
+        ? await planColleagueStatusAction(colleague.userId, plan)
+        : await planStatusAction(plan);
 
       if (result.ok) {
         const when = describeWhen(values);
         form.reset();
-        toast(when ? `Saved for ${when} ✨` : 'Status has been updated✨');
+        if (colleague)
+          toast(
+            when ? `Saved for ${colleague.name}: ${when} ✨` : `Saved for ${colleague.name} ✨`
+          );
+        else toast(when ? `Saved for ${when} ✨` : 'Status has been updated✨');
         onSaved?.();
       } else toast(`${result.error} 🚫`);
     } catch (error) {
@@ -185,12 +195,14 @@ export function StatusForm({
     <>
       <header className="status-form-header" aria-label="Status Form Header">
         <div>
-          <span className="status-form-eyebrow">Set my status</span>
+          <span className="status-form-eyebrow">
+            {colleague ? `Set status for ${colleague.name}` : 'Set my status'}
+          </span>
           <h3 className="status-form-heading">
             {currentStatus && currentStep !== 1 ? (
               <Status status={currentStatus} asLabel={false} />
             ) : (
-              'Where will you be?'
+              `Where will ${colleague?.name ?? 'you'} be?`
             )}
             {currentStep === 1 && presetDays && (
               <small className="status-form-preset">

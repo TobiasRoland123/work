@@ -44,6 +44,7 @@ export const WeekOverviewWrapper = ({
   initialPlans,
   initialPinnedIds,
   initialPanelOpen = true,
+  canSetColleagueStatus = false,
 }: {
   initialProfiles: UserWithExtras[];
   userId: string;
@@ -54,6 +55,7 @@ export const WeekOverviewWrapper = ({
   initialPlans: UpcomingStatus[];
   initialPinnedIds: string[];
   initialPanelOpen?: boolean;
+  canSetColleagueStatus?: boolean;
 }) => {
   const [initialView] = useState<View>(() => ({
     week: days.length === 1 ? undefined : weekStart,
@@ -295,6 +297,7 @@ export const WeekOverviewWrapper = ({
       onPrefetch={prefetch}
       onPinChange={(id, pinned) => void changePin(id, pinned)}
       onStatusSaved={() => void refetchProfiles()}
+      canSetColleagueStatus={canSetColleagueStatus}
     />
   );
 };
