@@ -230,7 +230,7 @@ describe('status labels in the week grid and the sidebar', () => {
     expect(grid).toMatch(/aria-label="Plan [^"]+\. Currently: No exception"/);
   });
 
-  it('shows No status for past days but leaves upcoming days without a status blank', () => {
+  it('leaves days without a status blank', () => {
     const html = renderToStaticMarkup(
       React.createElement(WeekOverview, {
         profiles: [
@@ -261,7 +261,7 @@ describe('status labels in the week grid and the sidebar', () => {
       })
     );
     const grid = html.match(/<div class="week-board"[\s\S]*?<\/main>/)?.[0] ?? '';
-    expect(grid.match(/<strong>No status<\/strong>/g)).toHaveLength(1);
+    expect(grid).not.toContain('<strong>No status</strong>');
     expect(grid).toContain('<span class="sr-only">No status</span>');
   });
 
