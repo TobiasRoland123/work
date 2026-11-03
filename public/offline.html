@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#090b0c" />
+    <title>You're offline | WØRK</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: system-ui, sans-serif;
+        color: #17262c;
+        background: #f6f6f0;
+      }
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        min-height: 100dvh;
+        display: grid;
+        place-items: center;
+        padding: max(24px, env(safe-area-inset-top)) max(24px, env(safe-area-inset-right))
+          max(24px, env(safe-area-inset-bottom)) max(24px, env(safe-area-inset-left));
+      }
+      main {
+        max-width: 28rem;
+      }
+      .wordmark {
+        font-weight: 700;
+        letter-spacing: 0.12em;
+      }
+      h1 {
+        margin-top: 2rem;
+        font-size: clamp(2rem, 8vw, 3rem);
+        letter-spacing: -0.05em;
+      }
+      p {
+        line-height: 1.6;
+      }
+      button {
+        margin-top: 1rem;
+        min-height: 48px;
+        padding: 12px 24px;
+        border: 0;
+        border-radius: 8px;
+        background: #17262c;
+        color: white;
+        font: inherit;
+        cursor: pointer;
+      }
+      button:focus-visible {
+        outline: 3px solid #3d88cb;
+        outline-offset: 4px;
+      }
+      @media (prefers-color-scheme: dark) {
+        :root {
+          color: #f6f6f0;
+          background: #111a20;
+        }
+        button {
+          color: #111a20;
+          background: #a9daa9;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="wordmark">WØRK</p>
+      <h1>You're offline</h1>
+      <p>Connect to the internet to see current colleague statuses and save your own updates.</p>
+      <p>No status changes can be saved while you're offline.</p>
+      <button type="button" onclick="window.location.reload()">Try again</button>
+    </main>
+  </body>
+</html>
