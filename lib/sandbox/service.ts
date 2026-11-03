@@ -1,6 +1,13 @@
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import { db } from '@/db';
-import { learnedShorthands, slackMessages, status, statusCorrections, users } from '@/db/schema';
+import {
+  learnedShorthands,
+  slackMessages,
+  status,
+  statusCorrections,
+  statusEchoes,
+  users,
+} from '@/db/schema';
 import {
   enqueueSlackEvent,
   processQueuedSlackMessage,
@@ -408,6 +415,7 @@ export function sandboxResetStatements() {
     statusCorrections: db
       .delete(statusCorrections)
       .where(inArray(statusCorrections.userId, sandboxUsers)),
+    statusEchoes: db.delete(statusEchoes).where(inArray(statusEchoes.userId, sandboxUsers)),
     status: db.delete(status).where(inArray(status.userID, sandboxUsers)),
     slackMessages: db.delete(slackMessages).where(eq(slackMessages.teamId, SANDBOX_TEAM_ID)),
     learnedShorthands: db
@@ -419,11 +427,16 @@ export function sandboxResetStatements() {
 export async function resetSandboxData() {
   const statements = sandboxResetStatements();
   await statements.statusCorrections;
+  const deletedEchoes = await statements.statusEchoes.returning({ id: statusEchoes.id });
   const deletedStatus = await statements.status.returning({ id: status.id });
   const deletedMessages = await statements.slackMessages.returning({
     key: slackMessages.messageKey,
   });
   // Observations went with their inbox rows; learned phrases are scoped to the workspace.
   await statements.learnedShorthands;
-  return { status: deletedStatus.length, slackMessages: deletedMessages.length };
+  return {
+    status: deletedStatus.length,
+    slackMessages: deletedMessages.length,
+    echoes: deletedEchoes.length,
+  };
 }
