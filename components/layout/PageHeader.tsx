@@ -58,7 +58,7 @@ export function PageHeaderSkeleton({
       <div className="office-header-actions">
         {actions}
         <ThemeToggle />
-        <Skeleton className="h-[45px] w-[116px] rounded-[5px]" />
+        <Skeleton className="set-status-skeleton h-[45px] w-[116px] rounded-[5px]" />
       </div>
     </header>
   );

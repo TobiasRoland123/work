@@ -14,6 +14,7 @@
   outline-color: var(--office-link);
 }
 .dark .set-status-button:hover,
+.dark .set-status-fab:hover,
 .dark .person-sheet-plan-button:hover {
   background: var(--office-primary-hover);
 }
