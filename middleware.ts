@@ -14,6 +14,9 @@ const { auth } = NextAuth({
   // Route access below preserves the app's login redirects and API 401 responses.
   callbacks: { ...authConfig.callbacks, authorized: () => true },
 });
+// Installation assets must also be available before a user signs in.
+const publicPwaRoutes = ['/manifest.webmanifest', '/sw.js', '/offline.html'];
+
 const serviceRoutes = [
   '/api/check-users',
   '/api/slack/events',
@@ -55,6 +58,7 @@ const authenticatedMiddleware = auth((request) =>
 
 export async function middleware(request: NextRequest, event?: NextFetchEvent) {
   const pathname = request.nextUrl.pathname;
+  if (publicPwaRoutes.includes(pathname)) return NextResponse.next();
   // Service endpoints validate signatures/secrets; the queue consumer is private on Vercel.
   // None of these callbacks should be redirected to interactive login.
   if (

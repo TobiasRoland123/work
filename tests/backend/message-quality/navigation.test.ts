@@ -9,15 +9,20 @@ vi.mock('next/link', () => ({
     React.createElement('a', { href }, children),
 }));
 
+import { InstallAppProvider } from '@/components/pwa/InstallApp';
 import { AppShell } from '@/components/layout/AppShell';
 
 describe('message review navigation', () => {
   const renderShell = (showMessageQuality = false) =>
     renderToStaticMarkup(
       React.createElement(
-        AppShell,
-        { showMessageQuality } as React.ComponentProps<typeof AppShell>,
-        'Content'
+        InstallAppProvider,
+        null,
+        React.createElement(
+          AppShell,
+          { showMessageQuality } as React.ComponentProps<typeof AppShell>,
+          'Content'
+        )
       )
     );
 

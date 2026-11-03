@@ -9,12 +9,17 @@ vi.mock('next/link', () => ({
     React.createElement('a', { href }, children),
 }));
 
+import { InstallAppProvider } from '@/components/pwa/InstallApp';
 import { AppShell, isCurrentPath } from '@/components/layout/AppShell';
 
 describe('employee stats navigation', () => {
   const renderShell = (props: { showEmployeeStats?: boolean; showRoleManagement?: boolean } = {}) =>
     renderToStaticMarkup(
-      React.createElement(AppShell, props as React.ComponentProps<typeof AppShell>, 'Content')
+      React.createElement(
+        InstallAppProvider,
+        null,
+        React.createElement(AppShell, props as React.ComponentProps<typeof AppShell>, 'Content')
+      )
     );
 
   it('does not expose either link to ordinary users', () => {
