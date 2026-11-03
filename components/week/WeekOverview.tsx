@@ -25,6 +25,7 @@ import { ProfileListItem } from '@/components/ui/ProfileListItem/ProfileListItem
 import { StatusEmoji } from '@/components/ui/Status/StatusEmoji';
 import { deleteStatusByIdAction } from '@/app/actions/statusActions';
 import type { UpcomingStatus } from '@/lib/status/plan';
+import { ECHO_CHANNEL_LABEL } from '@/lib/status/echo';
 import { addDays, formatDay, isoWeekNumber, shiftWorkWeek } from '@/lib/status/week';
 import { copenhagenDate } from '@/lib/status/active';
 import {
@@ -192,6 +193,11 @@ function UpcomingPlans({
                 <AIIndicator sourceMessageKey={plan.sourceMessageKey} position="corner" />
               </span>
               {note && <small>{note}</small>}
+              {plan.echoNotPosted && (
+                <small className="person-sheet-echo-failed">
+                  Not posted in {ECHO_CHANNEL_LABEL}
+                </small>
+              )}
             </span>
             {plan.sourceMessageKey ? (
               <a

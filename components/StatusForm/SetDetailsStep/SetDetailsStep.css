@@ -3,6 +3,26 @@
   gap: 8px;
 }
 
+.status-echo-field {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  column-gap: 10px;
+  row-gap: 2px;
+}
+
+.status-echo-field input {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--office-accent, currentColor);
+}
+
+.status-echo-field small {
+  grid-column: 2;
+  color: var(--office-subtle, inherit);
+  font-size: 12px;
+}
+
 .office-status-dialog .status-details-field [data-slot='form-label'] {
   color: var(--office-subtle);
   font:
