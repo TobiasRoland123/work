@@ -34,7 +34,19 @@ People announce days ahead from the same status form, in Slack, or straight from
 
 `planStatusAction` validates the plan on the server (`lib/status/plan.ts`): no past days, at most a year ahead, and a time that has not already passed when today is included. Picked days become one Declaration per run of consecutive days, where a gap of only Saturday and Sunday keeps the run going, so a Friday-to-Tuesday plan stays one bar. Timed statuses become one Declaration per day, with the time stored as that date's Copenhagen wall clock.
 
-Planning a day again adds a newer Declaration, which wins. The signed-in person's sheet lists "Your upcoming announcements" across all weeks. App-made ones can be removed, which restores whatever the day showed before; Slack-made ones link to their message, since the Slack message is their source.
+Planning a day again adds a newer Declaration, which wins. The signed-in person's sheet lists "Your upcoming announcements" across all weeks. App-made ones can be removed, which restores whatever the day showed before and cancels their Echo; Slack-made ones link to their message, since the Slack message is their source.
+
+## Echoes in #wørk
+
+Statuses you set for yourself in the app also reach colleagues who only read Slack. The status form's **Post in #wørk** box is ticked by default and applies to that one save; untick it to keep the status and its note out of Slack. The WORK 2.0 bot then posts an Echo in #wørk under your name and photo, which Slack marks as coming from an app. It shows the status emoji and label, the dates, any arrival or leaving time, and your note word for word, for example `🕒 In late · Tue 3 Nov · from 09:30`.
+
+Only exceptions you declare about yourself are echoed, including arriving late and leaving early. Being in the office is never echoed, and neither is a status an admin sets for you, a correction of a Slack import, or anything read from Slack. The box is not offered in those cases.
+
+An Echo is posted at 08:00 Copenhagen time on the weekday its status starts, or straight away when you save a status for today after 08:00. A status starting on a Saturday or Sunday is posted on the Monday, and one covering only a weekend is not posted. A status covering several days gets one Echo on its first day naming the whole range. Nothing is posted ahead of its day, so a status removed before then is never posted.
+
+When something newer replaces some of an Echo's days, whether you planned it in the app or wrote it in Slack, the Echo is edited to cross out those days and keep the rest, and a newer exception gets its own Echo on its own day. Removing the status from "Your upcoming announcements", or replacing every day, crosses out the whole Echo and marks it cancelled. Echoes are never deleted, so replies and reactions stay. If the bot cannot post an Echo by the end of its day, it gives up and "Not posted in #wørk" appears beside the status in your upcoming announcements, so you can announce it yourself. Nobody else sees this.
+
+The rules live in `lib/status/echo.ts` and the posting job in `lib/services/echoService.ts`. Scopes, schedule and preview checks are in [Slack setup](slack-setup.md#echoes-in-the-attendance-channel); the decision is [ADR 0003](adr/0003-echo-app-declarations-to-slack-as-the-bot.md).
 
 ## Correcting an imported status
 
