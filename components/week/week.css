@@ -177,9 +177,13 @@
   background: var(--office-hover);
   color: var(--office-ink);
 }
-.week-panel-toggle:focus-visible {
+.week-panel-toggle:focus-visible,
+.week-search-toggle:focus-visible {
   outline: 2px solid var(--office-link);
   outline-offset: 2px;
+}
+.week-search-toggle {
+  display: none;
 }
 
 .week-grouping-note {
@@ -1038,7 +1042,8 @@
     font-size: 11px;
   }
   .week-toolbar-actions {
-    width: 100%;
+    flex: 1;
+    min-width: 0;
   }
   .week-filters {
     flex: 1;
@@ -1046,6 +1051,98 @@
   .week-filters a,
   .week-filters button {
     flex: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 34px;
+    padding-block: 0;
     padding-inline: 6px;
+  }
+
+  /* Phones: title and arrows in one row, "Set my status" floats above the tab bar. */
+  .week-page > .office-header {
+    flex-wrap: nowrap;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  .week-page > .office-header > :first-child {
+    min-width: 0;
+  }
+  .week-page .office-header-actions {
+    gap: 6px;
+  }
+  .week-page > .office-header .set-status-button,
+  .week-page > .office-header .set-status-skeleton {
+    display: none;
+  }
+  .week-page .set-status-fab {
+    display: inline-flex;
+  }
+  .week-main {
+    padding-bottom: 88px;
+  }
+  /* The Today tab below takes over the jump back to today. */
+  .week-nav .week-nav-current {
+    display: none;
+  }
+  .week-nav a {
+    height: 40px;
+    min-width: 40px;
+    padding: 0;
+  }
+  .week-nav a + a {
+    border-left: 1px solid var(--office-border);
+  }
+  .week-page .theme-toggle {
+    width: 42px;
+    height: 42px;
+  }
+
+  /* Phones: one toolbar row; the search icon swaps the row for the search field. */
+  .week-toolbar {
+    flex-wrap: nowrap;
+    gap: 8px;
+  }
+  .week-search {
+    display: none;
+  }
+  .week-search button {
+    display: none;
+  }
+  .week-toolbar[data-searching] .week-search {
+    display: flex;
+    flex: 1;
+    width: auto;
+    height: 40px;
+  }
+  .week-toolbar[data-searching] .week-toolbar-actions {
+    display: none;
+  }
+  .week-filters.week-order {
+    flex: none;
+  }
+  .week-order button {
+    flex: none;
+    width: 38px;
+    padding: 0;
+  }
+  .week-filter-label {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .week-search-toggle {
+    display: grid;
+    place-items: center;
+    width: 40px;
+    height: 40px;
+    flex: none;
+    border: 1px solid var(--office-border);
+    border-radius: 6px;
+    background: var(--office-surface);
+    color: var(--office-ink);
   }
 }

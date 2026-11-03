@@ -139,7 +139,11 @@ export function WeekOverviewSkeleton() {
       <span role="status" className="sr-only">
         Loading the week overview…
       </span>
-      <PageHeaderSkeleton actions={<Skeleton className="h-10 w-[134px] rounded-[6px]" />} />
+      <PageHeaderSkeleton
+        actions={
+          <Skeleton className="h-10 w-[134px] rounded-[6px] max-[640px]:h-[42px] max-[640px]:w-[82px]" />
+        }
+      />
       <div className="week-body">
         <main className="week-main" id="dashboard-main">
           <div className="week-toolbar" aria-hidden="true">
@@ -155,6 +159,9 @@ export function WeekOverviewSkeleton() {
                   <Skeleton className={`h-[9px] ${width}`} />
                 </div>
               ))}
+            </div>
+            <div className="week-search-toggle">
+              <Search size={18} />
             </div>
           </div>
           <WeekBoardSkeleton />

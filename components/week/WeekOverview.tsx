@@ -1,6 +1,7 @@
 'use client';
 
-import { useState, type CSSProperties, type MouseEvent } from 'react';
+import { useRef, useState, type CSSProperties, type MouseEvent } from 'react';
+import { flushSync } from 'react-dom';
 import Link from 'next/link';
 import * as Dialog from '@radix-ui/react-dialog';
 import {
@@ -19,6 +20,7 @@ import {
 import { toast } from 'sonner';
 import type { DayPresence, UserWithExtras } from '@/db/types';
 import { PageHeader } from '@/components/layout/PageHeader';
+import { StatusButton } from '@/components/layout/StatusButton';
 import { StatusDialog } from '@/components/layout/StatusDialog';
 import { AIIndicator } from '@/components/ui/Status/AIIndicator';
 import { ProfileListItem } from '@/components/ui/ProfileListItem/ProfileListItem';
@@ -443,6 +445,9 @@ export function WeekOverview({
   const [panelOpen, setPanelOpen] = useState(initialPanelOpen);
   const [layout, setLayout] = useState(initialLayout);
   const [query, setQuery] = useState('');
+  // Phones hide the search field behind an icon; it stays open while it holds a query.
+  const [searchOpen, setSearchOpen] = useState(false);
+  const searchInput = useRef<HTMLInputElement>(null);
   const [selectedDay, setSelectedDay] = useState(days.includes(today) ? today : days[0]);
   const [openId, setOpenId] = useState<string | null>(null);
   const [planDays, setPlanDays] = useState<string[] | null>(null);
@@ -469,6 +474,18 @@ export function WeekOverview({
     setLayout(next);
     onLayoutChange?.(next);
     rememberWeekLayout(next);
+  };
+
+  const searching = searchOpen || query !== '';
+  const toggleSearch = () => {
+    if (searching) {
+      setQuery('');
+      setSearchOpen(false);
+      return;
+    }
+    // Focus within the tap, so phones open the keyboard.
+    flushSync(() => setSearchOpen(true));
+    searchInput.current?.focus();
   };
 
   const togglePanel = () => {
@@ -631,12 +648,19 @@ export function WeekOverview({
       />
       <div className="week-body" data-panel={panelOpen ? 'open' : 'closed'}>
         <main className="week-main" id="dashboard-main">
-          <div className="week-toolbar">
-            <label className="week-search">
+          <div className="week-toolbar" data-searching={searching || undefined}>
+            <label className="week-search" id="week-search">
               <Search size={17} aria-hidden="true" />
               <input
+                ref={searchInput}
                 value={query}
                 onChange={(event) => setQuery(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === 'Escape' && searchOpen) {
+                    setQuery('');
+                    setSearchOpen(false);
+                  }
+                }}
                 placeholder="Find a colleague..."
                 aria-label="Find a colleague"
               />
@@ -663,7 +687,7 @@ export function WeekOverview({
                   Week
                 </Link>
               </div>
-              <div className="week-filters" role="group" aria-label="Board order">
+              <div className="week-filters week-order" role="group" aria-label="Board order">
                 <button
                   type="button"
                   aria-pressed={!chronological}
@@ -671,7 +695,7 @@ export function WeekOverview({
                   onClick={() => chooseLayout('grouped')}
                 >
                   <LayoutList size={15} aria-hidden="true" />
-                  By status
+                  <span className="week-filter-label">By status</span>
                 </button>
                 <button
                   type="button"
@@ -680,7 +704,7 @@ export function WeekOverview({
                   onClick={() => chooseLayout('chronological')}
                 >
                   <Clock size={15} aria-hidden="true" />
-                  By time
+                  <span className="week-filter-label">By time</span>
                 </button>
               </div>
               <button
@@ -699,6 +723,20 @@ export function WeekOverview({
                 )}
               </button>
             </div>
+            <button
+              type="button"
+              className="week-search-toggle"
+              aria-expanded={searching}
+              aria-controls="week-search"
+              aria-label={searching ? 'Close search' : 'Find a colleague'}
+              onClick={toggleSearch}
+            >
+              {searching ? (
+                <X size={18} aria-hidden="true" />
+              ) : (
+                <Search size={18} aria-hidden="true" />
+              )}
+            </button>
           </div>
           {!todayOnly && (
             <p className="week-grouping-note" id="week-grouping-note">
@@ -916,6 +954,7 @@ export function WeekOverview({
           </aside>
         )}
       </div>
+      <StatusButton userId={userId} onSaved={onStatusSaved} weekStart={weekStart} floating />
       <PersonSheet
         person={profiles.find((person) => person.userId === openId)}
         days={days}
