@@ -2,7 +2,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import { NextRequest } from 'next/server';
 
 const auth = vi.hoisted(() => vi.fn());
-vi.mock('next-auth', () => ({ default: () => ({ auth }) }));
+vi.mock('next-auth', () => ({
+  default: () => ({
+    auth: (handler: (request: NextRequest) => Response) => async (request: NextRequest) =>
+      handler(Object.assign(request, { auth: await auth() })),
+  }),
+}));
 
 const { middleware } = await import('@/middleware');
 const request = (path: string) => new NextRequest(new URL(path, 'http://127.0.0.1:3000'));
