@@ -30,6 +30,27 @@ own Declarations, for one day or the whole announcement. The imported Declaratio
 kept, and the error is recorded for quality review.
 _Avoid_: Override, fix, edit
 
+**Echo**:
+A message the Wørk bot posts in the attendance channel to announce a Declaration a person
+made about themselves in the app. It carries the person's name and photo, and Slack marks
+it as coming from an app. Only exceptions are echoed: being in the office is not. A status
+an admin sets for a colleague is never echoed, and neither is a Correction. An Echo is
+never itself a Declaration and is never read back as one.
+The person chooses for each Declaration whether it is echoed; it is, unless they opt out.
+
+An Echo is posted at 08:00 Europe/Copenhagen on the weekday its Declaration applies,
+or at once when the Declaration is made later that same day. It is never posted ahead of
+its day, so a Declaration removed before then is never echoed. A Declaration covering
+several days gets one Echo, on its first day, naming the whole range. The Echo shows the
+status, its dates, any arrival or leaving time, and the person's note word for word. If
+its Declaration is removed after the Echo is posted, the Echo stays in the channel, crossed
+out and marked as cancelled. When a newer Declaration replaces only some of its days, the
+Echo is edited to cross out those days and keeps the rest; replacing every day cancels it.
+A newer exception gets its own Echo on its own day.
+An Echo that still cannot be posted by the end of its day is given up. Only the person is
+told it was not posted.
+_Avoid_: Mirror, relay, cross-post, notification
+
 **Learned Shorthand**:
 A whole-message phrase that Slack import reads without AI because enough earlier
 Declarations with exactly that wording were read the same way. Its dates resolve from each
@@ -65,6 +86,12 @@ _Avoid_: Current user, active profile, me
 Text entered in the Local Sandbox on behalf of an Author, which enters the same intake
 path a Slack message would. It is a genuine inbox row, not a simulation of one.
 _Avoid_: Fake message, test message, mock event
+
+**Sandbox Echo**:
+An Echo shown on the Local Sandbox page instead of in Slack, looking and changing as it
+would in the attendance channel. The day's Sandbox Echoes can be posted on demand instead
+of waiting for 08:00.
+_Avoid_: Fake echo, preview, mock post
 
 ### Appearance
 
