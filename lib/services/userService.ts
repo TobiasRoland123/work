@@ -10,10 +10,11 @@ import {
   business_phone_numbers,
   organisations,
 } from '@/db/schema';
-import { inArray, eq } from 'drizzle-orm';
+import { and, inArray, eq } from 'drizzle-orm';
 import { statusService } from './statusService';
-import { resolvePresenceStatus } from '@/lib/status/active';
+import { copenhagenDate, resolvePresenceStatus } from '@/lib/status/active';
 import { resolveWorkWeek } from '@/lib/status/week';
+import { overviewStatusCondition, overviewStatusWindow } from './overviewStatusWindow';
 const invalidateUserCache = (userId: string) => {
   void userId;
   invalidateWeekOverview();
@@ -124,6 +125,9 @@ export const userService = {
   },
 
   async getAllUsers(sortByStatus: boolean = true, weekDays?: readonly string[]) {
+    const now = new Date();
+    const today = copenhagenDate(now);
+    const window = overviewStatusWindow(weekDays ?? [], now);
     // 1. Fetch all users
     const usersList = await db
       .select()
@@ -168,7 +172,10 @@ export const userService = {
           eq(users_business_phone_numbers.businessPhoneNumberId, business_phone_numbers.id)
         )
         .where(inArray(users_business_phone_numbers.userId, userIds)),
-      db.select().from(status).where(inArray(status.userID, userIds)),
+      db
+        .select()
+        .from(status)
+        .where(and(inArray(status.userID, userIds), overviewStatusCondition(window))),
     ]);
     const orgMap = new Map(organisationsList.map((o) => [o.id, o.organisationName]));
 
@@ -193,17 +200,19 @@ export const userService = {
     }
 
     // 7. Assemble the final result
-    const now = new Date();
-    const usersWithExtras = usersList.map((user) => ({
-      ...user,
-      status: resolvePresenceStatus(statusMap.get(user.userId) ?? [], user.userId, now),
-      ...(weekDays && {
-        week: resolveWorkWeek(statusMap.get(user.userId) ?? [], user.userId, weekDays, now),
-      }),
-      organisationRoles: rolesMap.get(user.userId) ?? [],
-      businessPhoneNumber: phoneMap.get(user.userId) ?? null,
-      organisation: user.organisationId ? (orgMap.get(user.organisationId) ?? null) : null,
-    }));
+    const usersWithExtras = usersList.map((user) => {
+      const statuses = statusMap.get(user.userId) ?? [];
+      const week = weekDays ? resolveWorkWeek(statuses, user.userId, weekDays, now) : undefined;
+      const todayCell = week?.find((day) => day.date === today);
+      return {
+        ...user,
+        status: todayCell ? todayCell.status : resolvePresenceStatus(statuses, user.userId, now),
+        ...(week && { week }),
+        organisationRoles: rolesMap.get(user.userId) ?? [],
+        businessPhoneNumber: phoneMap.get(user.userId) ?? null,
+        organisation: user.organisationId ? (orgMap.get(user.organisationId) ?? null) : null,
+      };
+    });
 
     if (sortByStatus) {
       usersWithExtras.sort((a, b) => {

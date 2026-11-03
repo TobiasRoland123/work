@@ -6,6 +6,7 @@ vi.mock('@/db', () => ({ db: { select } }));
 vi.mock('@/lib/supabaseClient', () => ({ supabase: null }));
 
 import { userService } from '@/lib/services/userService';
+import * as active from '@/lib/status/active';
 
 function deferred<T>() {
   let resolve!: (value: T) => void;
@@ -77,6 +78,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  vi.restoreAllMocks();
   vi.useRealTimers();
 });
 
@@ -182,5 +184,28 @@ describe('userService parallel relation reads', () => {
     await expect(userService.getUserById('missing')).resolves.toBeNull();
     expect(select).toHaveBeenCalledTimes(1);
     expect(started()).toBe(1);
+  });
+
+  it('reuses the today cell even when its presence is null after an expired clock interval', async () => {
+    const resolvePresence = vi.spyOn(active, 'resolvePresenceStatus');
+    useQueries([
+      Promise.resolve([user]),
+      Promise.resolve([]),
+      Promise.resolve([]),
+      Promise.resolve([]),
+      Promise.resolve([
+        {
+          ...status,
+          fromDate: '2026-09-25',
+          toDate: '2026-09-25',
+          endsAt: new Date('2026-09-25T07:00:00Z'),
+        },
+      ]),
+    ]);
+
+    const result = await userService.getAllUsers(false, ['2026-09-25']);
+    expect(result[0].status).toBeNull();
+    expect(result[0].week?.[0].status).toBeNull();
+    expect(resolvePresence).toHaveBeenCalledTimes(1);
   });
 });
