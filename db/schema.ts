@@ -292,6 +292,53 @@ export const statusCorrections = pgTable(
   ]
 ).enableRLS();
 
+// An Echo: the bot's message in the attendance channel announcing a Declaration a person made
+// about themselves in the app. Its content is copied when it is scheduled, so it can still be
+// shown crossed out after the Declaration is removed; removing the Declaration clears statusId,
+// which cancels the Echo. channelId and ts identify the posted Slack message.
+// No public RLS policies: only the server database role may access this table.
+export const statusEchoes = pgTable(
+  'status_echoes',
+  {
+    id: serial().primaryKey().notNull(),
+    statusId: integer('status_id').references(() => status.id, { onDelete: 'set null' }),
+    userId: varchar('user_id', { length: 36 })
+      .notNull()
+      .references(() => users.userId, { onDelete: 'cascade' }),
+    // The Copenhagen weekday the Echo is posted on, from 08:00.
+    postOn: date('post_on').notNull(),
+    status: userStatus('status').notNull(),
+    emoji: text('emoji'),
+    details: text('details'),
+    fromDate: date('from_date').notNull(),
+    toDate: date('to_date').notNull(),
+    timeNote: text('time_note'),
+    // scheduled → posted, or failed when its day ended unposted, or withdrawn when nothing of it
+    // still stood by then.
+    state: text('state')
+      .$type<'scheduled' | 'posted' | 'failed' | 'withdrawn'>()
+      .notNull()
+      .default('scheduled'),
+    attempts: integer('attempts').notNull().default(0),
+    nextAttemptAt: timestamp('next_attempt_at', { withTimezone: true }).defaultNow().notNull(),
+    lastError: text('last_error'),
+    channelId: text('channel_id'),
+    ts: text('ts'),
+    // The text Slack currently shows, so edits are only sent when it changes.
+    postedText: text('posted_text'),
+    postedAt: timestamp('posted_at', { withTimezone: true }),
+    // Deleted in Slack: never edited again, and its Declaration is unaffected.
+    deletedInSlackAt: timestamp('deleted_in_slack_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    unique('status_echoes_status_unique').on(table.statusId),
+    unique('status_echoes_message_unique').on(table.channelId, table.ts),
+    index('status_echoes_state_post_on_idx').on(table.state, table.postOn),
+    index('status_echoes_user_idx').on(table.userId),
+  ]
+).enableRLS();
+
 /** Attendance read from a phrase, with dates as day offsets from the message's Copenhagen date. */
 export type ShorthandTemplate = {
   intervals: {
