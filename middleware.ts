@@ -7,6 +7,7 @@ import { isSandbox } from './lib/sandbox/enabled';
 const { auth } = NextAuth(authConfig);
 const serviceRoutes = [
   '/api/check-users',
+  '/api/echoes',
   '/api/slack/events',
   '/api/queues/slack-status',
   '/api/slack/process',

@@ -15,6 +15,7 @@ import {
   planCorrection,
 } from '@/lib/status/correction';
 import { blockCorrectedShorthand } from '@/lib/slack/learned-shorthand';
+import { notPostedEchoStatusIds, scheduleEcho } from './echoService';
 
 export const statusService = {
   // GET METHODS
@@ -34,17 +35,31 @@ export const statusService = {
     return resolvePresenceStatus(userStatuses, userID);
   },
 
-  // Declarations that still cover today or a later day
-  async getUpcomingStatusesByUserUserId(userID: string) {
-    return upcomingStatuses(await this.getStatusByUserUserId(userID));
+  // Declarations that still cover today or a later day, with whether their Echo was not posted
+  async getUpcomingStatusesByUserUserId(userID: string, now: Date = new Date()) {
+    const statuses = await this.getStatusByUserUserId(userID);
+    const notPosted = await notPostedEchoStatusIds(statuses, now);
+    return upcomingStatuses(statuses, now).map((plan) => ({
+      ...plan,
+      echoNotPosted: notPosted.has(plan.id),
+    }));
   },
 
   // POST METHODS
-  async createNewStatus(newStatus: NewStatus) {
-    const createdStatus = await db
-      .insert(status)
-      .values({ ...newStatus, announcedAt: new Date() })
-      .returning();
+  /**
+   * Save a Declaration. With `echo`, a person's own exception is also scheduled to be echoed
+   * in the attendance channel, in the same transaction; Slack itself is never contacted here.
+   */
+  async createNewStatus(newStatus: NewStatus, options: { echo?: boolean; now?: Date } = {}) {
+    const now = options.now ?? new Date();
+    const createdStatus = await db.transaction(async (tx) => {
+      const rows = await tx
+        .insert(status)
+        .values({ ...newStatus, announcedAt: now })
+        .returning();
+      if (options.echo && rows[0]) await scheduleEcho(tx, rows[0], now);
+      return rows;
+    });
     if (createdStatus.length) invalidateWeekOverview();
     if (supabase) {
       await supabase.channel('status-sync').send({

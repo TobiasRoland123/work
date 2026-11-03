@@ -137,3 +137,32 @@ export async function getSlackPermalink(channel: string, ts: string) {
     throw new SlackApiError('Invalid Slack permalink');
   return url.toString();
 }
+
+/**
+ * Post a bot message under a person's name and photo (needs chat:write and
+ * chat:write.customize). Slack still labels it as coming from the app; it is never sent as the
+ * person, and Slack import ignores it because it carries a bot_id.
+ */
+export async function postSlackMessage(input: {
+  channel: string;
+  text: string;
+  username: string;
+  iconUrl?: string | null;
+}): Promise<{ channel: string; ts: string }> {
+  const result = await slackRequest<{ channel: string; ts: string }>('chat.postMessage', {
+    channel: input.channel,
+    text: input.text,
+    username: input.username,
+    ...(input.iconUrl ? { icon_url: input.iconUrl } : {}),
+    unfurl_links: 'false',
+    unfurl_media: 'false',
+  });
+  if (typeof result.ts !== 'string' || typeof result.channel !== 'string')
+    throw new SlackApiError('Invalid Slack chat.postMessage response');
+  return { channel: result.channel, ts: result.ts };
+}
+
+/** Replace the text of a message the bot posted. */
+export async function updateSlackMessage(input: { channel: string; ts: string; text: string }) {
+  await slackRequest('chat.update', { channel: input.channel, ts: input.ts, text: input.text });
+}

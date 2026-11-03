@@ -38,6 +38,10 @@ vi.mock('@/lib/slack/learned-shorthand', () => ({
   readLearnedShorthand: async () => ({}),
   templateFromExtraction: () => null,
 }));
+vi.mock('@/lib/services/echoService', () => ({
+  markEchoDeletedInSlack: async () => false,
+  syncUserEchoes: async () => undefined,
+}));
 import { enqueueSlackEvent, processSlackInbox, processQueuedSlackMessage } from '@/lib/slack/inbox';
 
 beforeEach(() => {

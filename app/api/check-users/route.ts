@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { seedSlackUsers } from '@/scripts/seed';
 import { cleanupExpiredSlackMessages } from '@/lib/slack/inbox';
-
-function hasExactCronAuthorization(request: NextRequest): boolean {
-  const secret = process.env.CRON_SECRET?.trim();
-  return Boolean(secret) && request.headers.get('authorization') === `Bearer ${secret}`;
-}
+import { hasExactCronAuthorization } from '@/lib/auth/cron';
 
 export async function GET(request: NextRequest) {
   if (!hasExactCronAuthorization(request))

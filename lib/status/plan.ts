@@ -11,6 +11,8 @@ export const rangeStatuses: readonly string[] = ['VACATION', 'ON_LEAVE'];
 export const planSchema = z.object({
   status: z.enum(userStatus.enumValues),
   details: z.string().trim().max(2000).optional(),
+  /** "Post in #wørk": whether a person's own plan is echoed. Ticked unless they untick it. */
+  echo: z.boolean().optional(),
   time: z
     .string()
     .regex(/^([01]\d|2[0-3]):[0-5]\d$/)
@@ -119,7 +121,12 @@ function dayOf(value: Date | string | null | undefined): string | null {
   return Number.isNaN(date.getTime()) ? null : copenhagenDate(date);
 }
 
-export type UpcomingStatus = Status & { firstDay: string; lastDay: string };
+export type UpcomingStatus = Status & {
+  firstDay: string;
+  lastDay: string;
+  /** The Echo could not be posted on its day. Only the person themselves is shown this. */
+  echoNotPosted?: boolean;
+};
 
 /** The first and last Copenhagen day a Declaration covers, or null when it has no date. */
 export function declarationDays(

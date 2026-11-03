@@ -20,6 +20,7 @@ vi.mock('@/lib/auth/roles', () => ({
 vi.mock('@/lib/services/statusService', () => ({
   statusService: { createNewStatus: mocked.createNewStatus },
 }));
+vi.mock('@/lib/services/echoService', () => ({ syncUserEchoes: vi.fn() }));
 
 import { planColleagueStatusAction, planStatusAction } from '@/app/actions/statusActions';
 
@@ -35,15 +36,21 @@ describe('setting a colleague’s status', () => {
     mocked.createNewStatus.mockResolvedValue({});
   });
 
-  it('saves the plan on the colleague’s behalf for an admin', async () => {
+  it('saves the plan on the colleague’s behalf for an admin, never echoing it', async () => {
     await expect(planColleagueStatusAction('colleague', plan)).resolves.toEqual({
       ok: true,
       count: 1,
     });
     expect(mocked.isAdmin).toHaveBeenCalledWith('admin');
     expect(mocked.createNewStatus).toHaveBeenCalledWith(
-      expect.objectContaining({ userID: 'colleague', status: 'FROM_HOME', fromDate: from })
+      expect.objectContaining({ userID: 'colleague', status: 'FROM_HOME', fromDate: from }),
+      { echo: false }
     );
+  });
+
+  it('does not echo a colleague’s status even when the form asks for it', async () => {
+    await planColleagueStatusAction('colleague', { ...plan, echo: true });
+    expect(mocked.createNewStatus).toHaveBeenCalledWith(expect.anything(), { echo: false });
   });
 
   it('refuses managers and employees', async () => {
@@ -69,13 +76,20 @@ describe('setting a colleague’s status', () => {
     expect(mocked.createNewStatus).not.toHaveBeenCalled();
   });
 
-  it('keeps saving the signed-in person’s own plan without an admin check', async () => {
+  it('saves and echoes the signed-in person’s own plan without an admin check', async () => {
     mocked.requireUserId.mockResolvedValue('employee');
     await expect(planStatusAction(plan)).resolves.toEqual({ ok: true, count: 1 });
     expect(mocked.isAdmin).not.toHaveBeenCalled();
     expect(mocked.createNewStatus).toHaveBeenCalledWith(
-      expect.objectContaining({ userID: 'employee' })
+      expect.objectContaining({ userID: 'employee' }),
+      { echo: true }
     );
+  });
+
+  it('does not echo the person’s own plan when they untick “Post in #wørk”', async () => {
+    mocked.requireUserId.mockResolvedValue('employee');
+    await planStatusAction({ ...plan, echo: false });
+    expect(mocked.createNewStatus).toHaveBeenCalledWith(expect.anything(), { echo: false });
   });
 });
 
