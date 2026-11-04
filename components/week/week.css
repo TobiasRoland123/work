@@ -979,9 +979,6 @@
   .week-row {
     grid-template-columns: minmax(150px, 200px) minmax(0, 1fr);
   }
-  .week-cell small {
-    display: none;
-  }
 }
 @media (max-width: 900px) {
   .week-body {
