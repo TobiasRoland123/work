@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { and, eq, inArray, isNull } from 'drizzle-orm';
 import { db, pool } from '@/db';
-import { slackMessages, status, statusCorrections, users } from '@/db/schema';
+import { slackMessages, status, statusCorrections, statusEchoes, users } from '@/db/schema';
 import { copenhagenWallClock } from '@/lib/status/active';
 import { resolveWorkWeek } from '@/lib/status/week';
 
@@ -188,6 +188,15 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
       await expect(correct()).resolves.toMatchObject({ ok: true });
       const [record] = await corrections();
       expect(record.sourceRevision).toBeNull();
+    });
+
+    it('never echoes a correction, since the Slack message is already in the channel', async () => {
+      await expect(correct({ scope: 'declaration', status: 'VACATION' })).resolves.toMatchObject({
+        ok: true,
+      });
+      await expect(
+        db.select().from(statusEchoes).where(eq(statusEchoes.userId, owner))
+      ).resolves.toEqual([]);
     });
   }
 );

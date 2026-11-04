@@ -26,6 +26,7 @@ export const formSchema = z
     whenKind: z.enum(['days', 'range']),
     days: z.array(isoDay),
     dateRange: z.object({ from: z.string(), to: z.string() }).optional(),
+    echo: z.boolean().optional(),
   })
   .superRefine((data, ctx) => {
     const today = copenhagenDate();
@@ -126,6 +127,7 @@ export function StatusForm({
       detailsString: '',
       whenKind: 'days',
       days: presetDays ?? [defaultDay()],
+      echo: true,
     },
   });
 
@@ -160,6 +162,7 @@ export function StatusForm({
           values.whenKind === 'range'
             ? { kind: 'range', from: values.dateRange?.from, to: values.dateRange?.to }
             : { kind: 'days', days: values.days },
+        echo: colleague ? undefined : values.echo !== false,
       };
       const result = colleague
         ? await planColleagueStatusAction(colleague.userId, plan)
@@ -232,6 +235,7 @@ export function StatusForm({
                 form={form}
                 currentStep={currentStep}
                 weekStart={firstWeek}
+                showEcho={!colleague}
               />
             )}
             {currentStep === 2 ? (

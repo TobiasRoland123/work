@@ -891,6 +891,10 @@
   align-items: center;
   gap: 8px;
 }
+.person-sheet-status .person-sheet-echo-failed {
+  color: var(--office-ink);
+  font-weight: 600;
+}
 .person-sheet-plan-action {
   font-size: 13px;
   color: var(--office-link);

@@ -9,6 +9,7 @@ import { eq } from 'drizzle-orm';
 import { assertSandbox } from '@/lib/sandbox/enabled';
 import { SANDBOX_PROVIDER_ID } from '@/lib/sandbox/auth';
 import { seedSandboxProfiles } from '@/lib/sandbox/profiles';
+import { listSandboxEchoes, runEchoJob, sandboxEchoTransport } from '@/lib/services/echoService';
 import {
   createSandboxProfile,
   deleteSandboxMessage,
@@ -50,8 +51,22 @@ export async function getSandboxOverview() {
     readiness: sandboxReadiness(),
     profiles: await listSandboxProfiles(),
     inbox: await listSandboxInbox(),
+    echoes: await listSandboxEchoes(),
     signedIn,
   };
+}
+
+/** Run the 08:00 Echo job now, as if it were 08:00. Sandbox Echoes never leave the database. */
+export async function postSandboxEchoesNowAction() {
+  assertSandbox();
+  try {
+    return {
+      ok: true as const,
+      counts: await runEchoJob({ force: true, transport: sandboxEchoTransport }),
+    };
+  } catch (error) {
+    return failure(error);
+  }
 }
 
 export async function sendSandboxMessageAction(input: {

@@ -81,6 +81,9 @@ describe('Slack queue consumer', () => {
     expect(config.functions['app/api/queues/slack-status/route.ts'].experimentalTriggers).toEqual([
       { type: 'queue/v2beta', topic: 'slack-status', retryAfterSeconds: 60 },
     ]);
-    expect(config.crons).toEqual([{ path: '/api/check-users', schedule: '0 0 * * *' }]);
+    expect(config.crons).toContainEqual({ path: '/api/check-users', schedule: '0 0 * * *' });
+    expect(
+      config.crons.filter((cron: { path: string }) => cron.path.startsWith('/api/slack'))
+    ).toEqual([]);
   });
 });

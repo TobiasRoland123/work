@@ -26,4 +26,12 @@ describe('sandbox reset', () => {
     expect(sql).toBe('delete from "learned_shorthands" where "learned_shorthands"."team_id" = $1');
     expect(params).toEqual(['T_LOCAL']);
   });
+  it('deletes Sandbox Echoes only for profiles of the sandbox workspace', () => {
+    const { sql, params } = sandboxResetStatements().statusEchoes.toSQL();
+    expect(sql).toMatch(
+      /^delete from "status_echoes" where "status_echoes"\."user_id" in \(select/
+    );
+    expect(sql).toContain('"users"."slack_team_id" = $1');
+    expect(params).toEqual(['T_LOCAL']);
+  });
 });

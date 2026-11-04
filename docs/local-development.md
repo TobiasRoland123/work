@@ -100,15 +100,27 @@ text; a newer edit replaces it. There is no automatic age cutoff. Edit and Delet
 
 **Roles and restricted pages.** Sign in as Anna Attendee, the initial sandbox admin, and open **More → Roles** (`/admin/roles`). Assign **Manager** for employee stats, **Admin** for all features including message review, AI costs and role management, or **Employee** for normal attendance access. Other new profiles start as employees. Reseeding preserves edited roles. See [Application access](access-control.md) and [Employee stats](employee-stats.md).
 
-**Reset.** Deletes `status` rows of `T_LOCAL` profiles and `slack_messages` rows of team
-`T_LOCAL` (including any retained `review_text`), then clears the browser list. Profiles
+**Sandbox Echoes.** When the Signed-in Profile saves a status for themselves with **Post in #wørk**
+ticked, its Echo is scheduled exactly as in production, but it is never sent to Slack. The
+**Sandbox Echoes** card lists posted Echoes like the channel would, under each profile's name
+and photo (initials, since fixture profiles have no avatars), and shows how many are waiting
+and for which day. Posted Echoes change in place: a newer status crosses out the days it
+replaces, and removing the status crosses out the whole Echo and marks it cancelled. A status
+saved for today after 08:00 appears at once. **Post today's Echoes now** runs the 08:00 job on
+demand, so today's Echoes post before 08:00; it never posts an Echo ahead of its day. The
+button is a sandbox action and does not exist in production builds. Existing local databases
+get the new `status_echoes` table from `pnpm local:db` or `pnpm db:push`.
+
+**Reset.** Deletes `status` rows and Sandbox Echoes of `T_LOCAL` profiles and `slack_messages`
+rows of team `T_LOCAL` (including any retained `review_text`), then clears the browser list. Profiles
 are kept. Both deletes are scoped and `tests/backend/sandbox/reset.test.ts` asserts the
 generated SQL.
 
 ## What the sandbox does not exercise
 
 HMAC signature verification, the Vercel Queue round trip, Slack OAuth sign-in,
-`listSlackUsers` directory sync, and Slack's real wire text. Changes to
+`listSlackUsers` directory sync, Slack's real wire text, and posting or editing Echoes with
+`chat.postMessage` and `chat.update`. Changes to
 `lib/slack/{events,signature,client,identity}.ts`, `auth.config.ts`, or the queue
 configuration must be verified on the preview deployment before merging. The preview
 environment has its own database and its own Slack app credentials; see

@@ -28,11 +28,22 @@ import {
 } from './learned-shorthand';
 import { statusEmoji } from '@/lib/status/emoji';
 import { supabase } from '@/lib/supabaseClient';
+import { markEchoDeletedInSlack, syncUserEchoes } from '@/lib/services/echoService';
 
 const MAX_REVIEW_TEXT_LENGTH = 12000;
 
 function retainedReviewText(text: string | null | undefined) {
   return text ? text.slice(0, MAX_REVIEW_TEXT_LENGTH) : null;
+}
+
+/** Edit the person's posted Echoes after a Slack Declaration replaced some of their days. */
+async function syncEchoesQuietly(userId: string) {
+  try {
+    await syncUserEchoes(userId);
+  } catch {
+    // The scheduled Echo job retries; an import never fails because of an Echo.
+    console.warn('echo_sync', { outcome: 'failed' });
+  }
 }
 
 export async function enqueueSlackEvent(input: unknown) {
@@ -43,6 +54,9 @@ export async function enqueueSlackEvent(input: unknown) {
   );
   if (!inspected.event) return { outcome: 'ignored' as const, reason: inspected.reason };
   const event = inspected.event;
+  // Someone deleted an Echo in Slack. It was never a Declaration, so nothing else changes.
+  if (event.state === 'deleted' && (await markEchoDeletedInSlack(event.channelId, event.messageTs)))
+    return { outcome: 'ignored' as const, reason: 'echo_deleted' as const };
   const { changed, statusChanged } = await db.transaction(async (tx) => {
     const [changed] = await tx
       .insert(slackMessages)
@@ -103,6 +117,7 @@ export async function enqueueSlackEvent(input: unknown) {
     return { changed: Boolean(changed), statusChanged };
   });
   if (statusChanged) invalidateWeekOverview();
+  // Echo edits after a Slack deletion wait for the Echo job, so Slack is acknowledged promptly.
   return {
     outcome: !changed
       ? ('duplicate_or_stale' as const)
@@ -336,8 +351,10 @@ export async function processSlackInbox(limit = 2, messageKey?: string, revision
         return true;
       });
       if (!applied) counts.superseded++;
-      else if (hasRows) counts.applied++;
-      else if (extraction.decision === 'review') counts.review++;
+      else if (hasRows) {
+        counts.applied++;
+        await syncEchoesQuietly(user.id);
+      } else if (extraction.decision === 'review') counts.review++;
       else counts.ignored++;
       console.info('slack_processing', {
         messageKey: job.messageKey,

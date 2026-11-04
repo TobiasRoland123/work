@@ -9,6 +9,7 @@ import {
   deleteSandboxMessageAction,
   editSandboxMessageAction,
   getSandboxOverview,
+  postSandboxEchoesNowAction,
   resetSandboxDataAction,
   runSandboxRetriesAction,
   seedSandboxProfilesAction,
@@ -17,6 +18,7 @@ import {
   signOutSandboxAction,
 } from '@/app/actions/sandboxActions';
 import type { SandboxOutcome, SandboxProfile } from '@/lib/sandbox/service';
+import { SandboxEchoes } from './SandboxEchoes';
 
 type Overview = Awaited<ReturnType<typeof getSandboxOverview>>;
 
@@ -196,6 +198,14 @@ export function SandboxConsole({
       const response = await runSandboxRetriesAction();
       if (!response.ok) return setError(response.error);
       toast(`Retries: ${JSON.stringify(response.counts)}`);
+    });
+
+  const postEchoes = () =>
+    run(async () => {
+      const response = await postSandboxEchoesNowAction();
+      if (!response.ok) return setError(response.error);
+      const { posted, updated } = response.counts;
+      toast(`Posted ${posted} and updated ${updated} Sandbox Echoes.`);
     });
 
   const seed = () =>
@@ -381,6 +391,8 @@ export function SandboxConsole({
               </div>
             )}
           </section>
+
+          <SandboxEchoes echoes={overview.echoes} pending={pending} onPostNow={postEchoes} />
 
           <section className="sandbox-card" aria-labelledby="inbox-heading">
             <h2 id="inbox-heading">Inbox</h2>
