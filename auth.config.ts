@@ -15,7 +15,8 @@ export const authConfig = {
       authorization: { params: { scope: 'openid profile email', team: process.env.SLACK_TEAM_ID } },
     },
   ],
-  session: { maxAge: 8 * 60 * 60 },
+  // Keep this browser signed in for 90 days, renewed by authenticated requests.
+  session: { maxAge: 90 * 24 * 60 * 60 },
   callbacks: {
     async authorized({ auth }) {
       return auth?.provider === 'slack' && Boolean(auth.userId);

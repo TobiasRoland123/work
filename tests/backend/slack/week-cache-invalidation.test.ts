@@ -42,6 +42,10 @@ vi.mock('@/lib/services/echoService', () => ({
   markEchoDeletedInSlack: async () => false,
   syncUserEchoes: async () => undefined,
 }));
+vi.mock('@/lib/slack/attendance-context', () => ({
+  AttendanceContextPendingError: class extends Error {},
+  loadAttendanceContext: async () => ({ entries: [], sourceIds: {} }),
+}));
 import { enqueueSlackEvent, processSlackInbox, processQueuedSlackMessage } from '@/lib/slack/inbox';
 
 beforeEach(() => {

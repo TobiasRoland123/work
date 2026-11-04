@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 
 import localFont from 'next/font/local';
 import './globals.css';
@@ -7,6 +7,8 @@ import './dark.css';
 import type * as React from 'react';
 import { PALETTE_INIT_SCRIPT } from '@/lib/theme/palettes';
 import { Providers } from './providers';
+import { ServiceWorkerRegistration } from '@/components/pwa/ServiceWorkerRegistration';
+import { InstallAppProvider } from '@/components/pwa/InstallApp';
 const monumentGrotesk = localFont({
   src: [
     {
@@ -40,14 +42,20 @@ const ibxMono = localFont({
 
 export const metadata: Metadata = {
   title: 'WØRK',
+  applicationName: 'WØRK',
+  appleWebApp: { capable: true, title: 'WØRK', statusBarStyle: 'black' },
+  icons: {
+    icon: { url: '/icon.svg', type: 'image/svg+xml' },
+    apple: { url: '/icons/apple-touch-icon.png', sizes: '180x180', type: 'image/png' },
+  },
   description: 'Make sure your colleagues know how to get a hold of you!',
 };
 
-export const viewport = {
+export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  viewportFit: 'cover',
+  themeColor: '#090b0c',
 };
 
 export default async function RootLayout({
@@ -62,11 +70,13 @@ export default async function RootLayout({
       suppressHydrationWarning
     >
       <head>
-        <link rel="icon" href="./icon.svg" sizes="any" />
         <script dangerouslySetInnerHTML={{ __html: PALETTE_INIT_SCRIPT }} />
       </head>
       <body>
-        <Providers>{children}</Providers>
+        <ServiceWorkerRegistration />
+        <Providers>
+          <InstallAppProvider>{children}</InstallAppProvider>
+        </Providers>
       </body>
     </html>
   );

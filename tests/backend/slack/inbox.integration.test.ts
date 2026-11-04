@@ -482,8 +482,8 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
       expect(job.processedAt).toBeInstanceOf(Date);
       expect(broadcastSend).not.toHaveBeenCalled();
     });
-    it('processes a newly received message immediately, ahead of unrelated backlog', async () => {
-      const newer = { ...original, event: { ...original.event, ts: '1788766300.000001' } };
+    it('processes a newly received message immediately, ahead of earlier-day backlog', async () => {
+      const newer = { ...original, event: { ...original.event, ts: '1788852700.000001' } };
       const newerKey = `${team}:${channel}:${newer.event.ts}`;
       try {
         expect(await enqueueSlackEvent(original)).toMatchObject({

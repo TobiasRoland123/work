@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest';
 import { eq, inArray } from 'drizzle-orm';
 import { db, pool } from '@/db';
-import { slackMessages, status, statusEchoes, users } from '@/db/schema';
+import { slackMessages, status, statusEchoes, statusSupersessions, users } from '@/db/schema';
 import type { NewStatus } from '@/db/types';
 import { SlackApiError } from '@/lib/slack/client';
 import { enqueueSlackEvent } from '@/lib/slack/inbox';
@@ -246,6 +246,35 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')('Echoes on isolated Post
     const sent = slack.updates.length;
     await run(at('2026-11-04T12:00:00Z'), slack.transport);
     expect(slack.updates).toHaveLength(sent);
+  });
+
+  it('ignores superseded statuses when posting Echoes and restores them when the correction is removed', async () => {
+    const slack = fakeSlack();
+    const home = await save({ fromDate: monday, toDate: monday }, at('2026-10-30T10:00:00Z'));
+    const vacation = await save(
+      { status: 'VACATION', fromDate: monday, toDate: monday },
+      at('2026-10-30T11:00:00Z'),
+      false
+    );
+    const correction = await save(
+      { status: 'IN_OFFICE', fromDate: '2026-11-03', toDate: '2026-11-03' },
+      at('2026-10-30T12:00:00Z'),
+      false
+    );
+    await db.insert(statusSupersessions).values({
+      targetStatusId: vacation.id,
+      replacementStatusId: correction.id,
+    });
+
+    await run(at('2026-11-02T07:05:00Z'), slack.transport);
+    expect(slack.posts.map((post) => post.text)).toEqual(['🏠 *Home* · Mon 2 Nov']);
+    expect(await echoOf(home.id)).toMatchObject({ state: 'posted' });
+
+    await statusService.deleteStatusById(correction.id);
+    await run(at('2026-11-02T08:00:00Z'), slack.transport);
+    expect(slack.updates.map((update) => update.text)).toEqual([
+      '~🏠 Home · Mon 2 Nov~ · *Cancelled*',
+    ]);
   });
 
   it('crosses out and cancels a posted Echo when its Declaration is removed, keeping the message', async () => {

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { getTableName } from 'drizzle-orm';
 import { SlackMessagePendingError } from '@/lib/slack/inbox';
+import { loadAttendanceContext } from '@/lib/slack/attendance-context';
 import {
   announcementInstant,
   SandboxInputError,
@@ -11,6 +12,10 @@ import {
 
 // Rows returned per table, consumed in call order.
 const rows = vi.hoisted(() => new Map<string, unknown[][]>());
+vi.mock('@/lib/slack/attendance-context', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/slack/attendance-context')>()),
+  loadAttendanceContext: vi.fn(),
+}));
 vi.mock('@/db', () => {
   const chain = (table: unknown) => {
     const name = getTableName(table as never);
@@ -48,6 +53,7 @@ beforeEach(() => {
   vi.stubEnv('AI_GATEWAY_API_KEY', 'synthetic-key');
   enqueue.mockReset();
   consume.mockReset();
+  vi.mocked(loadAttendanceContext).mockReset().mockResolvedValue({ entries: [], sourceIds: {} });
 });
 afterEach(() => vi.unstubAllEnvs());
 
@@ -63,6 +69,22 @@ describe('announcementInstant', () => {
 });
 
 describe('sendSandboxMessage', () => {
+  it('requires the model for shorthand that has earlier same-person context', async () => {
+    vi.stubEnv('AI_GATEWAY_API_KEY', '');
+    queue('users', [{ id: 'sandbox-anna' }]);
+    vi.mocked(loadAttendanceContext).mockResolvedValue({
+      entries: [{ ref: 'earlier' }],
+      sourceIds: {},
+    } as unknown as Awaited<ReturnType<typeof loadAttendanceContext>>);
+    await expect(
+      sendSandboxMessage({ slackUserId: author, text: '11:00', announcedAt: '2026-09-19T09:00' })
+    ).rejects.toThrow('AI_GATEWAY_API_KEY');
+    expect(enqueue).not.toHaveBeenCalled();
+    expect(loadAttendanceContext).toHaveBeenCalledWith(
+      expect.objectContaining({ slackUserId: author, teamId: 'T_LOCAL', channelId: 'C_LOCAL' }),
+      'sandbox-anna'
+    );
+  });
   it('refuses to send when the intake is configured for another workspace', async () => {
     vi.stubEnv('SLACK_TEAM_ID', 'T02HKL21R');
     await expect(sendSandboxMessage({ slackUserId: author, text: 'wfh' })).rejects.toBeInstanceOf(
@@ -208,7 +230,7 @@ describe('sendSandboxMessage', () => {
 describe('edits and deletions', () => {
   const messageTs = '1789000000.000123';
   it('send message_changed with a newer revision', async () => {
-    queue('users', [{ id: 'sandbox-anna' }]);
+    queue('users', [{ id: 'sandbox-anna' }], [{ id: 'sandbox-anna' }]);
     queue('slack_messages', [{ state: 'applied', outcome: { reason: 'clear' }, attempts: 1 }]);
     queue('slack_messages', [{ state: 'applied', outcome: { reason: 'clear' } }]);
     queue('status', []);

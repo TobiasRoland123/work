@@ -205,3 +205,11 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Keep installed apps from triggering browser pull-to-refresh at a scroll edge. */
+@media (display-mode: standalone) {
+  html,
+  body {
+    overscroll-behavior-y: none;
+  }
+}

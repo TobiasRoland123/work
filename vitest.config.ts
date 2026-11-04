@@ -55,6 +55,8 @@ export default defineConfig({
         },
         test: {
           name: 'backend',
+          // Resolve Auth.js's extensionless Next.js imports through Vite in integration tests.
+          server: { deps: { inline: ['next-auth'] } },
           environment: 'node',
           include: ['tests/backend/**/*.test.ts'],
           exclude: [

@@ -22,6 +22,7 @@ import {
   replacedEchoDays,
 } from '@/lib/status/echo';
 import { addDays } from '@/lib/status/week';
+import { visibleStatusCondition } from '@/lib/status/visible';
 
 type Transaction = Parameters<Parameters<typeof db.transaction>[0]>[0];
 
@@ -71,7 +72,10 @@ function configuredChannel() {
 }
 
 const statusesOf = (executor: typeof db | Transaction, userId: string) =>
-  executor.select().from(status).where(eq(status.userID, userId));
+  executor
+    .select()
+    .from(status)
+    .where(and(eq(status.userID, userId), visibleStatusCondition()));
 
 /**
  * Schedule the Echo of a Declaration the person just made about themselves, in the transaction
