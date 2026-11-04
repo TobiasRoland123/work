@@ -101,6 +101,8 @@ The existing migrations `0043` through `0048` were applied in order through Supa
 
 Take a database backup and verify which migrations the target has applied. The repository's earliest historical migration is an introspection baseline and cannot initialize a blank database by replaying the complete history.
 
+For the 4 November 2026 `/today` failure caused by the missing `status_supersessions` table, follow the [targeted migration 0049 repair](production-status-supersessions-repair.md). Merging the repair entrypoint does not apply it to production.
+
 For an existing database matching the previous schema, apply `db/0034_slack_migration.sql`, `db/0035_slack_precision_and_activity.sql`, then `db/0036_status_announcement_time.sql` once each, in that order using the database's normal migration process. These add Slack identity/interval columns, approximation flags, an activity flag, a timezone-aware announcement timestamp, the AWAY enum value and a private durable inbox. They do not rewrite user IDs, delete data or change existing status values. If the deployment already maintains the Drizzle migration journal, `pnpm db:migrate` is available. Do not replay the entire historical chain against an unjournaled existing database. For a new empty development database, create the existing `service_role` role, then use `pnpm db:push` as documented in the project.
 
 The server database role must own the inbox tables or have the appropriate privileged access; no anonymous/public RLS policy is added for message text. Imported action clocks use the timezone-aware interval bounds; the legacy zone-less `time` column is left empty for imports.
