@@ -1,3 +1,4 @@
+import { visibleStatusCondition } from '@/lib/status/visible';
 import { and, gte, inArray, isNull, lte, or, sql } from 'drizzle-orm';
 import type { AnyPgColumn } from 'drizzle-orm/pg-core';
 import { db } from '@/db';
@@ -66,7 +67,7 @@ async function loadAttendance(range: EmployeeStatsRange, now: Date) {
       >`to_char(least(min(${status.fromDate}), ${earliestDay(status.startsAt)}, ${earliestDay(status.endsAt)}), 'YYYY-MM-DD')`,
     })
     .from(status)
-    .where(inArray(status.userID, userIds))
+    .where(and(inArray(status.userID, userIds), visibleStatusCondition()))
     .groupBy(status.userID);
   const firstAnnounced = new Map(firstRows.map((row) => [row.userId, row.firstDay]));
   const starts = new Map(
@@ -92,6 +93,7 @@ async function loadAttendance(range: EmployeeStatsRange, now: Date) {
     .where(
       and(
         inArray(status.userID, userIds),
+        visibleStatusCondition(),
         or(isNull(status.toDate), gte(status.toDate, addDays(calendar[0]!, -1))),
         or(isNull(status.fromDate), lte(status.fromDate, addDays(today, 1)))
       )

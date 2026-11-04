@@ -1,3 +1,4 @@
+import { visibleStatusCondition } from '@/lib/status/visible';
 import { invalidateWeekOverview } from './weekOverviewCache';
 import { NewStatus } from '@/db/types';
 import { slackMessages, status, statusCorrections } from '@/db/schema';
@@ -19,18 +20,24 @@ import { blockCorrectedShorthand } from '@/lib/slack/learned-shorthand';
 export const statusService = {
   // GET METHODS
   async getAllStatuses() {
-    const allStatuses = await db.select().from(status);
+    const allStatuses = await db.select().from(status).where(visibleStatusCondition());
     return allStatuses;
   },
 
   async getStatusByUserUserId(userID: string) {
-    const userStatus = await db.select().from(status).where(eq(status.userID, userID));
+    const userStatus = await db
+      .select()
+      .from(status)
+      .where(and(eq(status.userID, userID), visibleStatusCondition()));
     return userStatus;
   },
 
   // This gets the latest active status by user
   async getActiveStatusByUserUserId(userID: string) {
-    const userStatuses = await db.select().from(status).where(eq(status.userID, userID));
+    const userStatuses = await db
+      .select()
+      .from(status)
+      .where(and(eq(status.userID, userID), visibleStatusCondition()));
     return resolvePresenceStatus(userStatuses, userID);
   },
 
@@ -71,6 +78,7 @@ export const statusService = {
         .where(
           and(
             eq(status.id, parsed.statusId),
+            visibleStatusCondition(),
             eq(status.userID, userID),
             isNotNull(status.sourceMessageKey)
           )
@@ -134,7 +142,10 @@ export const statusService = {
           .for('update');
         if (!existing) throw new Error('Correction conflict without a stored correction');
         recordId = existing.id;
-        const own = await tx.select().from(status).where(eq(status.userID, userID));
+        const own = await tx
+          .select()
+          .from(status)
+          .where(and(eq(status.userID, userID), visibleStatusCondition()));
         const applied = own.find((row) => row.id === existing.correctionStatusId);
         // A repeat of a correction that still applies changes nothing. If the person removed
         // it or announced something newer since, saving it again re-applies the correction.

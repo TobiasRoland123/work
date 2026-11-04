@@ -1,3 +1,4 @@
+import { visibleStatusCondition } from '@/lib/status/visible';
 import { invalidateWeekOverview } from './weekOverviewCache';
 import { NewUser, Status, UserWithExtras } from '@/db/types';
 import { db } from '@/db';
@@ -175,7 +176,13 @@ export const userService = {
       db
         .select()
         .from(status)
-        .where(and(inArray(status.userID, userIds), overviewStatusCondition(window))),
+        .where(
+          and(
+            inArray(status.userID, userIds),
+            overviewStatusCondition(window),
+            visibleStatusCondition()
+          )
+        ),
     ]);
     const orgMap = new Map(organisationsList.map((o) => [o.id, o.organisationName]));
 

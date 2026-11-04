@@ -1,15 +1,22 @@
 import { invalidateWeekOverview } from '@/lib/services/weekOverviewCache';
-import { and, eq, lte, sql } from 'drizzle-orm';
+import { and, eq, inArray, lte, sql } from 'drizzle-orm';
 import { db } from '@/db';
 import {
   shorthandObservations,
   slackMessageFeedback,
   slackMessages,
   status,
+  statusSupersessions,
   users,
 } from '@/db/schema';
 import { inspectSlackEvent } from './events';
-import { descriptionRows, extractAttendance, statusRows } from './extraction';
+import {
+  descriptionRows,
+  extractAttendance,
+  statusRows,
+  validateContextualExtraction,
+} from './extraction';
+import { AttendanceContextPendingError, loadAttendanceContext } from './attendance-context';
 import { createSlackAiUsageRecorder } from './ai-usage';
 import { recordSlackMessageProcessing } from './message-processing';
 import {
@@ -199,9 +206,12 @@ export async function processSlackInbox(limit = 2, messageKey?: string, revision
         ? 'extraction_failed'
         : 'gateway_key_missing';
       const messageInstant = new Date(Number(job.messageTs) * 1000);
+      const context = await loadAttendanceContext(job, user.id);
       // A learned shorthand answers its whole phrase without an AI request.
-      const learned = await readLearnedShorthand(job, job.text ?? '', messageInstant);
-      const extraction =
+      const learned = context.entries.length
+        ? { phrase: null, learnedShorthandId: null, template: null, extraction: null }
+        : await readLearnedShorthand(job, job.text ?? '', messageInstant);
+      let extraction =
         learned.extraction ??
         (await extractAttendance(
           job.text ?? '',
@@ -211,18 +221,42 @@ export async function processSlackInbox(limit = 2, messageKey?: string, revision
             revision: job.revision,
             teamId: job.teamId,
             channelId: job.channelId,
-          })
+          }),
+          context.entries
         ));
+      if (context.entries.length) {
+        try {
+          extraction = validateContextualExtraction(
+            { ...extraction, replaces: extraction.replaces ?? [] },
+            messageInstant,
+            job.text ?? '',
+            context.entries
+          );
+        } catch {
+          extraction = { decision: 'review', reason: 'unsupported', intervals: [] };
+        }
+      } else if (extraction.replaces?.length) {
+        extraction = { decision: 'review', reason: 'unsupported', intervals: [] };
+      }
       const template =
         learned.template ??
         (learned.phrase ? templateFromExtraction(extraction, messageInstant) : null);
       const rows =
         extraction.decision === 'apply'
           ? statusRows(extraction)
-          : descriptionRows(extraction, job.text ?? '', messageInstant);
+          : context.entries.length
+            ? []
+            : descriptionRows(extraction, job.text ?? '', messageInstant);
       const hasRows = rows.length > 0;
       failureReason = 'status_write_failed';
       const applied = await db.transaction(async (tx) => {
+        // Serialize commits for one author, then re-read the bounded context. A model
+        // result based on a changed/deleted source must be retried, never applied stale.
+        await tx
+          .select({ id: users.userId })
+          .from(users)
+          .where(eq(users.userId, user.id))
+          .for('update');
         const [current] = await tx
           .select()
           .from(slackMessages)
@@ -230,18 +264,45 @@ export async function processSlackInbox(limit = 2, messageKey?: string, revision
           .for('update');
         if (!current || current.revision !== job.revision || current.state !== 'pending')
           return false;
+        const currentContext = await loadAttendanceContext(job, user.id, tx);
+        if (JSON.stringify(currentContext) !== JSON.stringify(context))
+          throw new AttendanceContextPendingError(
+            'Earlier announcements changed during extraction'
+          );
         if (hasRows) {
           await tx.delete(status).where(eq(status.sourceMessageKey, job.messageKey));
-          await tx.insert(status).values(
-            rows.map((row) => ({
-              ...row,
-              emoji: statusEmoji(row.status, job.text),
-              userID: user.id,
-              sourceMessageKey: job.messageKey,
-              createdAt: new Date(Number(job.revision) * 1000).toISOString(),
-              announcedAt: new Date(Number(job.revision) * 1000),
-            }))
-          );
+          const inserted = await tx
+            .insert(status)
+            .values(
+              rows.map((row) => ({
+                ...row,
+                emoji: statusEmoji(row.status, job.text),
+                userID: user.id,
+                sourceMessageKey: job.messageKey,
+                createdAt: new Date(Number(job.revision) * 1000).toISOString(),
+                announcedAt: new Date(Number(job.revision) * 1000),
+              }))
+            )
+            .returning({ id: status.id });
+          const directTargets = (extraction.replaces ?? []).flatMap((id) => context.sourceIds[id]);
+          // A correction of a correction inherits its ancestors. Deleting the
+          // intermediate message must not resurrect a plan the latest one replaced.
+          const ancestors = directTargets.length
+            ? await tx
+                .select({ id: statusSupersessions.targetStatusId })
+                .from(statusSupersessions)
+                .where(inArray(statusSupersessions.replacementStatusId, directTargets))
+            : [];
+          const targets = [...new Set([...directTargets, ...ancestors.map((row) => row.id)])];
+          if (targets.length)
+            await tx.insert(statusSupersessions).values(
+              inserted.flatMap((replacement) =>
+                targets.map((targetStatusId) => ({
+                  targetStatusId,
+                  replacementStatusId: replacement.id,
+                }))
+              )
+            );
         }
         await tx
           .update(slackMessages)
@@ -283,7 +344,24 @@ export async function processSlackInbox(limit = 2, messageKey?: string, revision
         outcome: applied ? (hasRows ? 'apply' : extraction.decision) : 'superseded',
         reason: extraction.reason,
       });
-    } catch {
+    } catch (error) {
+      if (error instanceof AttendanceContextPendingError) {
+        await db
+          .update(slackMessages)
+          .set({
+            attempts: job.attempts,
+            nextAttemptAt: new Date(Date.now() + 10000),
+          })
+          .where(
+            and(
+              eq(slackMessages.messageKey, job.messageKey),
+              eq(slackMessages.revision, job.revision),
+              eq(slackMessages.state, 'pending')
+            )
+          );
+        counts.retried++;
+        continue;
+      }
       const exhausted = job.attempts >= 4;
       await db
         .update(slackMessages)
