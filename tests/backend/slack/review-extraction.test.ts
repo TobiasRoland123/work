@@ -7,6 +7,7 @@ import {
 
 const sent = new Date('2026-09-06T23:30:00Z');
 const interval = {
+  mentionedUserIds: [],
   status: 'FROM_HOME',
   fromDate: '2026-09-08',
   toDate: '2026-09-08',
@@ -116,14 +117,12 @@ describe('attendance AI adapter with mocked structured replies', () => {
   );
   it('accepts a source comment above 2000 characters up to the 12000-character limit', async () => {
     const text = `in later, ${'x'.repeat(2500)}`;
-    const request = vi
-      .fn()
-      .mockResolvedValue(
-        reply({
-          ...output,
-          intervals: [{ ...interval, status: 'IN_LATE', comment: 'x'.repeat(2500) }],
-        })
-      );
+    const request = vi.fn().mockResolvedValue(
+      reply({
+        ...output,
+        intervals: [{ ...interval, status: 'IN_LATE', comment: 'x'.repeat(2500) }],
+      })
+    );
     vi.stubGlobal('fetch', request);
     const result = await extractAttendance(text, sent);
     expect(statusRows(result)[0].details).toBe(text);
@@ -327,6 +326,7 @@ describe('attendance AI adapter with mocked structured replies', () => {
               startApproximate: false,
               endApproximate: false,
               comment: 'at conference',
+              mentionedUserIds: [],
             },
           ],
         })
@@ -344,6 +344,7 @@ describe('attendance AI adapter with mocked structured replies', () => {
         startApproximate: false,
         endApproximate: false,
         comment: message,
+        mentionedUserIds: [],
       },
     ]);
   });

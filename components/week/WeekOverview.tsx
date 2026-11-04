@@ -1,5 +1,7 @@
 'use client';
 
+import { announcementAttribution } from '@/lib/status/attribution';
+
 import { useRef, useState, type CSSProperties, type MouseEvent } from 'react';
 import { flushSync } from 'react-dom';
 import Link from 'next/link';
@@ -106,6 +108,7 @@ function WeekCell({
     label,
     note,
     assumed && 'assumed, nothing announced',
+    !hiddenOffice && announcementAttribution(segment.status),
     !hiddenOffice && segment.status?.sourceMessageKey && 'AI-assisted',
   ]
     .filter(Boolean)
@@ -194,6 +197,7 @@ function UpcomingPlans({
                 <AIIndicator sourceMessageKey={plan.sourceMessageKey} position="corner" />
               </span>
               {note && <small>{note}</small>}
+              {announcementAttribution(plan) && <small>{announcementAttribution(plan)}</small>}
             </span>
             {plan.sourceMessageKey ? (
               <a
@@ -202,7 +206,7 @@ function UpcomingPlans({
                 target="_blank"
                 rel="noreferrer"
               >
-                Edit in Slack
+                {plan.sourceAuthor ? 'View Slack message' : 'Edit in Slack'}
               </a>
             ) : (
               <button
@@ -297,6 +301,9 @@ function PersonSheet({
                               />
                             </span>
                             {note && <small>{note}</small>}
+                            {announcementAttribution(status) && (
+                              <small>{announcementAttribution(status)}</small>
+                            )}
                             {status?.sourceMessageKey && (
                               <a
                                 href={`/api/slack/message?key=${encodeURIComponent(status.sourceMessageKey)}`}

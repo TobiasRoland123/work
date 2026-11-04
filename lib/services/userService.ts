@@ -1,3 +1,4 @@
+import { withStatusAttribution } from './statusAttribution';
 import { visibleStatusCondition } from '@/lib/status/visible';
 import { invalidateWeekOverview } from './weekOverviewCache';
 import { NewUser, Status, UserWithExtras } from '@/db/types';
@@ -200,7 +201,7 @@ export const userService = {
     }
 
     const statusMap = new Map<string, Status[]>();
-    for (const s of statusesList) {
+    for (const s of await withStatusAttribution(statusesList)) {
       const userStatuses = statusMap.get(s.userID) ?? [];
       userStatuses.push(s);
       statusMap.set(s.userID, userStatuses);

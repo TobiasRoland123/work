@@ -6,6 +6,7 @@ import {
   extractAttendance,
   localInstant,
   statusRows,
+  slackMentionIds,
   validateExtraction,
 } from '@/lib/slack/extraction';
 import { isStatusApplicable } from '@/lib/status/active';
@@ -33,6 +34,50 @@ const interval: {
 const extract = (intervals = [interval]) => ({ decision: 'apply', reason: 'clear', intervals });
 
 describe('attendance extraction boundary', () => {
+  it('accepts only explicit Slack mentions and deduplicates shared attendance recipients', () => {
+    const message =
+      'Going to Dagrofa logistik in Vejle for the day together with <@U08KPFPT928>, <@U585BUWS2> and Martin Rose';
+    expect(slackMentionIds(message)).toEqual(['U08KPFPT928', 'U585BUWS2']);
+    const result = validateExtraction(
+      {
+        ...extract(),
+        intervals: [
+          {
+            ...interval,
+            status: 'AT_CLIENT',
+            comment: message,
+            mentionedUserIds: ['U08KPFPT928', 'U585BUWS2', 'U08KPFPT928'],
+          },
+        ],
+      },
+      sent,
+      message
+    );
+    expect(result.intervals[0].mentionedUserIds).toEqual(['U08KPFPT928', 'U585BUWS2']);
+    expect(result.intervals[0].comment).toBe(message);
+    expect(() =>
+      validateExtraction(
+        { ...extract(), intervals: [{ ...interval, mentionedUserIds: ['UINVENTED'] }] },
+        sent,
+        message
+      )
+    ).toThrow('explicitly mentioned');
+  });
+  it('keeps recipient assignments on their own intervals and preserves old extraction input', () => {
+    expect(validateExtraction(extract(), sent).intervals[0].mentionedUserIds).toBeUndefined();
+    const result = validateExtraction(
+      {
+        ...extract(),
+        intervals: [
+          { ...interval, endTime: '12:00', mentionedUserIds: ['U123'] },
+          { ...interval, status: 'IN_OFFICE', startTime: '12:00', mentionedUserIds: [] },
+        ],
+      },
+      sent,
+      'WFH with <@U123> until noon, then I return to the office'
+    );
+    expect(result.intervals.map((row) => row.mentionedUserIds)).toEqual([['U123'], []]);
+  });
   it('uses Copenhagen day across UTC midnight', () => {
     expect(copenhagenDate(new Date('2026-09-06T23:30:00Z'))).toBe('2026-09-07');
   });
@@ -318,6 +363,9 @@ describe('AI Gateway transport', () => {
       expect(String(input)).toBe(`${AI_GATEWAY_BASE_URL}/chat/completions`);
       expect(new Headers(init.headers).get('authorization')).toBe('Bearer gateway-test-key');
       const body = JSON.parse(String(init.body));
+      expect(body.response_format.json_schema.schema.properties.intervals.items.required).toContain(
+        'mentionedUserIds'
+      );
       expect(body.model).toBe(DEFAULT_SLACK_EXTRACTION_MODEL);
       expect(body.store).toBe(false);
     } finally {

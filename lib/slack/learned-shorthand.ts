@@ -6,6 +6,7 @@ import {
   ATTENDANCE_TIME_ZONE,
   copenhagenDate,
   validateExtraction,
+  slackMentionIds,
   type Extraction,
 } from './extraction';
 import { extractShorthand } from './shorthand';
@@ -78,6 +79,7 @@ function findExcerpt(text: string, folded: string) {
  * depends on the sending day or moment.
  */
 export function learningPhrase(text: string, messageInstant: Date): string | null {
+  if (slackMentionIds(text).length) return null;
   const phrase = text
     .toLowerCase()
     .replace(/\(edited\)/g, ' ')
@@ -101,17 +103,26 @@ export function templateFromExtraction(
   extraction: Extraction,
   messageInstant: Date
 ): ShorthandTemplate | null {
-  if (extraction.decision !== 'apply' || !extraction.intervals.length) return null;
+  if (
+    extraction.decision !== 'apply' ||
+    !extraction.intervals.length ||
+    extraction.intervals.some((interval) => interval.mentionedUserIds?.length)
+  )
+    return null;
   const day = copenhagenDate(messageInstant);
   const clock = localClock.format(messageInstant);
   if (extraction.intervals.some((i) => i.startTime === clock || i.endTime === clock)) return null;
   return {
-    intervals: extraction.intervals.map(({ fromDate, toDate, comment, ...interval }) => ({
-      ...interval,
-      fromOffset: dayOffset(day, fromDate),
-      toOffset: dayOffset(day, toDate),
-      comment: comment === null ? null : foldComment(comment),
-    })),
+    intervals: extraction.intervals.map(({ fromDate, toDate, comment, ...interval }) => {
+      // An empty recipient list must compare identically to templates learned before mentions.
+      delete interval.mentionedUserIds;
+      return {
+        ...interval,
+        fromOffset: dayOffset(day, fromDate),
+        toOffset: dayOffset(day, toDate),
+        comment: comment === null ? null : foldComment(comment),
+      };
+    }),
   };
 }
 

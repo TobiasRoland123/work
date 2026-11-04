@@ -52,6 +52,7 @@ describe('learningPhrase', () => {
     ['Danish negation', 'ikke på kontoret'],
     ['a contraction', "won't make it in"],
     ['a question', 'office today?'],
+    ['a shared attendance mention', 'at client with <@UABC>'],
     ['a long message', 'at the client '.repeat(10)],
   ])('does not learn a phrase with %s', (_, text) => {
     expect(learningPhrase(text, sent)).toBeNull();
@@ -59,6 +60,16 @@ describe('learningPhrase', () => {
 });
 
 describe('learned templates', () => {
+  it('keeps empty recipient lists compatible with existing learned templates', () => {
+    expect(templateFromExtraction(apply(interval({ mentionedUserIds: [] })), sent)).toEqual(
+      templateFromExtraction(apply(interval()), sent)
+    );
+  });
+  it('never stores a recipient assignment in a reusable template', () => {
+    expect(
+      templateFromExtraction(apply(interval({ mentionedUserIds: ['UABC'] })), sent)
+    ).toBeNull();
+  });
   it('stores days relative to the message and resolves them from each new message', () => {
     const template = templateFromExtraction(
       apply(interval({ toDate: '2026-09-08', comment: 'Hos  Kunden' })),

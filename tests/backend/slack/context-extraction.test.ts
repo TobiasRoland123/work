@@ -26,9 +26,10 @@ const correction = {
   reason: 'clear',
   replaces: ['prior_1'],
   intervals: [
-    { ...prior.intervals[0], endTime: '11:00', comment: null },
+    { ...prior.intervals[0], endTime: '11:00', comment: null, mentionedUserIds: [] },
     {
       ...prior.intervals[0],
+      mentionedUserIds: [],
       status: 'IN_OFFICE',
       startTime: '11:00',
       endTime: null,
