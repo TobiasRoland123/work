@@ -141,6 +141,28 @@ export const status = pgTable(
   ]
 ).enableRLS();
 
+// Reversible links: removing a correction restores its predecessors. Editing a source
+// creates new row IDs, so a correction can never suppress an unseen source revision.
+export const statusSupersessions = pgTable(
+  'status_supersessions',
+  {
+    targetStatusId: integer('target_status_id')
+      .notNull()
+      .references(() => status.id, { onDelete: 'cascade' }),
+    replacementStatusId: integer('replacement_status_id')
+      .notNull()
+      .references(() => status.id, { onDelete: 'cascade' }),
+  },
+  (table) => [
+    primaryKey({ columns: [table.targetStatusId, table.replacementStatusId] }),
+    index('status_supersessions_replacement_idx').on(table.replacementStatusId),
+    check(
+      'status_supersessions_not_self',
+      sql`${table.targetStatusId} <> ${table.replacementStatusId}`
+    ),
+  ]
+).enableRLS();
+
 // A person's own shortlist of colleagues whose attendance they want to see at a glance.
 // No public RLS policies: only the server database role may access this table.
 export const pinnedColleagues = pgTable(

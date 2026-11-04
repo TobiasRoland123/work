@@ -1,3 +1,4 @@
+import { visibleStatusCondition } from '@/lib/status/visible';
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import { db } from '@/db';
 import { learnedShorthands, slackMessages, status, statusCorrections, users } from '@/db/schema';
@@ -10,6 +11,10 @@ import {
 import { ATTENDANCE_TIME_ZONE, copenhagenDate, localInstant } from '@/lib/slack/extraction';
 import { extractShorthand } from '@/lib/slack/shorthand';
 import { readLearnedShorthand } from '@/lib/slack/learned-shorthand';
+import {
+  AttendanceContextPendingError,
+  loadAttendanceContext,
+} from '@/lib/slack/attendance-context';
 import { SANDBOX_CHANNEL_ID, SANDBOX_TEAM_ID } from './enabled';
 import { deletedEnvelope, editedEnvelope, messageEnvelope, sandboxTs } from './envelope';
 
@@ -157,7 +162,28 @@ async function activeAuthor(slackUserId: string) {
   return author ?? null;
 }
 
-async function handledBy(text: string, instant: Date): Promise<'shorthand' | 'learned' | 'model'> {
+async function handledBy(
+  text: string,
+  instant: Date,
+  identity: { userId: string; slackUserId: string; messageTs: string; revision: string } | null
+): Promise<'shorthand' | 'learned' | 'model'> {
+  if (identity) {
+    const context = await loadAttendanceContext(
+      {
+        messageKey: `${SANDBOX_TEAM_ID}:${SANDBOX_CHANNEL_ID}:${identity.messageTs}`,
+        teamId: SANDBOX_TEAM_ID,
+        channelId: SANDBOX_CHANNEL_ID,
+        ...identity,
+      },
+      identity.userId
+    ).catch((error: unknown) => {
+      if (error instanceof AttendanceContextPendingError) return null;
+      throw error;
+    });
+    // The consumer will wait for the earlier message before deciding its interpretation.
+    if (!context) return 'model';
+    if (context.entries.length) return 'model';
+  }
   if (extractShorthand(text, copenhagenDate(instant), HHmm.format(instant))) return 'shorthand';
   const learned = await readLearnedShorthand(
     { teamId: SANDBOX_TEAM_ID, channelId: SANDBOX_CHANNEL_ID },
@@ -186,7 +212,7 @@ async function committedInterpretation(messageKey: string) {
   const rows = await db
     .select()
     .from(status)
-    .where(eq(status.sourceMessageKey, messageKey))
+    .where(and(eq(status.sourceMessageKey, messageKey), visibleStatusCondition()))
     .orderBy(status.startsAt);
   const intervals: SandboxInterval[] = rows.map((row) => ({
     status: row.status,
@@ -274,14 +300,20 @@ export async function sendSandboxMessage(input: {
   const text = input.text.trim();
   if (!text) throw new SandboxInputError('Write a message first.');
   const instant = announcementInstant(input.announcedAt);
-  const handler = await handledBy(text, instant);
+  const messageTs = sandboxTs(instant);
   const author = await activeAuthor(input.slackUserId);
+  const handler = await handledBy(
+    text,
+    instant,
+    author
+      ? { userId: author.id, slackUserId: input.slackUserId, messageTs, revision: messageTs }
+      : null
+  );
   // Fail up front instead of through five retries into review.
   if (author && handler === 'model' && !process.env.AI_GATEWAY_API_KEY?.trim())
     throw new SandboxInputError(
-      'AI_GATEWAY_API_KEY is not set. The model would fail five times and land in review. Only shorthand such as "wfh" works without it.'
+      'AI_GATEWAY_API_KEY is not set. Only standalone shorthand without earlier same-day context works without it.'
     );
-  const messageTs = sandboxTs(instant);
   const envelope = messageEnvelope({ slackUserId: input.slackUserId, text, messageTs });
   return deliver(envelope, {
     messageTs,
@@ -301,12 +333,22 @@ export async function editSandboxMessage(input: {
   if (!text) throw new SandboxInputError('An edit needs text. Use delete to withdraw.');
   const instant = new Date(Number(input.messageTs) * 1000);
   const revision = sandboxTs(new Date());
+  const author = await activeAuthor(input.slackUserId);
+  const handler = await handledBy(
+    text,
+    instant,
+    author
+      ? { userId: author.id, slackUserId: input.slackUserId, messageTs: input.messageTs, revision }
+      : null
+  );
+  if (author && handler === 'model' && !process.env.AI_GATEWAY_API_KEY?.trim())
+    throw new SandboxInputError('AI_GATEWAY_API_KEY is not set. This edit requires the model.');
   const envelope = editedEnvelope({ ...input, text, messageTs: input.messageTs, revision });
   return deliver(envelope, {
     messageTs: input.messageTs,
     revision,
     announcedAt: instant,
-    handledBy: await handledBy(text, instant),
+    handledBy: handler,
     slackUserId: input.slackUserId,
   });
 }
