@@ -1,3 +1,4 @@
+import { withStatusAttribution } from './statusAttribution';
 import { visibleStatusCondition } from '@/lib/status/visible';
 import { invalidateWeekOverview } from './weekOverviewCache';
 import { NewStatus } from '@/db/types';
@@ -21,7 +22,7 @@ export const statusService = {
   // GET METHODS
   async getAllStatuses() {
     const allStatuses = await db.select().from(status).where(visibleStatusCondition());
-    return allStatuses;
+    return withStatusAttribution(allStatuses);
   },
 
   async getStatusByUserUserId(userID: string) {
@@ -29,7 +30,7 @@ export const statusService = {
       .select()
       .from(status)
       .where(and(eq(status.userID, userID), visibleStatusCondition()));
-    return userStatus;
+    return withStatusAttribution(userStatus);
   },
 
   // This gets the latest active status by user
@@ -38,7 +39,7 @@ export const statusService = {
       .select()
       .from(status)
       .where(and(eq(status.userID, userID), visibleStatusCondition()));
-    return resolvePresenceStatus(userStatuses, userID);
+    return resolvePresenceStatus(await withStatusAttribution(userStatuses), userID);
   },
 
   // Declarations that still cover today or a later day

@@ -2,7 +2,13 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 import { randomUUID } from 'node:crypto';
 import { eq } from 'drizzle-orm';
 import { db, pool } from '@/db';
-import { shorthandObservations, slackMessages, status, users } from '@/db/schema';
+import {
+  shorthandObservations,
+  slackMessages,
+  status,
+  statusSupersessions,
+  users,
+} from '@/db/schema';
 import { enqueueSlackEvent, processSlackInbox } from '@/lib/slack/inbox';
 import { extractAttendance, type Extraction } from '@/lib/slack/extraction';
 import { loadAttendanceContext } from '@/lib/slack/attendance-context';
@@ -115,6 +121,54 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
       vi.unstubAllEnvs();
       await pool.end();
     });
+    it('keeps contextual corrections and supersession links scoped to the author', async () => {
+      const colleagueId = randomUUID();
+      const withColleague = (hour: string): Extraction => ({
+        ...arrival(hour),
+        intervals: arrival(hour).intervals.map((row) => ({
+          ...row,
+          mentionedUserIds: ['UCOLLEAGUE'],
+        })),
+      });
+      try {
+        await db.insert(users).values({
+          userId: colleagueId,
+          email: `${colleagueId}@example.com`,
+          slackTeamId: team,
+          slackUserId: 'UCOLLEAGUE',
+        });
+        await send(1, 'In at 10 together with <@UCOLLEAGUE>', withColleague('10'));
+        await send(2, 'Actually make that 11', { ...arrival('11'), replaces: ['prior_1'] });
+        expect((await visible()).map((row) => row.sourceMessageKey)).toEqual([key(2), key(2)]);
+        expect(
+          (await statusService.getStatusByUserUserId(colleagueId)).map(
+            (row) => row.sourceMessageKey
+          )
+        ).toEqual([key(1), key(1)]);
+        await send(3, 'Actually make that 12 together with <@UCOLLEAGUE>', {
+          ...withColleague('12'),
+          replaces: ['prior_1'],
+        });
+        const colleagueRows = await db.select().from(status).where(eq(status.userID, colleagueId));
+        const links = await db.select().from(statusSupersessions);
+        expect(
+          links.some((link) =>
+            colleagueRows.some(
+              (row) => row.id === link.replacementStatusId || row.id === link.targetStatusId
+            )
+          )
+        ).toBe(false);
+        await remove(3, 4);
+        expect((await visible()).map((row) => row.sourceMessageKey)).toEqual([key(2), key(2)]);
+        expect(
+          (await statusService.getStatusByUserUserId(colleagueId)).map(
+            (row) => row.sourceMessageKey
+          )
+        ).toEqual([key(1), key(1)]);
+      } finally {
+        await db.delete(users).where(eq(users.userId, colleagueId));
+      }
+    });
     it('uses prior intervals, replaces only the targeted announcement, and restores it on deletion', async () => {
       await send(1, 'In at 10', arrival('10'));
       await send(2, 'Vacation next week', {
@@ -139,7 +193,7 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
         intervals: [{ endTime: '10:00' }, { startTime: '10:00' }],
       });
       expect(context[1].replaceable).toBe(false);
-      expect((await visible()).map((row) => row.sourceMessageKey)).toEqual([
+      expect((await visible()).map((row) => row.sourceMessageKey).sort()).toEqual([
         key(2),
         key(3),
         key(3),
@@ -152,7 +206,7 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
           .where(eq(shorthandObservations.messageKey, key(3)))
       ).toHaveLength(0);
       await remove(3, 4);
-      expect((await visible()).map((row) => row.sourceMessageKey)).toEqual([
+      expect((await visible()).map((row) => row.sourceMessageKey).sort()).toEqual([
         key(1),
         key(1),
         key(2),

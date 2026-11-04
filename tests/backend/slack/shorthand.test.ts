@@ -103,16 +103,16 @@ describe('common Slack shorthand', () => {
     ],
     ['In Aalborg today', interval({ status: 'AT_CLIENT', comment: 'In Aalborg today' })],
     ['I Århus i dag', interval({ status: 'AT_CLIENT', comment: 'I Århus i dag' })],
-    ['Working in Warsaw today', interval({ status: 'AT_CLIENT', comment: 'Working in Warsaw today' })],
+    [
+      'Working in Warsaw today',
+      interval({ status: 'AT_CLIENT', comment: 'Working in Warsaw today' }),
+    ],
     ['Working from home today', interval({ status: 'FROM_HOME' })],
     [
       'Working from home in Aalborg',
       interval({ status: 'FROM_HOME', comment: 'Working from home in Aalborg' }),
     ],
-    [
-      'WFH in Aarhus today',
-      interval({ status: 'FROM_HOME', comment: 'WFH in Aarhus today' }),
-    ],
+    ['WFH in Aarhus today', interval({ status: 'FROM_HOME', comment: 'WFH in Aarhus today' })],
   ])('resolves %s without an AI configuration', async (text, expected) => {
     const request = vi.fn();
     vi.stubGlobal('fetch', request);
@@ -456,8 +456,8 @@ describe('common Slack shorthand', () => {
       decision: 'apply',
       reason: 'clear',
       intervals: [
-        interval({ status: 'IN_LATE', endTime: '09:30' }),
-        interval({ status: 'IN_OFFICE', startTime: '09:30' }),
+        interval({ status: 'IN_LATE', endTime: '09:30', mentionedUserIds: [] }),
+        interval({ status: 'IN_OFFICE', startTime: '09:30', mentionedUserIds: [] }),
       ],
     };
     const request = vi.fn().mockResolvedValue(reply(arrival));
@@ -473,7 +473,9 @@ describe('common Slack shorthand', () => {
       reply({
         decision: 'apply',
         reason: 'clear',
-        intervals: [interval({ status: 'IN_LATE', comment: 'dentist appointment' })],
+        intervals: [
+          interval({ status: 'IN_LATE', comment: 'dentist appointment', mentionedUserIds: [] }),
+        ],
       })
     );
     vi.stubEnv('AI_GATEWAY_API_KEY', 'synthetic-test-key');

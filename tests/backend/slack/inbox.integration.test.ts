@@ -114,6 +114,154 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
       vi.unstubAllEnvs();
       await pool.end();
     });
+    it('shares Ulla’s announcement only with active, same-team mentioned coworkers and tracks edits/deletion', async () => {
+      const colleagueIds = [randomUUID(), randomUUID(), randomUUID(), randomUUID()];
+      const slackIds = ['U08KPFPT928', 'U585BUWS2', 'UINACTIVE', 'UOTHERTEAM'];
+      try {
+        await db.insert(users).values(
+          colleagueIds.map((userId, index) => ({
+            userId,
+            email: `${userId}@example.com`,
+            slackUserId: slackIds[index],
+            slackTeamId: index === 3 ? 'TOTHER' : team,
+            slackDeactivated: index === 2,
+          }))
+        );
+        const message = `Going to Dagrofa logistik in Vejle for the day together with <@U08KPFPT928>, <@U585BUWS2> and Martin Rose <@UINACTIVE> <@UOTHERTEAM> <@UUNKNOWN> <@${slackUser}>`;
+        vi.mocked(extractAttendance).mockResolvedValue({
+          ...extraction,
+          intervals: [
+            {
+              ...extraction.intervals[0],
+              status: 'AT_CLIENT',
+              comment: message,
+              mentionedUserIds: [...slackIds, 'UUNKNOWN', slackUser, slackIds[0], 'UINVENTED'],
+            },
+          ],
+        });
+        await enqueueSlackEvent({ ...original, event: { ...original.event, text: message } });
+        await makeQueuedMessageDue();
+        expect(await processSlackInbox()).toMatchObject({ applied: 1 });
+        let rows = await db.select().from(status).where(eq(status.sourceMessageKey, key));
+        expect(rows.map((row) => row.userID).sort()).toEqual(
+          [userID, ...colleagueIds.slice(0, 2)].sort()
+        );
+        expect(rows.every((row) => row.status === 'AT_CLIENT' && row.details === message)).toBe(
+          true
+        );
+        expect(
+          await db
+            .select()
+            .from(shorthandObservations)
+            .where(eq(shorthandObservations.messageKey, key))
+        ).toEqual([]);
+        const [source] = await db
+          .select()
+          .from(slackMessages)
+          .where(eq(slackMessages.messageKey, key));
+        expect(source.slackUserId).toBe(slackUser);
+        // A later personal declaration wins over an imported shared announcement.
+        await db.insert(status).values({
+          userID: colleagueIds[0],
+          status: 'FROM_HOME',
+          fromDate: '2026-09-07',
+          toDate: '2026-09-07',
+          announcedAt: new Date('2026-09-07T09:00:00Z'),
+        });
+        const colleagueStatuses = await statusService.getStatusByUserUserId(colleagueIds[0]);
+        expect(
+          selectActiveStatus(colleagueStatuses, new Date('2026-09-07T10:00:00Z'))?.status
+        ).toBe('FROM_HOME');
+
+        vi.mocked(extractAttendance).mockResolvedValue({
+          ...extraction,
+          intervals: [
+            {
+              ...extraction.intervals[0],
+              mentionedUserIds: [slackIds[1]],
+            },
+          ],
+        });
+        await enqueueSlackEvent({
+          ...original,
+          event: {
+            type: 'message',
+            subtype: 'message_changed',
+            channel,
+            event_ts: '1788766500.000001',
+            message: {
+              ...original.event,
+              text: `WFH together with <@${slackIds[1]}>`,
+              edited: { ts: '1788766500.000001' },
+            },
+          },
+        });
+        await makeQueuedMessageDue();
+        await processSlackInbox();
+        rows = await db.select().from(status).where(eq(status.sourceMessageKey, key));
+        expect(rows.map((row) => row.userID).sort()).toEqual([userID, colleagueIds[1]].sort());
+        expect(rows.every((row) => row.status === 'FROM_HOME')).toBe(true);
+
+        await enqueueSlackEvent({
+          ...original,
+          event: {
+            type: 'message',
+            subtype: 'message_deleted',
+            channel,
+            deleted_ts: messageTs,
+            event_ts: '1788766600.000001',
+          },
+        });
+        expect(await db.select().from(status).where(eq(status.sourceMessageKey, key))).toEqual([]);
+      } finally {
+        await db.delete(users).where(inArray(users.userId, colleagueIds));
+      }
+    });
+
+    it.each([
+      [
+        'WFH, <@U123> is at a client',
+        { ...extraction, intervals: [{ ...extraction.intervals[0], mentionedUserIds: [] }] },
+      ],
+      [
+        'At a client for a meeting with <@U123>',
+        {
+          ...extraction,
+          intervals: [
+            { ...extraction.intervals[0], status: 'AT_CLIENT' as const, mentionedUserIds: [] },
+          ],
+        },
+      ],
+      [
+        'Is <@U123> also WFH?',
+        { decision: 'review' as const, reason: 'other_person' as const, intervals: [] },
+      ],
+      [
+        '<@U123> is WFH',
+        { decision: 'review' as const, reason: 'other_person' as const, intervals: [] },
+      ],
+    ])('does not copy unrelated or coworker-only attendance: %s', async (message, output) => {
+      const colleagueId = randomUUID();
+      try {
+        await db.insert(users).values({
+          userId: colleagueId,
+          email: `${colleagueId}@example.com`,
+          slackTeamId: team,
+          slackUserId: 'U123',
+        });
+        vi.mocked(extractAttendance).mockResolvedValue(output);
+        await enqueueSlackEvent({ ...original, event: { ...original.event, text: message } });
+        await makeQueuedMessageDue();
+        await processSlackInbox();
+        expect(await db.select().from(status).where(eq(status.userID, colleagueId))).toEqual([]);
+        expect(await db.select().from(status).where(eq(status.userID, userID))).toHaveLength(
+          output.decision === 'apply' ? 1 : 0
+        );
+      } finally {
+        await db.delete(users).where(eq(users.userId, colleagueId));
+      }
+    });
+
     it('keeps a relevant Slack emoji when extraction has no comment and replaces it on edit', async () => {
       await enqueueSlackEvent({
         ...original,
@@ -658,7 +806,14 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
                     reason: decision === 'apply' ? 'clear' : 'uncertain_status',
                     intervals:
                       decision === 'apply'
-                        ? [{ ...extraction.intervals[0], status: 'IN_LATE', comment }]
+                        ? [
+                            {
+                              ...extraction.intervals[0],
+                              status: 'IN_LATE',
+                              comment,
+                              mentionedUserIds: [],
+                            },
+                          ]
                         : [],
                   }),
                 },

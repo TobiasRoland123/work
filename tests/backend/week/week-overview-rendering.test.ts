@@ -673,3 +673,35 @@ describe('status emoji presentation', () => {
     expect(html).not.toMatch(/<span aria-hidden="true">[^<]* <\/span>/u);
   });
 });
+
+describe('shared announcement attribution', () => {
+  it.each([
+    ['Ulla', 'Announced by Ulla'],
+    [null, 'Announced by a colleague'],
+  ])('shows the source author in person details and the week tooltip: %s', (name, expected) => {
+    const row = status({
+      status: 'AT_CLIENT',
+      sourceMessageKey: 'T:C:123',
+      sourceAuthor: { name },
+    });
+    const html = renderToStaticMarkup(
+      React.createElement(ProfileListItem, {
+        showStatus: true,
+        user: { userId: 'anna', email: 'anna@example.com', status: row },
+      })
+    );
+    expect(html).toContain(expected);
+    expect(renderWeek(row).html).toContain(expected);
+  });
+  it('leaves self-authored and manual status details without colleague attribution', () => {
+    for (const sourceMessageKey of ['T:C:123', null]) {
+      const html = renderToStaticMarkup(
+        React.createElement(ProfileListItem, {
+          showStatus: true,
+          user: { userId: 'anna', email: 'anna@example.com', status: status({ sourceMessageKey }) },
+        })
+      );
+      expect(html).not.toContain('Announced by');
+    }
+  });
+});
