@@ -19,6 +19,7 @@ import { WeekOverview } from '@/components/week/WeekOverview';
 import { isInOffice, personName } from '@/components/week/presence';
 import { useLastSeen } from '@/components/week/lastSeen';
 import type { WeekLayout } from '@/components/week/layoutPreference';
+import { rememberWeekScope } from '@/components/week/scopePreference';
 
 /** `week` is a work week's Monday; without it the view is one day, and no day means today. */
 type View = { week?: string; day?: string };
@@ -243,6 +244,9 @@ export const WeekOverviewWrapper = ({
       if (channel) void supabase?.removeChannel(channel);
     };
   }, [refetchProfiles, show]);
+
+  // Remember whether a day or a week was last on screen, so the next plain visit opens it again.
+  useEffect(() => rememberWeekScope(view.week ? 'week' : 'day'), [view.week]);
 
   const todayOnly = !view.week;
   const viewDays = view.week ? workWeekDays(view.week) : [view.day ?? today];
