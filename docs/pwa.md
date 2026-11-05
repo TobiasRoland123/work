@@ -21,6 +21,17 @@ Open WØRK in Safari, choose **Share**, then **Add to Home Screen**. If Safari o
 **Open as Web App**, leave it enabled. Launch the new home-screen icon. The app
 provides an Apple touch icon and standalone web app metadata.
 
+## Phone invitation
+
+Until a person closes it once, WØRK shows a QR code on desktop browsers that
+opens `/today` on the same host, with short install steps. It waits until the
+person has had WØRK in view for 30 seconds, counting across in-app navigation
+but not while the tab is hidden, and never opens over another dialog such as
+the status drawer. A full reload restarts the wait. Closing it any way
+sets `users.phone_invite_dismissed_at`, so it never appears again for that
+person on any computer. It is never shown on phone-sized or touch screens or
+inside the installed app, and those visits don't count as a dismissal.
+
 ## What changes after installation
 
 - The installed app uses standalone display, removing the regular browser

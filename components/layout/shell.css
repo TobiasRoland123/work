@@ -577,6 +577,28 @@
   width: 44px;
   height: 44px;
 }
+.office-phone-invite {
+  text-align: center;
+}
+.office-phone-invite h2 {
+  padding-right: 0;
+}
+.office-phone-invite ol {
+  text-align: left;
+}
+.office-phone-invite-icon {
+  margin: 0 auto 12px;
+  color: var(--office-muted);
+}
+.office-phone-invite-qr {
+  display: block;
+  width: 200px;
+  height: 200px;
+  margin: 0 auto 20px;
+  padding: 8px;
+  border-radius: 8px;
+  background: #fff;
+}
 .office-install-dialog button:focus-visible {
   outline: 2px solid var(--office-link);
   outline-offset: 3px;
