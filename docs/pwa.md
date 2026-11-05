@@ -23,10 +23,11 @@ provides an Apple touch icon and standalone web app metadata.
 
 ## Phone invitation
 
-The first time a person signs in on a desktop browser, WØRK shows a QR code that
-opens `/today` on the same host, with short install steps. It is shown once per
-person per browser (`phone-app-invite:<userId>` in localStorage), and never on
-phone-sized or touch screens or inside the installed app.
+Until a person closes it once, WØRK shows a QR code on desktop browsers that
+opens `/today` on the same host, with short install steps. Closing it any way
+sets `users.phone_invite_dismissed_at`, so it never appears again for that
+person on any computer. It is never shown on phone-sized or touch screens or
+inside the installed app, and those visits don't count as a dismissal.
 
 ## What changes after installation
 

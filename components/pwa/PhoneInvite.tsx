@@ -3,16 +3,16 @@
 import { useEffect, useState } from 'react';
 import * as Dialog from '@radix-ui/react-dialog';
 import { Smartphone, X } from 'lucide-react';
-import {
-  hasSeenPhoneInvite,
-  rememberPhoneInvite,
-  shouldInviteToPhone,
-} from './phone-invite-storage';
+import { dismissPhoneInviteAction } from '@/app/actions/phoneInviteActions';
 
 const DESKTOP = '(min-width: 768px) and (pointer: fine)';
 
-/** Shows a one-time QR code inviting a desktop user to open WØRK on their phone and install it. */
-export function PhoneInvite({ userId }: { userId: string }) {
+/**
+ * Invites a desktop user to open WØRK on their phone and install it. Rendered only until the
+ * person has closed it once; closing it records that on their account. Phone-sized screens and
+ * the installed app never show it, since a QR code needs a second device.
+ */
+export function PhoneInvite() {
   const [qrCode, setQrCode] = useState<string | null>(null);
   const [open, setOpen] = useState(false);
 
@@ -20,12 +20,7 @@ export function PhoneInvite({ userId }: { userId: string }) {
     const standalone =
       window.matchMedia('(display-mode: standalone)').matches ||
       Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
-    const invite = shouldInviteToPhone({
-      seen: hasSeenPhoneInvite(window.localStorage, userId),
-      standalone,
-      desktop: window.matchMedia(DESKTOP).matches,
-    });
-    if (!invite) return;
+    if (standalone || !window.matchMedia(DESKTOP).matches) return;
 
     let cancelled = false;
     // Loaded only for the few visits that show the invitation.
@@ -40,8 +35,6 @@ export function PhoneInvite({ userId }: { userId: string }) {
       )
       .then((svg) => {
         if (cancelled) return;
-        // Counted as seen as soon as it appears, so closing it any way means it stays closed.
-        rememberPhoneInvite(window.localStorage, userId);
         setQrCode(`data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`);
         setOpen(true);
       })
@@ -51,12 +44,18 @@ export function PhoneInvite({ userId }: { userId: string }) {
     return () => {
       cancelled = true;
     };
-  }, [userId]);
+  }, []);
+
+  function changeOpen(value: boolean) {
+    setOpen(value);
+    // Closing it any way counts. If saving fails, it is offered again on a later visit.
+    if (!value) void dismissPhoneInviteAction();
+  }
 
   if (!qrCode) return null;
 
   return (
-    <Dialog.Root open={open} onOpenChange={setOpen}>
+    <Dialog.Root open={open} onOpenChange={changeOpen}>
       <Dialog.Portal>
         <Dialog.Overlay className="office-dialog-overlay" />
         <Dialog.Content className="office-install-dialog office-phone-invite">

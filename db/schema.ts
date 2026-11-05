@@ -58,6 +58,8 @@ export const users = pgTable(
     slackUserId: varchar('slack_user_id', { length: 32 }),
     slackTeamId: varchar('slack_team_id', { length: 32 }),
     slackDeactivated: boolean('slack_deactivated').default(false).notNull(),
+    // When the person closed the invitation to try WØRK on their phone. Null until then.
+    phoneInviteDismissedAt: timestamp('phone_invite_dismissed_at', { withTimezone: true }),
   },
   (table) => [
     unique('users_email_unique').on(table.email),

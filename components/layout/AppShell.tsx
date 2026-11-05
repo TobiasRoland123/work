@@ -63,14 +63,15 @@ export const isCurrentPath = (pathname: string | null, href: string) =>
 
 export function AppShell({
   children,
-  userId,
+  showPhoneInvite = false,
   firstName,
   showMessageQuality = false,
   showEmployeeStats = false,
   showRoleManagement = false,
 }: {
   children: ReactNode;
-  userId?: string;
+  /** True until the person has closed the phone app invitation. */
+  showPhoneInvite?: boolean;
   firstName?: string | null;
   showMessageQuality?: boolean;
   showEmployeeStats?: boolean;
@@ -149,7 +150,7 @@ export function AppShell({
         </Link>
       </nav>
       <div className="app-shell-content">{children}</div>
-      {userId && <PhoneInvite userId={userId} />}
+      {showPhoneInvite && <PhoneInvite />}
     </div>
   );
 }
