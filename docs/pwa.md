@@ -8,8 +8,7 @@ including `/today`, `/contact`, `/profile`, and `/login`. The normal launch page
 ## Android
 
 1. Open WØRK in Chrome at the production address.
-2. Choose **Install WØRK** in the app's More menu when offered, or use Chrome's
-   **Install app** menu option.
+2. Open Chrome's menu and choose **Install app**.
 3. Launch WØRK from its home-screen icon.
 
 If an older home-screen shortcut still displays the title/domain toolbar, remove

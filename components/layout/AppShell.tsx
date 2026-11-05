@@ -16,7 +16,6 @@ import {
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { isSandbox } from '@/lib/sandbox/enabled';
-import { InstallApp, useInstallApp } from '@/components/pwa/InstallApp';
 import './shell.css';
 
 const links = [
@@ -76,8 +75,6 @@ export function AppShell({
 }) {
   const pathname = usePathname();
   const moreMenuRef = useRef<HTMLDivElement>(null);
-  const moreButtonRef = useRef<HTMLButtonElement>(null);
-  const installer = useInstallApp();
   const special = [
     ...(showMessageQuality ? [reviewLink, aiCostLink] : []),
     ...(showEmployeeStats ? [employeeStatsLink] : []),
@@ -113,10 +110,9 @@ export function AppShell({
         </Link>
         <div className="office-nav-links">
           {links.map((link) => renderLink(link))}
-          {(special.length > 0 || installer.available || installer.instructionsOpen) && (
+          {special.length > 0 && (
             <>
               <button
-                ref={moreButtonRef}
                 type="button"
                 className="office-nav-more"
                 popoverTarget="office-nav-special"
@@ -134,21 +130,6 @@ export function AppShell({
                 {special.map((link) =>
                   renderLink(link, () => moreMenuRef.current?.hidePopover?.())
                 )}
-                <InstallApp
-                  installer={installer}
-                  onInstall={() => moreMenuRef.current?.hidePopover?.()}
-                  onClose={() => {
-                    const more = moreButtonRef.current;
-                    if (more?.offsetParent) more.focus();
-                    else {
-                      const wordmark =
-                        document.querySelector<HTMLAnchorElement>('.office-wordmark');
-                      if (wordmark?.offsetParent) wordmark.focus();
-                      else
-                        document.querySelector<HTMLAnchorElement>('.office-nav-links > a')?.focus();
-                    }
-                  }}
-                />
               </div>
             </>
           )}
