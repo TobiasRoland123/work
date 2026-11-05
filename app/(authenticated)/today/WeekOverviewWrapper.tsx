@@ -24,6 +24,11 @@ import { rememberWeekScope } from '@/components/week/scopePreference';
 /** `week` is a work week's Monday; without it the view is one day, and no day means today. */
 type View = { week?: string; day?: string };
 
+/** How often attendance is refetched without a live broadcast channel. */
+const FALLBACK_POLL_MS = 15_000;
+/** How often attendance is refetched while broadcasts are arriving. */
+const LIVE_POLL_MS = 3 * 60_000;
+
 const sameView = (a: View, b: View) => a.week === b.week && a.day === b.day;
 const viewKey = (view: View, today: string) =>
   view.week ? `week:${view.week}` : `day:${view.day ?? today}`;
@@ -221,14 +226,29 @@ export const WeekOverviewWrapper = ({
   // Synchronize server attendance with broadcasts, the clock, and browser visibility.
   useEffect(() => {
     mounted.current = true;
+    let lastRefresh = Date.now();
     const refresh = () => {
-      if (document.visibilityState === 'visible') void refetchProfiles();
+      if (document.visibilityState !== 'visible') return;
+      lastRefresh = Date.now();
+      void refetchProfiles();
     };
+    // While broadcasts arrive, polling is only a safety net for missed events and the date
+    // rolling over. Without a live channel (no Supabase, or it dropped), it is the only source.
+    let live = false;
+    let joined = false;
     const channel = supabase
       ?.channel('status-sync')
       .on('broadcast', { event: 'status_updated' }, refresh)
-      .subscribe();
-    const timer = window.setInterval(refresh, 15_000);
+      .subscribe((state) => {
+        live = state === 'SUBSCRIBED';
+        if (!live) return;
+        // Broadcasts sent while the channel was down are lost, so catch up after a rejoin.
+        if (joined) refresh();
+        joined = true;
+      });
+    const timer = window.setInterval(() => {
+      if (!live || Date.now() - lastRefresh >= LIVE_POLL_MS) refresh();
+    }, FALLBACK_POLL_MS);
     document.addEventListener('visibilitychange', refresh);
     const onPopState = () => {
       const next = viewFromHref(window.location.href);
