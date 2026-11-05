@@ -21,6 +21,13 @@ Open WØRK in Safari, choose **Share**, then **Add to Home Screen**. If Safari o
 **Open as Web App**, leave it enabled. Launch the new home-screen icon. The app
 provides an Apple touch icon and standalone web app metadata.
 
+## Phone invitation
+
+The first time a person signs in on a desktop browser, WØRK shows a QR code that
+opens `/today` on the same host, with short install steps. It is shown once per
+person per browser (`phone-app-invite:<userId>` in localStorage), and never on
+phone-sized or touch screens or inside the installed app.
+
 ## What changes after installation
 
 - The installed app uses standalone display, removing the regular browser

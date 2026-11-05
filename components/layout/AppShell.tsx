@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { isSandbox } from '@/lib/sandbox/enabled';
+import { PhoneInvite } from '@/components/pwa/PhoneInvite';
 import './shell.css';
 
 const links = [
@@ -62,12 +63,14 @@ export const isCurrentPath = (pathname: string | null, href: string) =>
 
 export function AppShell({
   children,
+  userId,
   firstName,
   showMessageQuality = false,
   showEmployeeStats = false,
   showRoleManagement = false,
 }: {
   children: ReactNode;
+  userId?: string;
   firstName?: string | null;
   showMessageQuality?: boolean;
   showEmployeeStats?: boolean;
@@ -146,6 +149,7 @@ export function AppShell({
         </Link>
       </nav>
       <div className="app-shell-content">{children}</div>
+      {userId && <PhoneInvite userId={userId} />}
     </div>
   );
 }

@@ -19,6 +19,7 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
   const showRoleManagement = await isAdmin(userId);
   return (
     <AppShell
+      userId={userId}
       firstName={user?.firstName}
       showMessageQuality={showMessageQuality}
       showEmployeeStats={showEmployeeStats}
