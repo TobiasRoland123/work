@@ -10,6 +10,7 @@ const mocked = vi.hoisted(() => ({
   isAdmin: vi.fn(),
   getUserRole: vi.fn(),
   createNewStatus: vi.fn(),
+  createColleagueStatuses: vi.fn(),
 }));
 
 vi.mock('@/lib/auth/require-user', () => ({ requireUserId: mocked.requireUserId }));
@@ -18,7 +19,10 @@ vi.mock('@/lib/auth/roles', () => ({
   getUserRole: mocked.getUserRole,
 }));
 vi.mock('@/lib/services/statusService', () => ({
-  statusService: { createNewStatus: mocked.createNewStatus },
+  statusService: {
+    createNewStatus: mocked.createNewStatus,
+    createColleagueStatuses: mocked.createColleagueStatuses,
+  },
 }));
 
 import { planColleagueStatusAction, planStatusAction } from '@/app/actions/statusActions';
@@ -33,6 +37,7 @@ describe('setting a colleague’s status', () => {
     mocked.isAdmin.mockResolvedValue(true);
     mocked.getUserRole.mockResolvedValue('EMPLOYEE');
     mocked.createNewStatus.mockResolvedValue({});
+    mocked.createColleagueStatuses.mockResolvedValue([]);
   });
 
   it('saves the plan on the colleague’s behalf for an admin', async () => {
@@ -41,16 +46,18 @@ describe('setting a colleague’s status', () => {
       count: 1,
     });
     expect(mocked.isAdmin).toHaveBeenCalledWith('admin');
-    expect(mocked.createNewStatus).toHaveBeenCalledWith(
-      expect.objectContaining({ userID: 'colleague', status: 'FROM_HOME', fromDate: from })
-    );
+    // Saved through the recorded path, attributed to the admin.
+    expect(mocked.createColleagueStatuses).toHaveBeenCalledWith('admin', 'colleague', [
+      expect.objectContaining({ status: 'FROM_HOME', fromDate: from }),
+    ]);
+    expect(mocked.createNewStatus).not.toHaveBeenCalled();
   });
 
   it('refuses managers and employees', async () => {
     mocked.isAdmin.mockResolvedValue(false);
     const result = await planColleagueStatusAction('colleague', plan);
     expect(result.ok).toBe(false);
-    expect(mocked.createNewStatus).not.toHaveBeenCalled();
+    expect(mocked.createColleagueStatuses).not.toHaveBeenCalled();
   });
 
   it('refuses people outside the active workspace', async () => {
@@ -60,19 +67,20 @@ describe('setting a colleague’s status', () => {
       ok: false,
       error: 'That person is not an active member of the workspace.',
     });
-    expect(mocked.createNewStatus).not.toHaveBeenCalled();
+    expect(mocked.createColleagueStatuses).not.toHaveBeenCalled();
   });
 
   it('rejects a non-string colleague id', async () => {
     const result = await planColleagueStatusAction({ userId: 'colleague' }, plan);
     expect(result.ok).toBe(false);
-    expect(mocked.createNewStatus).not.toHaveBeenCalled();
+    expect(mocked.createColleagueStatuses).not.toHaveBeenCalled();
   });
 
   it('keeps saving the signed-in person’s own plan without an admin check', async () => {
     mocked.requireUserId.mockResolvedValue('employee');
     await expect(planStatusAction(plan)).resolves.toEqual({ ok: true, count: 1 });
     expect(mocked.isAdmin).not.toHaveBeenCalled();
+    expect(mocked.createColleagueStatuses).not.toHaveBeenCalled();
     expect(mocked.createNewStatus).toHaveBeenCalledWith(
       expect.objectContaining({ userID: 'employee' })
     );

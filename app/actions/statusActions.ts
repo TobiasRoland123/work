@@ -33,13 +33,15 @@ export async function planColleagueStatusAction(colleagueUserId: unknown, input:
     return { ok: false as const, error: 'Only admins can change a colleague’s status.' };
   if (typeof colleagueUserId !== 'string' || !(await getUserRole(colleagueUserId)))
     return { ok: false as const, error: 'That person is not an active member of the workspace.' };
-  return savePlan(colleagueUserId, input);
+  return savePlan(colleagueUserId, input, adminUserId);
 }
 
-async function savePlan(userID: string, input: unknown) {
+/** `adminUserId` is set when an admin saves the plan for a colleague; the change is recorded. */
+async function savePlan(userID: string, input: unknown, adminUserId?: string) {
   try {
     const planned = planStatuses(input);
-    for (const row of planned) await statusService.createNewStatus({ ...row, userID });
+    if (adminUserId) await statusService.createColleagueStatuses(adminUserId, userID, planned);
+    else for (const row of planned) await statusService.createNewStatus({ ...row, userID });
     return { ok: true as const, count: planned.length };
   } catch (error) {
     if (error instanceof PlanError) return { ok: false as const, error: error.message };

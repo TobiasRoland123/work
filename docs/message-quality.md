@@ -18,6 +18,22 @@ Feedback belongs to the exact message revision and records the reviewer and save
 
 The inbox still clears the text of converted messages, so corrections do not retain the original message text. Open the Slack message to read the phrase. Each correction keeps the message key and exact revision. When that revision's phrase was recorded for shorthand learning, the correction blocks the phrase so it is not learned, or stops matching if it already was (see [Learned shorthands](slack-setup.md#learned-shorthands)). Corrections are scoped to the configured workspace and channel and use the same review permission as the rest of the page.
 
+## Admin status changes
+
+When an admin sets a status for a colleague from the week board, each saved Declaration is also recorded in `admin_status_changes`. A row keeps the admin, the colleague, the new status, note, time and days, and the Declaration it created. `replaced` lists what the colleague's grid showed on those days just before the change, as runs of days with the status, note and, for an imported status, the Slack message key and revision. Days with no Declaration are left out. `overrides_import` is true when any replaced status came from Slack import.
+
+Not every change means the import was wrong: an admin may also record a change of plans or a phone call. Admin changes do not block learned shorthands, and there is no page for them yet. To look for recurring misreadings, count the imported-to-new status pairs:
+
+```sql
+select r->>'status' as imported, c.status as set_by_admin, count(*)
+from admin_status_changes c, jsonb_array_elements(c.replaced) r
+where r->>'sourceMessageKey' is not null
+group by 1, 2
+order by 3 desc;
+```
+
+The inbox clears the text of converted messages, so open the Slack message from its key to read the phrase. Rows are kept when the admin's account is removed and deleted with the colleague's.
+
 ## AI cost dashboard
 
 `/ai-cost` gives reviewers a separate overview of AI spending. It appears as **AI cost** in the navigation next to **Review** (under **More** on mobile) and uses the same access rules. Choose the last 7, 30 or 90 days; 30 days is the default. The page shows the period's reported cost, AI calls, average cost per priced call, input and output tokens, failed calls and calls without a reported cost. A daily chart covers every day in the period, including days without calls; striped bars mark days that include unpriced calls. Below it, the current month to date sits next to the full previous month, and a table breaks the period down by model.
