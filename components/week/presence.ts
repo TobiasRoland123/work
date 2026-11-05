@@ -1,6 +1,7 @@
 import type { DayPresence, Status, UserWithExtras } from '@/db/types';
 import type { StatusType } from '@/components/ui/Status/Status';
 import { announcement } from '@/lib/status/active';
+import { slackText } from '@/lib/slack/text';
 
 export type Tone = 'office' | 'partial' | 'remote' | 'sick' | 'off' | 'away' | 'note' | 'none';
 export type DayGroup = 'office' | 'elsewhere' | 'out' | 'unknown';
@@ -144,7 +145,10 @@ export function segmentWeek(week: readonly DayPresence[]): Segment[] {
 
 /** Timing and details for one day, e.g. "from 10:00 · dentist first". */
 export function dayNote(status: Status | null): string | null {
-  return [timeNote(status), status?.details].filter(Boolean).join(' · ') || null;
+  return (
+    [timeNote(status), status?.details && slackText(status.details)].filter(Boolean).join(' · ') ||
+    null
+  );
 }
 
 /** Day note plus the announced range when it reaches past the visible week. */
@@ -159,5 +163,9 @@ export function segmentNote(segment: Segment, days: readonly string[]): string |
       : status.fromDate && status.fromDate < first
         ? `since ${shortDate(status.fromDate)}`
         : null;
-  return [timeNote(status), range, status.details].filter(Boolean).join(' · ') || null;
+  return (
+    [timeNote(status), range, status.details && slackText(status.details)]
+      .filter(Boolean)
+      .join(' · ') || null
+  );
 }

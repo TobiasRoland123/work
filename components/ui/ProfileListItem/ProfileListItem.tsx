@@ -1,5 +1,6 @@
 import { announcementAttribution } from '@/lib/status/attribution';
 import { getSlackImageUrl } from '@/lib/slack/image';
+import { slackText } from '@/lib/slack/text';
 import Image from 'next/image';
 import { Status } from '../Status/Status';
 import { AIIndicator } from '../Status/AIIndicator';
@@ -148,7 +149,9 @@ export function ProfileListItem({ user, showStatus = false }: ProfileListItemPro
           <div className={'mt-2'}>
             <small>Details:</small>
             <div className={'flex justify-between'}>
-              <p className="max-w-[50ch] bg-white-blue p-2 rounded-md">{user.status.details}</p>
+              <p className="max-w-[50ch] bg-white-blue p-2 rounded-md">
+                {slackText(user.status.details)}
+              </p>
             </div>
           </div>
         )}
