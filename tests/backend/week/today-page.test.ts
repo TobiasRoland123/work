@@ -7,6 +7,9 @@ const mocked = vi.hoisted(() => ({
   getUpcoming: vi.fn(),
   listPinnedIds: vi.fn(),
   cookies: vi.fn(),
+  redirect: vi.fn((url: string) => {
+    throw new Error(`NEXT_REDIRECT ${url}`);
+  }),
 }));
 
 vi.mock('@/lib/auth/require-user', () => ({ requirePageUserId: mocked.requirePageUserId }));
@@ -18,6 +21,7 @@ vi.mock('@/lib/services/pinService', () => ({
   pinService: { listPinnedIds: mocked.listPinnedIds },
 }));
 vi.mock('next/headers', () => ({ cookies: mocked.cookies }));
+vi.mock('next/navigation', () => ({ redirect: mocked.redirect }));
 vi.mock('@/app/(authenticated)/today/WeekOverviewWrapper', () => ({
   WeekOverviewWrapper: () => null,
 }));
@@ -34,6 +38,7 @@ describe('/today page days', () => {
     mocked.getUpcoming.mockReset().mockResolvedValue([]);
     mocked.listPinnedIds.mockReset().mockResolvedValue([]);
     mocked.cookies.mockReset().mockResolvedValue({ get: () => undefined });
+    mocked.redirect.mockClear();
   });
   afterEach(() => {
     vi.useRealTimers();
@@ -123,6 +128,40 @@ describe('/today page days', () => {
     });
     const chronological = await WeekPage({ searchParams: Promise.resolve({}) });
     expect(chronological.props.initialLayout).toBe('chronological');
+  });
+
+  describe('remembered day or week', () => {
+    const scope = (value: string) =>
+      mocked.cookies.mockResolvedValue({
+        get: (name: string) => (name === 'week-scope' ? { value } : undefined),
+      });
+
+    it('sends a plain visit to the current work week when the visitor last looked at a week', async () => {
+      scope('week');
+
+      await expect(WeekPage({ searchParams: Promise.resolve({}) })).rejects.toThrow(
+        'NEXT_REDIRECT /today?week=2026-09-28'
+      );
+      expect(mocked.getWeekOverview).not.toHaveBeenCalled();
+    });
+
+    it.each(['day', 'garbage'])('opens today for the %s scope', async (value) => {
+      scope(value);
+
+      const element = await WeekPage({ searchParams: Promise.resolve({}) });
+
+      expect(mocked.redirect).not.toHaveBeenCalled();
+      expect(element.props.days).toEqual(['2026-09-26']);
+    });
+
+    it('keeps an explicit day even when the visitor last looked at a week', async () => {
+      scope('week');
+
+      const element = await WeekPage({ searchParams: Promise.resolve({ day: '2026-09-24' }) });
+
+      expect(mocked.redirect).not.toHaveBeenCalled();
+      expect(element.props.days).toEqual(['2026-09-24']);
+    });
   });
 
   it('keeps week mode when both query parameters are present', async () => {

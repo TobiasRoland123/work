@@ -8,6 +8,7 @@ import {
   isWeekPanelOpen,
   rememberWeekPanel,
 } from '@/components/week/panelPreference';
+import { WEEK_SCOPE_COOKIE, rememberWeekScope, weekScope } from '@/components/week/scopePreference';
 import { workWeekDays } from '@/lib/status/week';
 
 vi.mock('@/components/layout/PageHeader', () => ({
@@ -105,6 +106,24 @@ describe('side panel preference', () => {
     rememberWeekPanel(open);
     expect(document.cookie).toBe(
       `${WEEK_PANEL_COOKIE}=${value}; path=/; max-age=31536000; samesite=lax`
+    );
+  });
+});
+
+describe('remembered day or week', () => {
+  it('is a single day unless the cookie says week', () => {
+    expect(weekScope(undefined)).toBe('day');
+    expect(weekScope('day')).toBe('day');
+    expect(weekScope('garbage')).toBe('day');
+    expect(weekScope('week')).toBe('week');
+  });
+
+  it.each(['day', 'week'] as const)('remembers %s in a year-long site-wide cookie', (scope) => {
+    const document = { cookie: '' };
+    vi.stubGlobal('document', document);
+    rememberWeekScope(scope);
+    expect(document.cookie).toBe(
+      `${WEEK_SCOPE_COOKIE}=${scope}; path=/; max-age=31536000; samesite=lax`
     );
   });
 });
