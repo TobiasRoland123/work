@@ -99,7 +99,7 @@ After login, `/today` failed with digest `3915557996` because `pinned_colleagues
 
 The existing migrations `0043` through `0048` were applied in order through Supabase MCP, each in its own transaction. Post-repair checks passed for all 16 application table queries and the pinned-colleagues service query, with counts unchanged at 75 users and 121 attendance records. The Supabase migration ledger now records these six migrations; the historical Drizzle journal remains absent. Do not apply them again or replay the full historical chain with `pnpm db:migrate`. A fresh browser sign-in remains the end-to-end verification step.
 
-Take a database backup and verify which migrations the target has applied. The repository's earliest historical migration is an introspection baseline and cannot initialize a blank database by replaying the complete history.
+Vercel builds now apply pending migrations once the database has a recorded baseline; see [Database migrations](database-migrations.md). Until then, take a database backup and verify which migrations the target has applied. The repository's earliest historical migration is an introspection baseline and cannot initialize a blank database by replaying the complete history.
 
 For the 4 November 2026 `/today` failure caused by the missing `status_supersessions` table, follow the [targeted migration 0049 repair](production-status-supersessions-repair.md). Merging the repair entrypoint does not apply it to production.
 

@@ -82,6 +82,8 @@ Visit drizzle dashboard at [https://local.drizzle.studio/](https://local.drizzle
 
 `pnpm run db:generate`
 
+Vercel builds apply new migrations automatically; see [docs/database-migrations.md](docs/database-migrations.md).
+
 ### Push schema changes directly to the database
 
 `pnpm run db:push`
