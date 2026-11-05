@@ -203,6 +203,8 @@
   }
   body {
     @apply bg-background text-foreground;
+    /* iOS Safari needs a positioned body for the drawer overlay to cover the page. */
+    position: relative;
   }
 }
 
