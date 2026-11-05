@@ -351,6 +351,13 @@
       "when": 1793753555509,
       "tag": "0049_status_supersessions",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1793862655759,
+      "tag": "0050_admin_status_changes",
+      "breakpoints": true
     }
   ]
 }
