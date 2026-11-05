@@ -1,9 +1,27 @@
-import 'dotenv/config';
-import { migrate } from 'drizzle-orm/node-postgres/migrator';
-import { db, pool } from '../db';
+/**
+ * Apply pending migrations to the database the app connects to. Refuses to run without a
+ * migration ledger instead of replaying the whole history; see docs/database-migrations.md.
+ */
+import { pool } from '../db';
+import {
+  applyPendingMigrations,
+  MigrationError,
+  readMigrations,
+} from '../lib/db-migrations/runner';
 
 async function main() {
-  try { await migrate(db, { migrationsFolder: './db' }); }
-  finally { await pool.end(); }
+  const client = await pool.connect();
+  try {
+    await applyPendingMigrations(client, readMigrations('./db'));
+  } finally {
+    client.release();
+    await pool.end();
+  }
 }
-main().catch(() => { console.error('Database migration failed. Check the database migration baseline and connection.'); process.exitCode = 1; });
+
+main().catch((error) => {
+  console.error(
+    error instanceof MigrationError ? error.message : `Database migration failed: ${error.message}`
+  );
+  process.exitCode = 1;
+});
