@@ -1,4 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path from 'node:path';
+import { afterEach, describe, expect, it } from 'vitest';
 import {
   deployDecision,
   MigrationError,
@@ -35,12 +38,58 @@ describe('pendingMigrations', () => {
 });
 
 describe('readMigrations', () => {
-  it('reads the repository’s journal in order with Drizzle’s hashes', () => {
-    const migrations = readMigrations('./db');
-    expect(migrations.length).toBeGreaterThan(50);
-    expect(migrations.at(-1)?.tag).toMatch(/^\d{4}_/);
-    expect(migrations.every((m, i) => !i || m.when > migrations[i - 1].when)).toBe(true);
-    expect(migrations.every((m) => /^[0-9a-f]{64}$/.test(m.hash))).toBe(true);
+  let folder: string | undefined;
+
+  afterEach(() => {
+    if (folder) rmSync(folder, { recursive: true, force: true });
+    folder = undefined;
+  });
+
+  function fixture(secondTimestamp = 200) {
+    folder = mkdtempSync(path.join(tmpdir(), 'work-migration-unit-'));
+    mkdirSync(path.join(folder, 'meta'));
+    writeFileSync(
+      path.join(folder, 'meta/_journal.json'),
+      JSON.stringify({
+        entries: [
+          { tag: '0001_a', when: 100, breakpoints: true },
+          { tag: '0002_b', when: secondTimestamp, breakpoints: true },
+        ],
+      })
+    );
+    writeFileSync(
+      path.join(folder, '0001_a.sql'),
+      'SELECT 1;--> statement-breakpoint\n \n--> statement-breakpointSELECT 2;'
+    );
+    writeFileSync(path.join(folder, '0002_b.sql'), 'SELECT 3;');
+    return folder;
+  }
+
+  it('keeps each journal entry paired with its SQL and content hash, omitting empty statements', () => {
+    expect(readMigrations(fixture())).toEqual([
+      {
+        tag: '0001_a',
+        when: 100,
+        hash: '68f59c05d5ef3dd84f92fc63c0a5d5803b643d3f9ff04b980b576523d5ba2fc3',
+        statements: ['SELECT 1;', 'SELECT 2;'],
+      },
+      {
+        tag: '0002_b',
+        when: 200,
+        hash: '6d51e258cb323b98bf07dd6658c78c08adaf998a8e717f85e02d9c7ce869608b',
+        statements: ['SELECT 3;'],
+      },
+    ]);
+  });
+
+  it.each([99, 100])('refuses a non-increasing journal timestamp %s', (timestamp) => {
+    expect(() => readMigrations(fixture(timestamp))).toThrow('0002_b is not newer than 0001_a');
+  });
+
+  it('fails rather than silently omitting a missing SQL file', () => {
+    const migrationsFolder = fixture();
+    rmSync(path.join(migrationsFolder, '0002_b.sql'));
+    expect(() => readMigrations(migrationsFolder)).toThrow(/0002_b\.sql/);
   });
 });
 
@@ -75,5 +124,30 @@ describe('deployDecision', () => {
 
   it('fails the build when a migrating deployment has no database URL', () => {
     expect(() => deployDecision({ VERCEL_ENV: 'production' })).toThrow(/DATABASE_URL/);
+  });
+
+  it('uses the documented legacy URL only when DATABASE_URL is absent', () => {
+    expect(deployDecision({ VERCEL_ENV: 'production', NEXT_PUBLIC_DATABASE_URL: url })).toEqual({
+      run: true,
+      connectionString: url,
+    });
+    expect(
+      deployDecision({
+        VERCEL_ENV: 'production',
+        DATABASE_URL: url,
+        NEXT_PUBLIC_DATABASE_URL: 'postgresql://legacy/other',
+      })
+    ).toEqual({ run: true, connectionString: url });
+  });
+
+  it('does not require credentials when skipped or given an unknown deployment target', () => {
+    expect(deployDecision({ VERCEL_ENV: 'production', SKIP_DEPLOY_MIGRATIONS: '1' })).toMatchObject(
+      {
+        run: false,
+      }
+    );
+    expect(deployDecision({ VERCEL_ENV: 'staging', DATABASE_URL: url })).toMatchObject({
+      run: false,
+    });
   });
 });

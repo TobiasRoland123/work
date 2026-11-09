@@ -31,13 +31,23 @@ describe('daily cost views', () => {
 
   it('distinguishes unknown, partial, zero cost and no calls in the daily table', () => {
     const html = render('table');
-    expect(html).toContain('27 Oct');
-    expect(html).toContain('28 Oct');
-    expect(html).toContain('Unknown');
-    expect(html).toContain('$0.0020 + unknown');
-    expect(html.match(/\$0.0000/g)).toHaveLength(2);
-    expect(html).toContain('<td>100</td>');
-    expect(html).toContain('Without cost');
+    const rows = [...html.matchAll(/<tr>([\s\S]*?)<\/tr>/g)].map((match) => match[1]);
+    const expected = [
+      ['Tue 27 Oct', '<td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>$0.0000</td>'],
+      ['Wed 28 Oct', '<td>1</td><td>0</td><td>0</td><td>0</td><td>1</td><td>Unknown</td>'],
+      ['Thu 29 Oct', '<td>2</td><td>0</td><td>100</td><td>0</td><td>0</td><td>$0.0030</td>'],
+      ['Fri 30 Oct', '<td>1</td><td>1</td><td>0</td><td>0</td><td>0</td><td>$0.0000</td>'],
+      [
+        'Sat 31 Oct',
+        '<td>2</td><td>0</td><td>0</td><td>0</td><td>1</td><td>$0.0020 + unknown</td>',
+      ],
+    ];
+    for (const [date, cells] of expected) {
+      expect(
+        rows.find((row) => row.startsWith(`<th scope="row">${date}</th>`)),
+        date
+      ).toBe(`<th scope="row">${date}</th>${cells}`);
+    }
   });
 
   it('retains unknown costs as gaps in the daily line', () => {

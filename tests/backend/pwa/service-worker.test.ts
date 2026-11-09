@@ -70,6 +70,17 @@ describe('offline service worker', () => {
     expect(w.cache.match).toHaveBeenCalledWith('/offline.html');
   });
 
+  it('returns a network error when the offline document was evicted', async () => {
+    const w = worker();
+    w.fetch.mockRejectedValue(new TypeError('Failed to fetch'));
+    w.cache.match.mockResolvedValue(undefined);
+    const respondWith = vi.fn();
+    w.listeners.get('fetch')!({ request: navigation(), respondWith });
+    const response = await respondWith.mock.calls[0][0];
+    expect(response.type).toBe('error');
+    expect(response.status).toBe(0);
+  });
+
   it('preserves server errors instead of masking them as offline', async () => {
     const w = worker();
     const response = new Response('server unavailable', { status: 503 });

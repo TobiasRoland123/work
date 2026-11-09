@@ -63,8 +63,25 @@ describe('messages handled views', () => {
       { ai: 8, withoutAi: 0, total: 8 },
     ]) {
       const html = render(view, data);
-      expect(html).toContain('0%');
-      expect(html).toContain('100%');
+      if (view === 'table') {
+        expect(html).toContain(
+          `<th scope="row">With AI</th><td>${data.ai}</td><td>${data.ai ? 100 : 0}%</td>`
+        );
+        expect(html).toContain(
+          `<th scope="row">Without AI</th><td>${data.withoutAi}</td><td>${data.withoutAi ? 100 : 0}%</td>`
+        );
+      } else {
+        expect(html).toMatch(
+          new RegExp(
+            `With AI</dt><dd><strong>${data.ai}</strong><small>${data.ai ? 100 : 0}%</small>`
+          )
+        );
+        expect(html).toMatch(
+          new RegExp(
+            `Without AI</dt><dd><strong>${data.withoutAi}</strong><small>${data.withoutAi ? 100 : 0}%</small>`
+          )
+        );
+      }
       expect(html).not.toMatch(/NaN|Infinity/);
     }
   });

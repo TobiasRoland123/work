@@ -50,10 +50,15 @@ describe('Slack event security and normalization', () => {
         message: { ...original.event, text: 'Office at 10', edited: { ts: '1788766500.000001' } },
       },
     };
-    expect(normalizeSlackEvent(event, 'T123', 'C123')).toMatchObject({
+    expect(normalizeSlackEvent(event, 'T123', 'C123')).toEqual({
       messageKey: 'T123:C123:1788766200.000001',
+      teamId: 'T123',
+      channelId: 'C123',
+      messageTs: '1788766200.000001',
       revision: '1788766500.000001',
+      slackUserId: 'U123',
       text: 'Office at 10',
+      state: 'pending',
     });
   });
   it('normalizes deletions without retaining their old text', () => {
@@ -123,5 +128,84 @@ describe('Slack intake diagnostics', () => {
     ['invalid_event', null],
   ])('reports %s without returning the rejected payload', (reason, payload) => {
     expect(inspectSlackEvent(payload, 'T123', 'C123')).toEqual({ reason });
+  });
+});
+
+describe('Slack signature replay window', () => {
+  const body = JSON.stringify(original);
+  const timestamp = '1788766200';
+  const secret = 'test-secret';
+  const signature = `v0=${createHmac('sha256', secret).update(`v0:${timestamp}:${body}`).digest('hex')}`;
+  it.each([
+    [-300001, false],
+    [-300000, true],
+    [300000, true],
+    [300001, false],
+  ] as const)('bounds clock skew at %i milliseconds', (skew, valid) => {
+    expect(
+      verifySlackSignature(body, timestamp, signature, secret, Number(timestamp) * 1000 + skew)
+    ).toBe(valid);
+  });
+  it.each([
+    [null, signature],
+    ['1788766200.5', signature],
+    ['invalid', signature],
+    [timestamp, null],
+    [timestamp, `v1=${'a'.repeat(64)}`],
+    [timestamp, `v0=${'a'.repeat(63)}`],
+  ])('rejects malformed signing headers %# without throwing', (time, sig) => {
+    expect(verifySlackSignature(body, time, sig, secret, Number(timestamp) * 1000)).toBe(false);
+  });
+});
+
+describe('Slack edit and deletion revision fallbacks', () => {
+  it('uses event_ts for an edit without edited.ts while preserving original message identity', () => {
+    const event = {
+      ...original,
+      event: {
+        type: 'message',
+        subtype: 'message_changed',
+        channel: 'C123',
+        event_ts: '1788766500.000001',
+        message: { ...original.event, text: 'Changed' },
+      },
+    };
+    expect(normalizeSlackEvent(event, 'T123', 'C123')).toEqual({
+      messageKey: 'T123:C123:1788766200.000001',
+      teamId: 'T123',
+      channelId: 'C123',
+      messageTs: '1788766200.000001',
+      revision: '1788766500.000001',
+      slackUserId: 'U123',
+      text: 'Changed',
+      state: 'pending',
+    });
+  });
+  it.each([
+    { subtype: 'message_changed', event_ts: '1788766500.000001' },
+    { subtype: 'message_changed', message: original.event },
+    { subtype: 'message_deleted', deleted_ts: original.event.ts },
+    { subtype: 'message_deleted', event_ts: '1788766500.000001' },
+  ])('does not invent missing edit/deletion identifiers %#', (details) => {
+    expect(
+      inspectSlackEvent(
+        {
+          ...original,
+          event: {
+            type: 'message',
+            channel: 'C123',
+            ...details,
+          },
+        },
+        'T123',
+        'C123'
+      )
+    ).toEqual({ reason: 'incomplete_message' });
+  });
+  it.each([
+    ['', 'C123'],
+    ['T123', ''],
+  ])('fails closed without workspace/channel configuration %#', (team, channel) => {
+    expect(inspectSlackEvent(original, team, channel)).toEqual({ reason: 'missing_configuration' });
   });
 });

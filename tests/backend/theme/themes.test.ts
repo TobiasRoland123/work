@@ -67,9 +67,10 @@ describe('palette registry', () => {
   });
 
   it('recognises only registered ids', () => {
-    expect(isPaletteId('ocean')).toBe(true);
-    expect(isPaletteId('neon')).toBe(false);
-    expect(isPaletteId(null)).toBe(false);
+    for (const palette of PALETTES) expect(isPaletteId(palette.id)).toBe(true);
+    for (const invalid of ['neon', 'Ocean', '', null, undefined, 0, ['ocean'], { id: 'ocean' }]) {
+      expect(isPaletteId(invalid)).toBe(false);
+    }
   });
 });
 
@@ -80,8 +81,23 @@ describe('themes.css', () => {
 
   const reference = Object.keys(themes.default?.light ?? {}).sort();
 
-  it('has a token set to compare against', () => {
-    expect(reference.length).toBeGreaterThan(20);
+  it('defines the background, foreground, and action tokens consumed by the interface', () => {
+    expect(reference).toEqual(
+      expect.arrayContaining([
+        'canvas',
+        'page',
+        'surface',
+        'raised',
+        'ink',
+        'muted',
+        'link',
+        'primary',
+        'primary-ink',
+        'accent',
+        'accent-ink',
+        'rail',
+      ])
+    );
   });
 
   for (const { id } of PALETTES) {
@@ -207,14 +223,15 @@ describe('palette init script', () => {
   }
 
   it('restores a saved palette before first paint', () => {
-    expect(run('ocean')).toEqual({ 'data-palette': 'ocean' });
-    expect(run('lavender')).toEqual({ 'data-palette': 'lavender' });
+    for (const { id } of PALETTES.filter(({ id }) => id !== DEFAULT_PALETTE)) {
+      expect(run(id)).toEqual({ 'data-palette': id });
+    }
   });
 
   it('leaves the default look when nothing valid is saved', () => {
     expect(run(null)).toEqual({});
     expect(run('default')).toEqual({});
-    expect(run('neon')).toEqual({});
+    for (const value of ['neon', '', 'Ocean', 'ocean;dark']) expect(run(value)).toEqual({});
   });
 
   it('survives blocked storage', () => {

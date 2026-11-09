@@ -17,7 +17,11 @@ describe('documented Slack deletion payload', () => {
         deleted_ts: '1788766200.000001',
       },
     };
-    expect(normalizeSlackEvent(event, 'TTEST', 'CTEST')).toMatchObject({
+    expect(normalizeSlackEvent(event, 'TTEST', 'CTEST')).toEqual({
+      teamId: 'TTEST',
+      channelId: 'CTEST',
+      messageTs: '1788766200.000001',
+      slackUserId: null,
       messageKey: 'TTEST:CTEST:1788766200.000001',
       revision: '1788766500.000001',
       state: 'deleted',

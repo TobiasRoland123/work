@@ -3,6 +3,14 @@ import { sandboxResetStatements } from '@/lib/sandbox/service';
 
 // Built against the real query builder without a connection: asserts the SQL, not the data.
 describe('sandbox reset', () => {
+  it('deletes admin changes only for profiles of the sandbox workspace', () => {
+    const { sql, params } = sandboxResetStatements().adminStatusChanges.toSQL();
+    expect(sql).toMatch(
+      /^delete from "admin_status_changes" where "admin_status_changes"\."user_id" in \(select/
+    );
+    expect(sql).toContain('"users"."slack_team_id" = $1');
+    expect(params).toEqual(['T_LOCAL']);
+  });
   it('deletes status rows only for profiles of the sandbox workspace', () => {
     const { sql, params } = sandboxResetStatements().status.toSQL();
     expect(sql).toMatch(/^delete from "status" where "status"\."user_id" in \(select/);
@@ -19,6 +27,7 @@ describe('sandbox reset', () => {
     expect(sql).toMatch(
       /^delete from "status_corrections" where "status_corrections"\."user_id" in \(select/
     );
+    expect(sql).toContain('"users"."slack_team_id" = $1');
     expect(params).toEqual(['T_LOCAL']);
   });
   it('deletes learned shorthands only for the sandbox workspace', () => {

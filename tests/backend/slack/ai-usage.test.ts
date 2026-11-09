@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createSlackAiUsageRecorder } from '@/lib/slack/ai-usage';
 
 const writes = vi.hoisted(() => ({
@@ -26,6 +26,8 @@ const identity = {
   channelId: 'C',
 };
 
+afterEach(() => vi.restoreAllMocks());
+
 describe('Slack AI usage recorder', () => {
   beforeEach(() => {
     writes.insert.mockReset().mockResolvedValue(undefined);
@@ -36,9 +38,11 @@ describe('Slack AI usage recorder', () => {
   it('inserts an attempt before completion and leaves unknown cost as null', async () => {
     const recorder = createSlackAiUsageRecorder(identity);
     await recorder.onStart('provider/model');
-    expect(writes.insert).toHaveBeenCalledWith(
-      expect.objectContaining({ ...identity, model: 'provider/model', id: expect.any(String) })
-    );
+    expect(writes.insert).toHaveBeenCalledExactlyOnceWith({
+      ...identity,
+      model: 'provider/model',
+      id: expect.any(String),
+    });
     expect(writes.update).not.toHaveBeenCalled();
     await recorder.onFinish({
       state: 'failed',
@@ -102,5 +106,36 @@ describe('Slack AI usage recorder', () => {
     } finally {
       warning.mockRestore();
     }
+  });
+});
+
+describe('Slack usage recorder lifecycle', () => {
+  beforeEach(() => {
+    writes.insert.mockReset().mockResolvedValue(undefined);
+    writes.set.mockReset();
+    writes.update.mockReset().mockResolvedValue(undefined);
+  });
+  const usage = {
+    state: 'completed' as const,
+    costUsd: '0.125',
+    inputTokens: 20,
+    outputTokens: 7,
+    responseId: 'response-1',
+  };
+  it('refuses completion before a successful start', async () => {
+    const recorder = createSlackAiUsageRecorder(identity);
+    await expect(recorder.onFinish(usage)).rejects.toThrow('not started');
+    writes.insert.mockRejectedValueOnce(new Error('offline'));
+    await expect(recorder.onStart('provider/model')).rejects.toThrow('offline');
+    await expect(recorder.onFinish(usage)).rejects.toThrow('not started');
+    expect(writes.update).not.toHaveBeenCalled();
+  });
+  it('stores known final usage once and consumes the attempt', async () => {
+    const recorder = createSlackAiUsageRecorder(identity);
+    await recorder.onStart('provider/model');
+    await recorder.onFinish(usage);
+    expect(writes.set).toHaveBeenCalledExactlyOnceWith({ ...usage, completedAt: expect.any(Date) });
+    await expect(recorder.onFinish(usage)).rejects.toThrow('not started');
+    expect(writes.update).toHaveBeenCalledOnce();
   });
 });

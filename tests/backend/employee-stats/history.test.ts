@@ -44,7 +44,7 @@ describe('bucketing workdays', () => {
   });
 
   it('uses weeks starting on Monday for a few months, with partial edges', () => {
-    // Wed 23 Sep to Tue 6 Oct: 3 days, then a full week, then 2 days.
+    // Wed 23 Sep to Tue 13 Oct: 3 days, two full weeks, then 2 days.
     const days = workdaysBetween('2026-09-23', '2026-10-13');
     const { granularity, buckets } = bucketWorkdays(days);
     expect(granularity).toBe('week');
@@ -118,7 +118,7 @@ describe('series and spread', () => {
     );
     expect(shares).toHaveLength(MIN_SPREAD_PEOPLE);
     const [first] = officeShareSpread(shares, buckets);
-    expect(first!.low).toBeCloseTo(0.4 * 0.75, 5);
+    expect(first!.low).toBeCloseTo(0.3, 5);
     expect(first!.high).toBeCloseTo(0.85, 5);
     expect(officeShareSpread(shares.slice(1), buckets)[0]).toBeNull();
   });

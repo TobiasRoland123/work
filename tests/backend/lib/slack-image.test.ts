@@ -21,7 +21,17 @@ describe('Slack-only profile photos', () => {
     'http://avatars.slack-edge.com/photo.jpg',
     'https://user:password@avatars.slack-edge.com/photo.jpg',
     'https://avatars.slack-edge.com:8443/photo.jpg',
+    'https://attacker.example@avatars.slack-edge.com/photo.jpg',
+    'https://avatars.slack-edge.com@attacker.example/photo.jpg',
+    'data:image/png;base64,aGVsbG8=',
+    '//avatars.slack-edge.com/photo.jpg',
   ])('uses the initials fallback for an unsupported source: %s', (url) => {
     expect(getSlackImageUrl(url)).toBeNull();
   });
+});
+
+it('normalizes a trusted URL while preserving its requested image path and query', () => {
+  expect(getSlackImageUrl('https://AVATARS.SLACK-EDGE.COM:443/team user.jpg?size=512')).toBe(
+    'https://avatars.slack-edge.com/team%20user.jpg?size=512'
+  );
 });

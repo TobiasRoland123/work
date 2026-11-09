@@ -1,19 +1,22 @@
 import isValidCharlieTangoEmail from '@/lib/userHelper';
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
 describe('isValidCharlieTangoEmail', () => {
-  it('should return true for a valid Charlie Tango email', () => {
-    expect(isValidCharlieTangoEmail('test.user@charlietango.dk')).toBe(true);
-    expect(isValidCharlieTangoEmail('alias@charlietango.dk')).toBe(true);
+  it.each(['test.user@charlietango.dk', 'alias+project@charlietango.dk'])(
+    'accepts the company email %s',
+    (email) => expect(isValidCharlieTangoEmail(email)).toBe(true)
+  );
+  it.each([
+    'test.user@external.com',
+    'testuser',
+    'testuser@charlietango',
+    'test@charlietango.dk.attacker.example',
+    'test@othercharlietango.dk',
+    'test@sub.charlietango.dk',
+    '@charlietango.dk',
+    'test user@charlietango.dk',
+  ])('rejects malformed or other-domain address %s', (email) => {
+    expect(isValidCharlieTangoEmail(email)).toBe(false);
   });
-
-  it('should return false for an invalid email format', () => {
-    expect(isValidCharlieTangoEmail('test.user@external.com')).toBe(false);
-    expect(isValidCharlieTangoEmail('testuser')).toBe(false);
-    expect(isValidCharlieTangoEmail('testuser@charlietango')).toBe(false);
-  });
-
-  it('should return false for empty input', () => {
-    expect(isValidCharlieTangoEmail('')).toBe(false);
-  });
+  it('rejects empty input', () => expect(isValidCharlieTangoEmail('')).toBe(false));
 });

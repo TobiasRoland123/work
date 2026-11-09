@@ -134,12 +134,14 @@ describe('userService parallel relation reads', () => {
   });
 
   it('starts getAllUsers relation reads together and preserves list enrichment', async () => {
+    const otherUser = { ...user, userId: 'user-2', firstName: 'Grace', organisationId: 5 };
+    const otherStatus = { ...status, id: 13, userID: otherUser.userId, status: 'SICK' };
     const organisations = deferred<unknown[]>();
     const roles = deferred<unknown[]>();
     const phones = deferred<unknown[]>();
     const statuses = deferred<unknown[]>();
     const started = useQueries([
-      Promise.resolve([user]),
+      Promise.resolve([user, otherUser]),
       organisations.promise,
       roles.promise,
       phones.promise,
@@ -155,13 +157,22 @@ describe('userService parallel relation reads', () => {
     ]);
     await vi.waitFor(() => expect(started()).toBe(5));
 
-    organisations.resolve([{ id: 4, organisationName: 'Analytical Engines' }]);
-    roles.resolve([{ userId: user.userId, role: 'Engineer' }]);
-    phones.resolve([{ userId: user.userId, businessPhoneNumber: '555-0199' }]);
-    statuses.resolve([status]);
+    organisations.resolve([
+      { id: 4, organisationName: 'Analytical Engines' },
+      { id: 5, organisationName: 'Compilers' },
+    ]);
+    roles.resolve([
+      { userId: otherUser.userId, role: 'Admiral' },
+      { userId: user.userId, role: 'Engineer' },
+    ]);
+    phones.resolve([
+      { userId: otherUser.userId, businessPhoneNumber: '555-0200' },
+      { userId: user.userId, businessPhoneNumber: '555-0199' },
+    ]);
+    statuses.resolve([otherStatus, status]);
 
     const result = await resultPromise;
-    expect(result).toHaveLength(1);
+    expect(result.map((person) => person.userId)).toEqual([user.userId, otherUser.userId]);
     expect(result[0]).toMatchObject({
       ...user,
       organisation: 'Analytical Engines',
@@ -176,6 +187,16 @@ describe('userService parallel relation reads', () => {
         { date: '2026-09-25', status },
       ],
     });
+    expect(result[1]).toMatchObject({
+      ...otherUser,
+      organisation: 'Compilers',
+      organisationRoles: ['Admiral'],
+      businessPhoneNumber: '555-0200',
+      status: otherStatus,
+    });
+    expect(result[1].week?.map((day) => day.status?.userID)).toEqual(
+      Array(5).fill(otherUser.userId)
+    );
   });
 
   it('returns null for a missing user without starting relation reads', async () => {

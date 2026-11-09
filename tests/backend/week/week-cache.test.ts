@@ -35,6 +35,8 @@ beforeEach(() => {
   const status = { time: date, startsAt: date, endsAt: date, announcedAt: date };
   getAllUsers.mockResolvedValue([
     { userId: 'colleague', status, week: [{ date: '2026-10-30', status, announcement: status }] },
+    { userId: 'missing', status: null, week: [{ date: '2026-10-30', status: null }] },
+    { userId: 'no-week', status: null },
   ]);
 });
 afterEach(() => {
@@ -46,7 +48,7 @@ describe('shared week query cache', () => {
   it('reuses identical day inputs for five minutes and separates day/week variants', async () => {
     await getWeekOverview(['2026-10-30']);
     await getWeekOverview(['2026-10-30']);
-    expect(getAllUsers).toHaveBeenCalledTimes(1);
+    expect(getAllUsers).toHaveBeenCalledExactlyOnceWith(false, ['2026-10-30']);
     expect(get).toHaveBeenLastCalledWith(
       expect.any(String),
       expect.objectContaining({ revalidate: 300, tags: ['week-overview'] })
@@ -65,8 +67,22 @@ describe('shared week query cache', () => {
     const miss = await getWeekOverview(['2026-10-30']);
     const hit = await getWeekOverview(['2026-10-30']);
     expect(hit).toEqual(miss);
-    expect(hit[0].status?.announcedAt).toBeInstanceOf(Date);
-    expect(hit[0].week?.[0].status?.startsAt).toBeInstanceOf(Date);
-    expect(hit[0].week?.[0].announcement?.endsAt).toBeInstanceOf(Date);
+    for (const result of [miss, hit]) {
+      for (const status of [
+        result[0].status,
+        result[0].week?.[0].status,
+        result[0].week?.[0].announcement,
+      ]) {
+        for (const key of ['time', 'startsAt', 'endsAt', 'announcedAt'] as const) {
+          expect(status?.[key]).toEqual(new Date('2026-10-30T09:00:00Z'));
+          expect(status?.[key]).toBeInstanceOf(Date);
+        }
+      }
+      expect(result[1]).toMatchObject({
+        status: null,
+        week: [{ status: null, announcement: null }],
+      });
+      expect(result[2]).not.toHaveProperty('week');
+    }
   });
 });
