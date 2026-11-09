@@ -1,4 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import { PgDialect } from 'drizzle-orm/pg-core';
 import type { JWT } from 'next-auth/jwt';
 import { applySandboxSignIn, SANDBOX_PROVIDER_ID, sandboxProviders } from '@/lib/sandbox/auth';
 
@@ -8,11 +9,16 @@ type CredentialsProvider = {
   options?: { id?: string; authorize?: (credentials: unknown, request: Request) => unknown };
 };
 
-const select = vi.hoisted(() => vi.fn());
+const { select, where } = vi.hoisted(() => ({ select: vi.fn(), where: vi.fn() }));
 vi.mock('@/db', () => ({
   db: {
     select: () => ({
-      from: () => ({ where: () => ({ limit: select }) }),
+      from: () => ({
+        where: (clause: unknown) => {
+          where(clause);
+          return { limit: select };
+        },
+      }),
     }),
   },
 }));
@@ -20,6 +26,7 @@ vi.mock('@/db', () => ({
 afterEach(() => {
   vi.unstubAllEnvs();
   select.mockReset();
+  where.mockReset();
 });
 
 const account = {
@@ -48,10 +55,24 @@ describe('sandbox credentials provider', () => {
     await expect(authorize({ userId: 'sandbox-user' }, request)).resolves.toEqual({
       id: 'sandbox-user',
     });
+    const query = new PgDialect().sqlToQuery(where.mock.calls[0][0]);
+    expect(query.sql).toBe(
+      '("users"."user_id" = $1 and "users"."slack_team_id" = $2 and "users"."slack_deactivated" = $3)'
+    );
+    expect(query.params).toEqual(['sandbox-user', 'T_LOCAL', false]);
     select.mockResolvedValueOnce([]);
     await expect(authorize({ userId: 'deactivated' }, request)).resolves.toBeNull();
     await expect(authorize({}, request)).resolves.toBeNull();
     expect(select).toHaveBeenCalledTimes(2);
+  });
+  it('rechecks the production guard even for a provider registered in development', async () => {
+    vi.stubEnv('NODE_ENV', 'development');
+    const [provider] = sandboxProviders() as CredentialsProvider[];
+    vi.stubEnv('NODE_ENV', 'production');
+    await expect(
+      provider.options!.authorize!({ userId: 'sandbox-user' }, new Request('http://localhost'))
+    ).resolves.toBeNull();
+    expect(select).not.toHaveBeenCalled();
   });
 });
 
@@ -81,4 +102,11 @@ describe('sandbox sign-in claim', () => {
       userId: 'real',
     });
   });
+});
+
+it('does not mint a sandbox claim without a signed-in profile', () => {
+  vi.stubEnv('NODE_ENV', 'development');
+  const token: JWT = { provider: 'sandbox', userId: 'existing' };
+  expect(applySandboxSignIn(token, account, {})).toBe(token);
+  expect(token).toEqual({ provider: 'sandbox', userId: 'existing' });
 });

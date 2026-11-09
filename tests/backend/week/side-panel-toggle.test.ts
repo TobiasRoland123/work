@@ -83,9 +83,14 @@ describe('side panel toggle', () => {
 
   it('keeps the toggle in the toolbar next to the attendance view switch', () => {
     const { html } = render(false);
-    expect(html).toMatch(
-      /<div class="week-toolbar-actions"><div class="week-filters"[\s\S]*?<\/div><button[^>]*class="week-panel-toggle"/
-    );
+    const actions = html.match(
+      /<div class="week-toolbar-actions">([\s\S]*?)<\/div><button[^>]*class="week-search-toggle"/
+    )?.[1];
+    expect(actions, 'the shared toolbar actions must exist').toBeDefined();
+    expect(actions).toContain('aria-label="Attendance view"');
+    expect(actions).toContain('aria-label="Board order"');
+    expect(actions).toContain('aria-label="Side panel"');
+    expect(actions!.match(/class="week-panel-toggle"/g)).toHaveLength(1);
   });
 });
 

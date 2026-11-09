@@ -20,3 +20,10 @@ describe('Slack message text for display', () => {
     expect(slackText('Meeting at 10:30: :party-parrot:')).toBe('Meeting at 10:30: :party-parrot:');
   });
 });
+
+it('keeps unsupported entities and HTML as text for the rendering layer to escape', () => {
+  expect(slackText('&quot; &#60; &amp;amp; &lt;script&gt;')).toBe('&quot; &#60; &amp; <script>');
+});
+it('preserves unknown custom emoji with a tone and adjacent punctuation', () => {
+  expect(slackText(':party-parrot::skin-tone-3: :wave:!')).toBe(':party-parrot::skin-tone-3: 👋!');
+});

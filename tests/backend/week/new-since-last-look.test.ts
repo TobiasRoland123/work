@@ -104,6 +104,17 @@ describe('announcedSince', () => {
     expect(announcedSince(ben, days.slice(0, 1), lastLook)).toBeNull();
   });
 
+  it('treats the last-look boundary as seen and reads retained daily announcements after arrival', () => {
+    const visible = declaration('ben', 'IN_LATE', '2026-09-22T07:30:00Z');
+    const ben = person('ben', []);
+    ben.week = [
+      { date: days[1], status: { ...visible, status: 'IN_OFFICE' }, announcement: visible },
+    ];
+    const at = Date.parse('2026-09-22T07:30:00Z');
+    expect(announcedSince(ben, [days[1]], at)).toBeNull();
+    expect(announcedSince(ben, [days[1]], at - 1)).toBe(at);
+  });
+
   it('ignores in-office declarations and Workday Defaults', () => {
     const ben = person('ben', [
       declaration('ben', 'IN_OFFICE', '2026-09-22T07:30:00Z', days[1]),

@@ -46,6 +46,7 @@ describe('manual status cache invalidation', () => {
     );
     await write();
     expect(mocks.invalidate).toHaveBeenCalledTimes(1);
+    expect(mocks.send).toHaveBeenCalledTimes(1);
   });
   it.each(writes)('does not invalidate failed writes', async (write) => {
     mocks.returning.mockRejectedValueOnce(new Error('write failed'));
@@ -69,6 +70,7 @@ describe('manual status cache invalidation', () => {
         scope: 'day',
       });
       expect(mocks.invalidate).toHaveBeenCalledTimes(changed ? 1 : 0);
+      expect(mocks.send).toHaveBeenCalledTimes(changed ? 1 : 0);
     }
   );
 });

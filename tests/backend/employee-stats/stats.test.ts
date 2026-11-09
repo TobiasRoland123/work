@@ -121,6 +121,26 @@ describe('tallying days', () => {
     expect(absenceDays(counts)).toBe(5);
   });
 
+  it.each([
+    ['IN_OFFICE', 'office'],
+    ['IN_LATE', 'office'],
+    ['LEAVING_EARLY', 'office'],
+    ['FROM_HOME', 'remote'],
+    ['REMOTE', 'remote'],
+    ['AT_CLIENT', 'client'],
+    ['SICK', 'sick'],
+    ['CHILD_SICK', 'sick'],
+    ['VACATION', 'vacation'],
+    ['ON_LEAVE', 'other'],
+    ['AWAY', 'other'],
+  ] as const)('counts %s only in %s', (value, group) => {
+    const result = tallyDays([day('2026-09-21', value)]);
+    expect(result).toEqual({
+      counts: { office: 0, remote: 0, client: 0, sick: 0, vacation: 0, other: 0, [group]: 1 },
+      noStatus: 0,
+    });
+  });
+
   it('counts a status without a group as no status', () => {
     expect(
       tallyDays([{ date: '2026-09-21', status: status('NOT_A_STATUS' as UserStatus) }])
@@ -328,6 +348,33 @@ describe('resolving each employee’s days', () => {
     const now = new Date('2026-09-25T10:00:00Z');
     const workdays = ['2026-09-21', '2026-09-22', '2026-09-23'];
     expect(codesOf(statuses, workdays, now)).toEqual(reference(statuses, workdays, now));
+  });
+
+  it('keeps a newer home declaration on its own date while another day remains office attendance', () => {
+    const declaration = {
+      id: 4,
+      userID: 'person',
+      status: 'IN_LATE',
+      fromDate: '2026-09-24',
+      toDate: '2026-09-25',
+      time: new Date('2026-09-25T08:00:00Z'),
+      startsAt: null,
+      endsAt: null,
+      announcedAt: new Date('2026-09-23T08:00:00Z'),
+      createdAt: '2026-09-23T08:00:00Z',
+    } as Status;
+    const home = {
+      ...declaration,
+      id: 5,
+      announcedAt: new Date('2026-09-23T09:00:00Z'),
+      status: 'FROM_HOME',
+      time: null,
+      fromDate: '2026-09-24',
+      toDate: '2026-09-24',
+    } as Status;
+    expect(
+      codesOf([declaration, home], ['2026-09-24', '2026-09-25'], new Date('2026-09-25T10:00:00Z'))
+    ).toEqual([1, 0]);
   });
 
   it('gives a person with no declarations the workday default', () => {

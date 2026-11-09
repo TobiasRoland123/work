@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PgDialect } from 'drizzle-orm/pg-core';
 
 const mocked = vi.hoisted(() => ({
@@ -14,21 +14,12 @@ const mocked = vi.hoisted(() => ({
   listWhere: vi.fn(),
 }));
 
+vi.mock('@/lib/auth/require-user', () => ({ requireUserId: vi.fn() }));
 vi.mock('next/cache', () => ({ revalidatePath: mocked.revalidatePath }));
-vi.mock('@/lib/auth/roles', async () => {
-  const { and, eq, isNotNull, ne } = await import('drizzle-orm');
-  const { users } = await import('@/db/schema');
-  return {
-    requireAdmin: mocked.requireAdmin,
-    activeWorkspaceMember: (teamId: string) =>
-      and(
-        eq(users.slackTeamId, teamId),
-        eq(users.slackDeactivated, false),
-        isNotNull(users.slackUserId),
-        ne(users.slackUserId, '')
-      ),
-  };
-});
+vi.mock('@/lib/auth/roles', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/auth/roles')>()),
+  requireAdmin: mocked.requireAdmin,
+}));
 vi.mock('@/db', () => ({
   db: {
     transaction: mocked.transaction,
@@ -73,6 +64,8 @@ beforeEach(() => {
   };
   mocked.transaction.mockReset().mockImplementation(async (callback) => callback(tx));
 });
+
+afterEach(() => vi.unstubAllEnvs());
 
 describe('changing application roles', () => {
   it('rejects a nonadmin before touching role data', async () => {
@@ -119,8 +112,16 @@ describe('changing application roles', () => {
       expect.arrayContaining(['admin-user', 'ADMIN', 'T_CONFIGURED', false])
     );
     expect(actor.sql).toContain('"slack_user_id" is not null');
+    expect(actor.sql).toContain('"slack_user_id" <>');
+    expect(actor.params).toContain('');
+    expect(mocked.actorLimit.mock.invocationCallOrder[0]).toBeLessThan(
+      mocked.updateSet.mock.invocationCallOrder[0]
+    );
     expect(mocked.updateSet).toHaveBeenCalledWith({ systemRole: 'MANAGER' });
-    expect(mocked.revalidatePath).toHaveBeenCalledWith('/', 'layout');
+    expect(mocked.revalidatePath).toHaveBeenCalledExactlyOnceWith('/', 'layout');
+    expect(mocked.returning.mock.invocationCallOrder[0]).toBeLessThan(
+      mocked.revalidatePath.mock.invocationCallOrder[0]
+    );
   });
 
   it('rejects a caller whose admin role was revoked while they waited', async () => {
@@ -146,6 +147,8 @@ describe('changing application roles', () => {
     const target = dialect.sqlToQuery(mocked.updateWhere.mock.calls[0][0]);
     expect(target.params).toEqual(expect.arrayContaining(['outsider', 'T_CONFIGURED', false]));
     expect(target.sql).toContain('"slack_user_id" is not null');
+    expect(target.sql).toContain('"slack_user_id" <>');
+    expect(target.params).toContain('');
     expect(mocked.revalidatePath).not.toHaveBeenCalled();
   });
 
@@ -183,5 +186,7 @@ describe('listing application roles', () => {
     const query = dialect.sqlToQuery(mocked.listWhere.mock.calls[0][0]);
     expect(query.params).toEqual(expect.arrayContaining(['T_CONFIGURED', false]));
     expect(query.sql).toContain('"slack_user_id" is not null');
+    expect(query.sql).toContain('"slack_user_id" <>');
+    expect(query.params).toContain('');
   });
 });

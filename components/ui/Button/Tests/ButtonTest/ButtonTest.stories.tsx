@@ -1,73 +1,77 @@
 import { Button } from '@/components/ui/Button/Button';
-import { Meta, StoryObj } from '@storybook/react';
-import { expect, userEvent, within } from '@storybook/test';
+import type { Meta, StoryObj } from '@storybook/react';
+import { expect, fn, userEvent, within } from '@storybook/test';
 
-const meta: Meta<typeof Button> = {
-  component: Button,
-};
-
+const meta: Meta<typeof Button> = { component: Button };
 export default meta;
 type Story = StoryObj<typeof Button>;
 
-const buttonClickTest = () => {
-  const message = document.createElement('p');
-  const storyRoot = document.getElementById('storybook-root');
-  message.textContent = 'Everything is perfect. Your works as intended when clicked!';
-  storyRoot?.appendChild(message);
-};
+const onClick = fn();
 
 export const ButtonClickTests: Story = {
-  args: {
-    variant: 'default',
-    handleClick: buttonClickTest,
-    children: 'Button',
-  },
+  args: { handleClick: onClick, children: 'Save', ariaLabel: 'Save attendance' },
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-
-    await userEvent.click(canvas.getByRole('button'));
-
-    // 👇 Assert DOM structure
-    await expect(
-      canvas.getByText('Everything is perfect. Your works as intended when clicked!')
-    ).toBeInTheDocument();
+    onClick.mockClear();
+    const button = within(canvasElement).getByRole('button', { name: 'Save attendance' });
+    await userEvent.click(button);
+    await expect(onClick).toHaveBeenCalledTimes(1);
+    button.focus();
+    await userEvent.keyboard('{Enter}');
+    await expect(onClick).toHaveBeenCalledTimes(2);
+    await userEvent.keyboard(' ');
+    await expect(onClick).toHaveBeenCalledTimes(3);
   },
 };
 
 export const ButtonChildrenTests: Story = {
-  args: {
-    variant: 'default',
-    children: 'im the button text',
-  },
-
+  args: { children: 'Save attendance', ariaLabel: 'Save attendance' },
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-
-    await expect(canvas.getByText('im the button text')).toBeInTheDocument();
+    const button = within(canvasElement).getByRole('button', { name: 'Save attendance' });
+    await expect(button).toHaveTextContent('Save attendance');
+    await expect(button).toHaveAttribute('type', 'button');
+    await expect(button).toBeEnabled();
   },
 };
 
 export const ButtonLargeVariantTests: Story = {
-  args: {
-    variant: 'large',
-    children: 'I should be large variant',
-    ariaLabel: 'aria label text',
-  },
-
+  args: { variant: 'large', children: 'Continue', ariaLabel: 'Continue to status' },
   play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-
-    await expect(canvas.getByRole('button')).toHaveClass('w-full');
-    await expect(canvas.getByRole('button')).toHaveAttribute('aria-label', 'aria label text');
+    const button = within(canvasElement).getByRole('button', { name: 'Continue to status' });
+    await expect(button).toHaveClass('w-full');
+    await expect(button).toHaveTextContent('Continue');
   },
 };
 
 export const ButtonPropsPresentTest: Story = {
-  args: { children: 'im a button with props', ariaLabel: 'aria label text' },
-
+  args: {
+    children: 'Save',
+    label: 'Submit attendance',
+    ariaLabel: 'Submit attendance',
+    type: 'submit',
+  },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    const button = canvas.getByRole('button', { name: 'Submit attendance' });
+    await expect(button).toHaveAttribute('type', 'submit');
+    await expect(button).toHaveTextContent('Submit attendance');
+    await expect(canvas.queryByText('Save')).not.toBeInTheDocument();
+  },
+};
 
-    await expect(canvas.getByRole('button')).toHaveAttribute('aria-label', 'aria label text');
+const whileLoading = fn();
+export const LoadingPreventsSubmission: Story = {
+  args: {
+    children: 'Save',
+    ariaLabel: 'Save attendance',
+    isLoading: true,
+    handleClick: whileLoading,
+  },
+  play: async ({ canvasElement }) => {
+    whileLoading.mockClear();
+    const button = within(canvasElement).getByRole('button', { name: 'Save attendance' });
+    await expect(button).toBeDisabled();
+    await expect(button).toHaveAttribute('aria-busy', 'true');
+    button.click();
+    await expect(whileLoading).not.toHaveBeenCalled();
   },
 };

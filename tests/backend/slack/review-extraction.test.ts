@@ -1,9 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import {
-  DEFAULT_SLACK_EXTRACTION_MODEL,
-  extractAttendance,
-  statusRows,
-} from '@/lib/slack/extraction';
+import { extractAttendance, statusRows } from '@/lib/slack/extraction';
 
 const sent = new Date('2026-09-06T23:30:00Z');
 const interval = {
@@ -47,12 +43,13 @@ afterEach(() => {
 
 describe('attendance AI adapter with mocked structured replies', () => {
   it.each(['WFH tomorrow', 'Jeg arbejder hjemme i morgen'])(
-    'anchors %s to original Copenhagen date and keeps identity outside the prompt',
+    'sends the original Copenhagen date and source text to the adapter for %s',
     async (text) => {
       const request = vi.fn().mockResolvedValue(reply());
       vi.stubGlobal('fetch', request);
       const result = await extractAttendance(text, sent);
-      expect(result.intervals[0].fromDate).toBe('2026-09-08');
+      expect(result).toEqual(output);
+      expect(request).toHaveBeenCalledOnce();
       const payload = JSON.parse(request.mock.calls[0][1].body);
       expect(payload.store).toBe(false);
       expect(payload.response_format.json_schema.strict).toBe(true);
@@ -69,7 +66,7 @@ describe('attendance AI adapter with mocked structured replies', () => {
     ['Tandlægebesøg først, så jeg kommer senere', 'Tandlægebesøg først'],
     ['going to dentist so I will be in later', 'going to dentist'],
   ])(
-    'extracts status and saves the complete source message for %s through the SDK',
+    'expands a valid mocked comment excerpt to the complete source message for %s',
     async (text, excerpt) => {
       const request = vi.fn().mockResolvedValue(
         reply({
@@ -99,7 +96,9 @@ describe('attendance AI adapter with mocked structured replies', () => {
       expect(
         payload.response_format.json_schema.schema.properties.intervals.items.required
       ).toContain('comment');
-      expect(payload.messages[0].content).toContain('semantic extraction, not a punctuation split');
+      expect(payload.messages[0].role).toBe('system');
+      expect(payload.messages[1].role).toBe('user');
+      expect(JSON.parse(payload.messages[1].content).message).toBe(text);
     }
   );
   it.each(['invented diagnosis', '', 'x'.repeat(12001)])(
@@ -127,19 +126,6 @@ describe('attendance AI adapter with mocked structured replies', () => {
     const result = await extractAttendance(text, sent);
     expect(statusRows(result)[0].details).toBe(text);
     expect(request).toHaveBeenCalledOnce();
-  });
-  it('uses the default model when the optional model configuration is missing', async () => {
-    vi.stubEnv('SLACK_EXTRACTION_MODEL', '');
-    const request = vi
-      .fn()
-      .mockResolvedValue(reply({ decision: 'ignore', reason: 'not_attendance', intervals: [] }));
-    vi.stubGlobal('fetch', request);
-    await expect(extractAttendance('hello', sent)).resolves.toMatchObject({
-      decision: 'ignore',
-      intervals: [],
-    });
-    expect(request).toHaveBeenCalledOnce();
-    expect(JSON.parse(request.mock.calls[0][1].body).model).toBe(DEFAULT_SLACK_EXTRACTION_MODEL);
   });
   it('retains a nominal approximate time from valid structured output', async () => {
     vi.stubGlobal(
@@ -186,7 +172,7 @@ describe('attendance AI adapter with mocked structured replies', () => {
       statusCode: 429,
     });
   });
-  it('maps explicit multi-day offsite work to AWAY without inventing a client or private reason', async () => {
+  it('preserves a mocked multi-day AWAY interval without inventing details', async () => {
     vi.stubGlobal(
       'fetch',
       vi.fn().mockResolvedValue(
@@ -203,7 +189,7 @@ describe('attendance AI adapter with mocked structured replies', () => {
     ).toMatchObject({ status: 'AWAY', fromDate: '2026-09-08', toDate: '2026-09-10' });
   });
 
-  it('maps multi-day remote declarations via AI to REMOTE with full message details', async () => {
+  it('preserves a mocked multi-day REMOTE interval and expands its source comment', async () => {
     const message = 'Working remotely from Roskilde Tuesday through Thursday';
     const request = vi.fn().mockResolvedValue(
       reply({
@@ -242,7 +228,7 @@ describe('attendance AI adapter with mocked structured replies', () => {
     ).toContain('REMOTE');
   });
 
-  it('maps multi-day KMD office city declarations via AI to AT_CLIENT with full message details', async () => {
+  it('preserves a mocked multi-day AT_CLIENT interval and expands its source comment', async () => {
     const message = 'In Odense Tuesday through Thursday';
     const request = vi.fn().mockResolvedValue(
       reply({
@@ -278,7 +264,7 @@ describe('attendance AI adapter with mocked structured replies', () => {
     expect(systemPrompt).toContain('AT_CLIENT');
   });
 
-  it('requires review rather than inferring REMOTE for "not in the office" alone', async () => {
+  it('preserves an uncertain mocked reply rather than manufacturing a status', async () => {
     const request = vi
       .fn()
       .mockResolvedValue(reply({ decision: 'review', reason: 'uncertain_status', intervals: [] }));
@@ -319,8 +305,8 @@ describe('attendance AI adapter with mocked structured replies', () => {
           intervals: [
             {
               status: 'AWAY',
-              fromDate: '2026-09-08',
-              toDate: '2026-09-09',
+              fromDate: '2026-09-07',
+              toDate: '2026-09-08',
               startTime: null,
               endTime: null,
               startApproximate: false,
@@ -337,8 +323,8 @@ describe('attendance AI adapter with mocked structured replies', () => {
     expect(result.intervals).toEqual([
       {
         status: 'AWAY',
-        fromDate: '2026-09-08',
-        toDate: '2026-09-09',
+        fromDate: '2026-09-07',
+        toDate: '2026-09-08',
         startTime: null,
         endTime: null,
         startApproximate: false,
@@ -347,5 +333,35 @@ describe('attendance AI adapter with mocked structured replies', () => {
         mentionedUserIds: [],
       },
     ]);
+  });
+});
+
+it('returns review for a malformed JSON model answer while recording the completed paid attempt', async () => {
+  const request = vi.fn().mockResolvedValue(
+    new Response(
+      JSON.stringify({
+        id: 'paid-response',
+        choices: [
+          { index: 0, finish_reason: 'stop', message: { role: 'assistant', content: '{bad-json' } },
+        ],
+        usage: { prompt_tokens: 11, completion_tokens: 3, total_tokens: 14, cost: 0.0001 },
+      }),
+      { headers: { 'content-type': 'application/json' } }
+    )
+  );
+  vi.stubGlobal('fetch', request);
+  const observer = { onStart: vi.fn(), onFinish: vi.fn() };
+  await expect(extractAttendance('Need a model interpretation', sent, observer)).resolves.toEqual({
+    decision: 'review',
+    reason: 'unsupported',
+    intervals: [],
+  });
+  expect(request).toHaveBeenCalledOnce();
+  expect(observer.onFinish).toHaveBeenCalledExactlyOnceWith({
+    state: 'completed',
+    costUsd: '0.0001',
+    inputTokens: 11,
+    outputTokens: 3,
+    responseId: 'paid-response',
   });
 });

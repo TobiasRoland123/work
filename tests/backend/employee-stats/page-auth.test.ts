@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import type React from 'react';
+import React from 'react';
+import { PersonSearch } from '@/app/(authenticated)/employee-stats/PersonSearch';
 import {
   bucketWorkdays,
   buildProfile,
@@ -87,7 +88,7 @@ const stats = (overrides = {}) => ({
 const directory = [
   { userId: 'u1', name: 'Mads Nielsen', email: 'mads@example.com' },
   { userId: 'u2', name: 'Anna Hansen', email: 'anna@example.com' },
-  { userId: 'u3', name: 'Freja Holm', email: 'freja@example.com' },
+  { userId: 'u3', name: 'Fréja Holm', email: 'freja@example.com' },
   { userId: 'u4', name: 'Jonas Krogh', email: 'jonas@example.com' },
   { userId: 'u5', name: 'Ida Bech', email: 'ida@example.com' },
 ];
@@ -265,7 +266,9 @@ describe('employee directory page', () => {
   });
 
   it('finds people whatever the case or accents, by name or email', async () => {
-    expect(await renderDirectory({ q: 'FREJA holm' })).toContain('1 of 5 employees');
+    const accented = await renderDirectory({ q: 'FREJA holm' });
+    expect(accented).toContain('Fréja Holm');
+    expect(accented).toContain('1 of 5 employees');
     expect(await renderDirectory({ q: 'ida@example' })).toContain('Ida Bech');
     expect(await renderDirectory({ q: 'nobody' })).toContain('No employees match.');
   });
@@ -352,11 +355,39 @@ describe('employee profile page', () => {
     expect(html).toContain('Mads only');
   });
 
-  it('keeps the period and comparison when searching for someone else', async () => {
-    const html = await renderProfile({ days: '30' });
-    expect(html).toContain('Search employees');
-    expect(html).not.toContain('/employee-stats/people/u2?days=30&amp;compare=norm');
-  });
+  it.each([
+    ['norm', 90],
+    ['alone', 'all'],
+  ] as const)(
+    'keeps comparison %s and period %s on employee search links',
+    async (compare, range) => {
+      mocked.getEmployeeProfile.mockResolvedValue(profile(compare, range));
+      const element = await EmployeeProfilePage({
+        params: Promise.resolve({ userId: 'u1' }),
+        searchParams: Promise.resolve({ days: String(range), compare }),
+      });
+      const findSearch = (
+        node: React.ReactNode
+      ): React.ReactElement<React.ComponentProps<typeof PersonSearch>> | undefined => {
+        if (!React.isValidElement<{ children?: React.ReactNode }>(node)) return;
+        if (node.type === PersonSearch)
+          return node as React.ReactElement<React.ComponentProps<typeof PersonSearch>>;
+        return React.Children.toArray(node.props.children).map(findSearch).find(Boolean);
+      };
+      const search = findSearch(element);
+      expect(search, 'the profile must offer employee search').toBeDefined();
+      const html = renderToStaticMarkup(
+        React.createElement(PersonSearch, {
+          ...search!.props,
+          initialQuery: 'Anna',
+        })
+      );
+      expect(html).toContain(
+        `href="/employee-stats/people/u2?days=${range}&amp;compare=${compare}"`
+      );
+      expect(html).not.toContain('href="/employee-stats/people/u3');
+    }
+  );
 
   it('explains a missing norm instead of drawing an empty one', async () => {
     mocked.getEmployeeProfile.mockResolvedValue({ ...profile('alone'), compare: 'norm' });

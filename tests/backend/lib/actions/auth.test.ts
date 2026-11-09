@@ -1,23 +1,33 @@
-import { vi, describe, it, expect } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-// Mock @/auth entirely BEFORE importing your functions
-vi.mock('@/auth', () => ({
-  signIn: vi.fn().mockResolvedValue(undefined),
-  signOut: vi.fn().mockResolvedValue(undefined),
-}));
+const { signIn, signOut } = vi.hoisted(() => ({ signIn: vi.fn(), signOut: vi.fn() }));
+vi.mock('@/auth', () => ({ signIn, signOut }));
+import { login, logout } from '@/lib/actions/auth';
 
-import { login, logout } from '@/lib/actions/auth'; // Adjust path as needed
+beforeEach(() => {
+  signIn.mockReset();
+  signOut.mockReset();
+});
 
-describe('auth', () => {
-  it('calls signIn with Slack and correct options', async () => {
-    const { signIn } = await import('@/auth');
-    await login();
-    expect(signIn).toHaveBeenCalledWith('slack', { redirectTo: '/' });
+describe('authentication actions', () => {
+  it('starts Slack sign-in and returns its result', async () => {
+    signIn.mockResolvedValue('sign-in result');
+    await expect(login()).resolves.toBe('sign-in result');
+    expect(signIn).toHaveBeenCalledExactlyOnceWith('slack', { redirectTo: '/' });
+    expect(signOut).not.toHaveBeenCalled();
   });
-
-  it('calls signOut with correct options', async () => {
-    const { signOut } = await import('@/auth');
-    await logout();
-    expect(signOut).toHaveBeenCalledWith({ redirectTo: '/' });
+  it('signs out and returns its result', async () => {
+    signOut.mockResolvedValue('sign-out result');
+    await expect(logout()).resolves.toBe('sign-out result');
+    expect(signOut).toHaveBeenCalledExactlyOnceWith({ redirectTo: '/' });
+    expect(signIn).not.toHaveBeenCalled();
   });
+  it.each(['login', 'logout'] as const)(
+    'propagates the Auth.js redirect from %s',
+    async (action) => {
+      const redirect = new Error('NEXT_REDIRECT');
+      (action === 'login' ? signIn : signOut).mockRejectedValue(redirect);
+      await expect(action === 'login' ? login() : logout()).rejects.toBe(redirect);
+    }
+  );
 });

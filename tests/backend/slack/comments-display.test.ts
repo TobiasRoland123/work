@@ -36,7 +36,7 @@ function render(
         ],
       },
       new Date('2026-09-07T07:00:00Z'),
-      `in later, ${comment}`
+      `${status === 'IN_LATE' ? 'in later' : 'leaving early'}, ${comment}`
     )
   )[0];
   return renderToStaticMarkup(
@@ -61,17 +61,18 @@ function render(
   );
 }
 describe('sender comment display', () => {
-  it.each(['IN_LATE', 'LEAVING_EARLY'] as const)(
-    'shows a comment without inventing a midnight action for %s',
-    (status) => {
-      const html = render('going to dentist', null, false, status);
-      expect(html).toContain('in later, going to dentist');
-      expect(html).not.toContain('00:00');
-      expect(html).not.toContain('>00.00<');
-      expect(html).toContain('View Slack message');
-      expect(html).toContain('aria-label="AI-assisted"');
-    }
-  );
+  it.each([
+    ['IN_LATE', 'in later, going to dentist'],
+    ['LEAVING_EARLY', 'leaving early, going to dentist'],
+  ] as const)('shows a comment without inventing a midnight action for %s', (status, message) => {
+    const html = render('going to dentist', null, false, status);
+    expect(html).toContain(message);
+    expect(html).not.toContain('00:00');
+    expect(html).not.toContain('>00.00<');
+    expect(html).toContain('href="/api/slack/message?key=T%3AC%3A1788766200.000001"');
+    expect(html).toContain('View Slack message');
+    expect(html).toContain('aria-label="AI-assisted"');
+  });
   it('keeps approximate timing separate from comment wording', () => {
     const html = render('going to dentist', '10:00', true);
     expect(html).toContain('Until ca. 10:00');
@@ -204,6 +205,7 @@ describe('unclassified attendance descriptions', () => {
     expect(html).toContain('&lt;script&gt;hello&lt;/script&gt;');
     expect(html).not.toContain('<script>');
     expect(html).not.toContain('role="status"');
+    expect(html).not.toContain('08.09');
     expect(html).toContain('View Slack message');
   });
 

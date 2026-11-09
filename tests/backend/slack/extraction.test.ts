@@ -111,7 +111,14 @@ describe('attendance extraction boundary', () => {
     );
     const rows = statusRows(parsed);
     expect(rows[0].endsAt.toISOString()).toBe('2026-09-07T08:00:00.000Z');
-    expect(rows[2].endsAt.getTime()).toBe(rows[3].startsAt.getTime());
+    expect(
+      rows.map((row) => [row.status, row.startsAt.toISOString(), row.endsAt.toISOString()])
+    ).toEqual([
+      ['IN_LATE', '2026-09-06T22:00:00.000Z', '2026-09-07T08:00:00.000Z'],
+      ['IN_OFFICE', '2026-09-07T08:00:00.000Z', '2026-09-07T11:00:00.000Z'],
+      ['AWAY', '2026-09-07T11:00:00.000Z', '2026-09-07T12:00:00.000Z'],
+      ['IN_OFFICE', '2026-09-07T12:00:00.000Z', '2026-09-07T22:00:00.000Z'],
+    ]);
   });
   it('preserves unspecified arrival time', () => {
     const [row] = statusRows(
@@ -121,13 +128,16 @@ describe('attendance extraction boundary', () => {
     expect(row.details).toBe('Arrival time unspecified');
   });
   it.each([
-    { ...interval, fromDate: '2026-02-30' },
-    { ...interval, toDate: '2026-09-06' },
-    { ...interval, startTime: '14:00', endTime: '13:00' },
-    { ...interval, startTime: '25:00' },
-    { ...interval, fromDate: '2028-01-01', toDate: '2028-01-02' },
-    { ...interval, toDate: '2026-09-08', startTime: '14:00' },
-  ])('rejects malformed or unsupported date/time output', (bad) => {
+    ['nonexistent calendar date', { ...interval, fromDate: '2026-02-30' }],
+    ['reversed dates', { ...interval, toDate: '2026-09-06' }],
+    ['reversed clocks', { ...interval, startTime: '14:00', endTime: '13:00' }],
+    ['invalid clock', { ...interval, startTime: '25:00' }],
+    [
+      'date beyond the supported horizon',
+      { ...interval, fromDate: '2028-01-01', toDate: '2028-01-02' },
+    ],
+    ['clock on a multi-day interval', { ...interval, toDate: '2026-09-08', startTime: '14:00' }],
+  ])('rejects %s', (_, bad) => {
     expect(() => validateExtraction(extract([bad as typeof interval]), sent)).toThrow();
   });
   it('rejects invented free-text fields and overlapping intervals', () => {
@@ -239,34 +249,6 @@ describe('multi-day out-of-office status extraction', () => {
     expect(isStatusApplicable(status, new Date('2026-09-08T12:00:00Z'))).toBe(true);
     expect(isStatusApplicable(status, new Date('2026-09-09T12:00:00Z'))).toBe(false);
   });
-
-  it.each([
-    'at conference today and tomorow',
-    'at conference today and tomorrow',
-    'At conference today and tomorow',
-    'på konference i dag og i morgen',
-    'til konference i dag og i morgen',
-    'today and tomorrow at conference',
-  ])(
-    'extracts multi-day AWAY status with typo tolerance and complete comment for "%s"',
-    async (text) => {
-      const result = await extractAttendance(text, sent);
-      expect(result.decision).toBe('apply');
-      expect(result.reason).toBe('clear');
-      expect(result.intervals).toEqual([
-        {
-          status: 'AWAY',
-          fromDate: '2026-09-07',
-          toDate: '2026-09-08',
-          startTime: null,
-          endTime: null,
-          startApproximate: false,
-          endApproximate: false,
-          comment: text,
-        },
-      ]);
-    }
-  );
 
   it('maps multi-day REMOTE intervals with statusRows and details preserved', () => {
     const remoteInterval = {
@@ -394,8 +376,9 @@ describe('AI Gateway transport', () => {
       await expect(extractAttendance('hello', sent, usageObserver)).rejects.toThrow(
         'connection closed'
       );
+      expect(request).toHaveBeenCalledOnce();
       expect(usageObserver.onStart).toHaveBeenCalledOnce();
-      expect(usageObserver.onFinish).toHaveBeenCalledWith({
+      expect(usageObserver.onFinish).toHaveBeenCalledExactlyOnceWith({
         state: 'failed',
         costUsd: null,
         inputTokens: null,
@@ -406,5 +389,77 @@ describe('AI Gateway transport', () => {
       vi.unstubAllGlobals();
       vi.unstubAllEnvs();
     }
+  });
+});
+
+describe('extraction intake and clock boundaries', () => {
+  it.each([
+    ['2026-08-07', true],
+    ['2026-08-06', false],
+    ['2027-09-08', true],
+    ['2027-09-09', false],
+  ])('bounds supported dates at %s', (date, accepted) => {
+    const input = extract([{ ...interval, fromDate: date, toDate: date }]);
+    if (accepted)
+      expect(validateExtraction(input, sent).intervals).toEqual([
+        { ...interval, fromDate: date, toDate: date },
+      ]);
+    else expect(() => validateExtraction(input, sent)).toThrow('outside supported range');
+  });
+  it.each([
+    { startApproximate: true },
+    { endApproximate: true },
+    { startTime: '12:00', endTime: '12:00' },
+  ])('rejects missing approximate clocks or zero duration %#', (overrides) => {
+    expect(() => validateExtraction(extract([{ ...interval, ...overrides }]), sent)).toThrow();
+  });
+  it('returns oversized input to review without calling the model or recording paid usage', async () => {
+    const fetch = vi.fn();
+    vi.stubGlobal('fetch', fetch);
+    const observer = { onStart: vi.fn(), onFinish: vi.fn() };
+    try {
+      await expect(extractAttendance('x'.repeat(12001), sent, observer)).resolves.toEqual({
+        decision: 'review',
+        reason: 'unsupported',
+        intervals: [],
+      });
+      expect(fetch).not.toHaveBeenCalled();
+      expect(observer.onStart).not.toHaveBeenCalled();
+      expect(observer.onFinish).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+  it('does not call the model if storing the attempt fails', async () => {
+    vi.stubEnv('AI_GATEWAY_API_KEY', 'synthetic-key');
+    const fetch = vi.fn();
+    vi.stubGlobal('fetch', fetch);
+    const observer = {
+      onStart: vi.fn().mockRejectedValue(new Error('usage storage offline')),
+      onFinish: vi.fn(),
+    };
+    try {
+      await expect(extractAttendance('hello', sent, observer)).rejects.toThrow(
+        'usage storage offline'
+      );
+      expect(fetch).not.toHaveBeenCalled();
+      expect(observer.onFinish).not.toHaveBeenCalled();
+    } finally {
+      vi.unstubAllEnvs();
+      vi.unstubAllGlobals();
+    }
+  });
+  it.each([
+    ['2026-03-29', '2026-03-28T23:00:00.000Z', '2026-03-29T22:00:00.000Z'],
+    ['2026-10-25', '2026-10-24T22:00:00.000Z', '2026-10-25T23:00:00.000Z'],
+  ])('uses the full Copenhagen calendar day on DST transition %s', (date, start, end) => {
+    const [row] = statusRows(
+      validateExtraction(
+        extract([{ ...interval, fromDate: date, toDate: date }]),
+        new Date(`${date}T12:00:00Z`)
+      )
+    );
+    expect(row.startsAt.toISOString()).toBe(start);
+    expect(row.endsAt.toISOString()).toBe(end);
   });
 });

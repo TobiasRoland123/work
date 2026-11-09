@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { PgDialect } from 'drizzle-orm/pg-core';
 
 const auth = vi.hoisted(() => ({
@@ -35,17 +35,17 @@ beforeEach(() => {
   auth.notFound.mockClear();
 });
 
+afterEach(() => vi.unstubAllEnvs());
+
 describe('workspace roles', () => {
   it.each(APP_ROLES)('reads the stored %s role, rather than session claims', async (role) => {
     auth.limit.mockResolvedValueOnce([{ role }]);
     await expect(getUserRole('selected-user')).resolves.toBe(role);
     const query = new PgDialect().sqlToQuery(auth.where.mock.calls[0][0]);
-    expect(query.sql).toContain('"slack_deactivated"');
-    expect(query.sql).toContain('"slack_team_id"');
-    expect(query.sql).toContain('"slack_user_id" is not null');
-    expect(query.params).toEqual(
-      expect.arrayContaining(['selected-user', 'T_WORKSPACE', false, ''])
+    expect(query.sql).toBe(
+      '("users"."user_id" = $1 and ("users"."slack_team_id" = $2 and "users"."slack_deactivated" = $3 and "users"."slack_user_id" is not null and "users"."slack_user_id" <> $4))'
     );
+    expect(query.params).toEqual(['selected-user', 'T_WORKSPACE', false, '']);
   });
 
   it('fails closed for unknown roles and missing/inactive workspace accounts', async () => {
@@ -62,7 +62,7 @@ describe('workspace roles', () => {
     expect(auth.where).not.toHaveBeenCalled();
   });
 
-  it('uses the latest role on a later request', async () => {
+  it('uses the latest stored role on independent uncached calls', async () => {
     auth.limit
       .mockResolvedValueOnce([{ role: 'ADMIN' }])
       .mockResolvedValueOnce([{ role: 'EMPLOYEE' }]);

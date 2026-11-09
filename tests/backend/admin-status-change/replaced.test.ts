@@ -94,4 +94,41 @@ describe('replacedAnnouncements', () => {
     );
     expect(entry).toMatchObject({ statusId: 11, status: 'FROM_HOME', sourceMessageKey: null });
   });
+  it('records the newest visible announcement and splits an older run around it', () => {
+    const newer = declaration({
+      id: 12,
+      status: 'FROM_HOME',
+      details: 'Changed plans',
+      fromDate: '2026-11-06',
+      toDate: '2026-11-06',
+      announcedAt: new Date('2026-11-06T08:00:00Z'),
+    });
+    const older = {
+      ...imported,
+      toDate: '2026-11-07',
+      endsAt: copenhagenWallClock('2026-11-08', 0, 0),
+    };
+    const result = replacedAnnouncements(
+      [older, newer],
+      { fromDate: '2026-11-05', toDate: '2026-11-07' },
+      new Map([[messageKey, revision]])
+    );
+    expect(result.map(({ statusId, fromDay, toDay }) => ({ statusId, fromDay, toDay }))).toEqual([
+      { statusId: 10, fromDay: '2026-11-05', toDay: '2026-11-05' },
+      { statusId: 12, fromDay: '2026-11-06', toDay: '2026-11-06' },
+      { statusId: 10, fromDay: '2026-11-07', toDay: '2026-11-07' },
+    ]);
+    expect(result[1]).toMatchObject({
+      details: 'Changed plans',
+      sourceMessageKey: null,
+      sourceRevision: null,
+    });
+  });
+
+  it.each([
+    { fromDate: null, toDate: '2026-11-06' },
+    { fromDate: '2026-11-05', toDate: null },
+  ])('records no replaced days for an incomplete planned range %o', (range) => {
+    expect(replacedAnnouncements([imported], range, new Map())).toEqual([]);
+  });
 });

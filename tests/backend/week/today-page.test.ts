@@ -3,6 +3,7 @@ import React from 'react';
 
 const mocked = vi.hoisted(() => ({
   requirePageUserId: vi.fn(),
+  isAdmin: vi.fn(),
   getWeekOverview: vi.fn(),
   getUpcoming: vi.fn(),
   listPinnedIds: vi.fn(),
@@ -13,6 +14,7 @@ const mocked = vi.hoisted(() => ({
 }));
 
 vi.mock('@/lib/auth/require-user', () => ({ requirePageUserId: mocked.requirePageUserId }));
+vi.mock('@/lib/auth/roles', () => ({ isAdmin: mocked.isAdmin }));
 vi.mock('@/lib/services/weekOverviewQuery', () => ({ getWeekOverview: mocked.getWeekOverview }));
 vi.mock('@/lib/services/statusService', () => ({
   statusService: { getUpcomingStatusesByUserUserId: mocked.getUpcoming },
@@ -34,6 +36,7 @@ describe('/today page days', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-09-26T10:00:00Z'));
     mocked.requirePageUserId.mockReset().mockResolvedValue('viewer');
+    mocked.isAdmin.mockReset().mockResolvedValue(false);
     mocked.getWeekOverview.mockReset().mockResolvedValue([]);
     mocked.getUpcoming.mockReset().mockResolvedValue([]);
     mocked.listPinnedIds.mockReset().mockResolvedValue([]);
@@ -44,6 +47,31 @@ describe('/today page days', () => {
     vi.useRealTimers();
     vi.unstubAllGlobals();
   });
+
+  it('authenticates before reading cookies, shared attendance, plans, pins, or roles', async () => {
+    mocked.requirePageUserId.mockRejectedValueOnce(new Error('LOGIN'));
+    await expect(WeekPage({ searchParams: Promise.resolve({}) })).rejects.toThrow('LOGIN');
+    for (const read of [
+      mocked.cookies,
+      mocked.getWeekOverview,
+      mocked.getUpcoming,
+      mocked.listPinnedIds,
+      mocked.isAdmin,
+    ]) {
+      expect(read).not.toHaveBeenCalled();
+    }
+  });
+
+  it.each([false, true])(
+    'passes the live admin permission %s to the board for the signed-in person',
+    async (admin) => {
+      mocked.isAdmin.mockResolvedValueOnce(admin);
+      const element = await WeekPage({ searchParams: Promise.resolve({}) });
+      expect(mocked.isAdmin).toHaveBeenCalledExactlyOnceWith('viewer');
+      expect(mocked.getUpcoming).toHaveBeenCalledExactlyOnceWith('viewer');
+      expect(element.props.canSetColleagueStatus).toBe(admin);
+    }
+  );
 
   it.each(['2026-09-26T10:00:00Z', '2026-09-25T22:30:00Z'])(
     'passes only Copenhagen today for the default route at %s, including a weekend',

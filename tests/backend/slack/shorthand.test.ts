@@ -1,6 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { extractAttendance, statusRows } from '@/lib/slack/extraction';
-import { KMD_OFFICES } from '@/lib/slack/shorthand';
 
 // 07:26 in Copenhagen on the test date. This also verifies that "rest of day"
 // uses the message's local clock rather than a processing-time clock.
@@ -47,16 +46,6 @@ afterEach(() => {
 });
 
 describe('common Slack shorthand', () => {
-  it('defines the verified KMD office cities and aliases', () => {
-    expect(KMD_OFFICES).toEqual([
-      { city: 'Ballerup', office: 'KMD Ballerup', aliases: ['ballerup'] },
-      { city: 'Odense', office: 'KMD Odense', aliases: ['odense'] },
-      { city: 'Aalborg', office: 'KMD Aalborg', aliases: ['aalborg', 'ålborg'] },
-      { city: 'Aarhus', office: 'KMD Aarhus', aliases: ['aarhus', 'århus'] },
-      { city: 'Warszawa', office: 'KMD Warszawa', aliases: ['warszawa', 'warsaw'] },
-    ]);
-  });
-
   it.each([
     ['wfh', interval()],
     ['  WFH  ', interval()],
@@ -356,23 +345,42 @@ describe('common Slack shorthand', () => {
   });
 
   it.each([
-    ['In at 7', '07:00'],
-    ['In at 9', '09:00'],
-    ['In at 10', '10:00'],
-    ['In 9.45', '09:45'],
-    ['in the office at 10.30', '10:30'],
-  ])('turns %s into a late arrival and office start', async (text, time) => {
-    const result = await extractAttendance(text, sent);
-    if (time <= '09:00') {
-      expect(result.intervals).toEqual([interval({ status: 'IN_OFFICE', startTime: time })]);
-    } else {
-      expect(result.intervals).toEqual([
-        interval({ status: 'IN_LATE', endTime: time }),
-        interval({ status: 'IN_OFFICE', startTime: time }),
-      ]);
-    }
-    expect(result.decision).toBe('apply');
-    expect(result.reason).toBe('clear');
+    ['In at 7', [interval({ status: 'IN_OFFICE', startTime: '07:00' })]],
+    ['In at 9', [interval({ status: 'IN_OFFICE', startTime: '09:00' })]],
+    [
+      'In at 09:01',
+      [
+        interval({ status: 'IN_LATE', endTime: '09:01' }),
+        interval({ status: 'IN_OFFICE', startTime: '09:01' }),
+      ],
+    ],
+    [
+      'In at 10',
+      [
+        interval({ status: 'IN_LATE', endTime: '10:00' }),
+        interval({ status: 'IN_OFFICE', startTime: '10:00' }),
+      ],
+    ],
+    [
+      'In 9.45',
+      [
+        interval({ status: 'IN_LATE', endTime: '09:45' }),
+        interval({ status: 'IN_OFFICE', startTime: '09:45' }),
+      ],
+    ],
+    [
+      'in the office at 10.30',
+      [
+        interval({ status: 'IN_LATE', endTime: '10:30' }),
+        interval({ status: 'IN_OFFICE', startTime: '10:30' }),
+      ],
+    ],
+  ])('uses the workday boundary for an explicit arrival %s', async (text, expected) => {
+    await expect(extractAttendance(text, sent)).resolves.toEqual({
+      decision: 'apply',
+      reason: 'clear',
+      intervals: expected,
+    });
   });
 
   it.each(['Wfh, In at 10:00', 'Starting from home, in at 10'])(
@@ -401,13 +409,20 @@ describe('common Slack shorthand', () => {
     'wfh, hope to come in later',
     'in at 25:00',
     'wfh?',
+    'in at 10:60',
+    'In at -1',
+    'Working from home with <@U123>',
   ])('sends the complete unsupported message %s to AI', async (text) => {
     vi.stubEnv('AI_GATEWAY_API_KEY', 'synthetic-test-key');
     const request = vi
       .fn()
       .mockResolvedValue(reply({ decision: 'review', reason: 'uncertain_status', intervals: [] }));
     vi.stubGlobal('fetch', request);
-    await extractAttendance(text, sent);
+    await expect(extractAttendance(text, sent)).resolves.toEqual({
+      decision: 'review',
+      reason: 'uncertain_status',
+      intervals: [],
+    });
     expect(request).toHaveBeenCalledOnce();
     const payload = JSON.parse(request.mock.calls[0][1].body);
     expect(JSON.parse(payload.messages[1].content).message).toBe(text);

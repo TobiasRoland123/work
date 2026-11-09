@@ -33,15 +33,19 @@ beforeEach(() => {
   vi.stubEnv('CRON_SECRET', 'synthetic-cron-secret');
 });
 afterEach(() => {
+  vi.restoreAllMocks();
   vi.unstubAllEnvs();
 });
 
 describe('Slack HTTP authentication boundaries', () => {
-  it('requires configuration and fails closed', async () => {
-    vi.stubEnv('SLACK_SIGNING_SECRET', '');
-    expect((await events(signed('{}'))).status).toBe(503);
-    expect(enqueueSlackEvent).not.toHaveBeenCalled();
-  });
+  it.each(['SLACK_SIGNING_SECRET', 'SLACK_TEAM_ID', 'SLACK_CHANNEL_ID'])(
+    'requires %s and fails closed',
+    async (name) => {
+      vi.stubEnv(name, '');
+      expect((await events(signed('{}'))).status).toBe(503);
+      expect(enqueueSlackEvent).not.toHaveBeenCalled();
+    }
+  );
   it('rejects unsigned challenge requests before returning the challenge', async () => {
     const response = await events(
       new Request('https://work.example/api/slack/events', {
@@ -57,6 +61,7 @@ describe('Slack HTTP authentication boundaries', () => {
     const response = await events(
       signed(JSON.stringify({ type: 'url_verification', challenge: 'verified' }))
     );
+    expect(response.status).toBe(200);
     expect(await response.json()).toEqual({ challenge: 'verified' });
     expect(enqueueSlackEvent).not.toHaveBeenCalled();
     expect(publishSlackMessage).not.toHaveBeenCalled();
@@ -183,15 +188,18 @@ describe('Slack HTTP authentication boundaries', () => {
     expect(JSON.stringify(log.mock.calls)).not.toContain('private event text');
     log.mockRestore();
   });
-  it.each(['review', 'ignored'] as const)('does not publish %s intake outcomes', async (outcome) => {
-    vi.mocked(enqueueSlackEvent).mockResolvedValue(
-      outcome === 'review'
-        ? { outcome, messageKey: 'T:C:1788766200.000001', revision: '1788766200.000001' }
-        : { outcome, reason: 'wrong_channel' }
-    );
-    expect((await events(signed(JSON.stringify({ text: 'private message' })))).status).toBe(200);
-    expect(publishSlackMessage).not.toHaveBeenCalled();
-  });
+  it.each(['review', 'ignored'] as const)(
+    'does not publish %s intake outcomes',
+    async (outcome) => {
+      vi.mocked(enqueueSlackEvent).mockResolvedValue(
+        outcome === 'review'
+          ? { outcome, messageKey: 'T:C:1788766200.000001', revision: '1788766200.000001' }
+          : { outcome, reason: 'wrong_channel' }
+      );
+      expect((await events(signed(JSON.stringify({ text: 'private message' })))).status).toBe(200);
+      expect(publishSlackMessage).not.toHaveBeenCalled();
+    }
+  );
   it('ignores signed null payloads without crashing', async () => {
     vi.mocked(enqueueSlackEvent).mockResolvedValue({ outcome: 'ignored', reason: 'invalid_event' });
     expect((await events(signed('null'))).status).toBe(200);
@@ -234,6 +242,13 @@ describe('Slack HTTP authentication boundaries', () => {
       })
     );
     expect(response.status).toBe(200);
+    expect(await response.json()).toEqual({
+      applied: 1,
+      review: 0,
+      ignored: 0,
+      retried: 0,
+      superseded: 0,
+    });
     expect(processSlackInbox).toHaveBeenCalledOnce();
   });
 });
@@ -281,6 +296,60 @@ describe('manual attendance identity boundary', () => {
             method: 'POST',
             body: JSON.stringify({ status: 'MADE_UP' }),
           })
+        )
+      ).status
+    ).toBe(400);
+    expect(statusService.createNewStatus).not.toHaveBeenCalled();
+  });
+});
+
+describe('Slack HTTP failure responses', () => {
+  it('limits UTF-8 bytes rather than JavaScript characters', async () => {
+    const body = JSON.stringify({ text: 'ø'.repeat(128000) });
+    expect(body.length).toBeLessThan(256000);
+    expect((await events(signed(body))).status).toBe(413);
+    expect(enqueueSlackEvent).not.toHaveBeenCalled();
+    expect(publishSlackMessage).not.toHaveBeenCalled();
+  });
+  it('accepts a signed body at the exact byte limit and passes the parsed payload to intake', async () => {
+    const text = 'x'.repeat(256000 - 11);
+    const body = JSON.stringify({ text });
+    expect(Buffer.byteLength(body)).toBe(256000);
+    vi.mocked(enqueueSlackEvent).mockResolvedValue({ outcome: 'ignored', reason: 'invalid_event' });
+    expect((await events(signed(body))).status).toBe(200);
+    expect(enqueueSlackEvent).toHaveBeenCalledExactlyOnceWith({ text });
+    expect(publishSlackMessage).not.toHaveBeenCalled();
+  });
+  it('returns a retryable cron failure without returning database exception details', async () => {
+    vi.mocked(processSlackInbox).mockRejectedValue(new Error('secret database connection'));
+    const response = await processInbox(
+      new Request('https://work.example/api/slack/process', {
+        headers: { authorization: 'Bearer synthetic-cron-secret' },
+      })
+    );
+    expect(response.status).toBe(503);
+    expect(await response.json()).toEqual({ error: 'Slack queue processing failed' });
+  });
+  it.each([{ provider: 'MicrosoftEntraID', userId: 'old-user' }, { provider: 'slack' }])(
+    'refuses an invalid manual-status session %#',
+    async (session) => {
+      vi.mocked(auth).mockResolvedValue(session as never);
+      const response = await createStatus(
+        new Request('https://work.example/api/status', {
+          method: 'POST',
+          body: JSON.stringify({ status: 'FROM_HOME' }),
+        })
+      );
+      expect(response.status).toBe(401);
+      expect(statusService.createNewStatus).not.toHaveBeenCalled();
+    }
+  );
+  it('refuses malformed manual-status JSON before writing', async () => {
+    vi.mocked(auth).mockResolvedValue({ provider: 'slack', userId: 'real-user' } as never);
+    expect(
+      (
+        await createStatus(
+          new Request('https://work.example/api/status', { method: 'POST', body: '{' })
         )
       ).status
     ).toBe(400);
