@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { cn } from '@/lib/className'; // Adjust the import path as needed
+import { cn } from '@/lib/className';
 
 describe('cn', () => {
   it('merges class names correctly', () => {
@@ -7,10 +7,12 @@ describe('cn', () => {
   });
 
   it('handles conditionals like clsx', () => {
-    expect(cn('foo', false && 'bar', 'baz')).toBe('foo baz');
+    expect(cn('foo', [null, 'bar'], { active: true, hidden: false }, undefined)).toBe(
+      'foo bar active'
+    );
   });
 
   it('applies tailwind-merge rules', () => {
-    expect(cn('px-2', 'px-4')).toBe('px-4'); // tailwind-merge should resolve px-4 last
+    expect(cn('px-2', 'text-sm', 'px-4', 'hover:px-8')).toBe('text-sm px-4 hover:px-8');
   });
 });

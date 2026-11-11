@@ -14,6 +14,7 @@ import {
   descriptionRows,
   extractAttendance,
   statusRows,
+  slackMentionIds,
   validateContextualExtraction,
 } from './extraction';
 import { AttendanceContextPendingError, loadAttendanceContext } from './attendance-context';
@@ -223,9 +224,11 @@ export async function processSlackInbox(limit = 2, messageKey?: string, revision
       const messageInstant = new Date(Number(job.messageTs) * 1000);
       const context = await loadAttendanceContext(job, user.id);
       // A learned shorthand answers its whole phrase without an AI request.
-      const learned = context.entries.length
-        ? { phrase: null, learnedShorthandId: null, template: null, extraction: null }
-        : await readLearnedShorthand(job, job.text ?? '', messageInstant);
+      const mentionIds = slackMentionIds(job.text ?? '');
+      const learned =
+        context.entries.length || mentionIds.length
+          ? { phrase: null, learnedShorthandId: null, template: null, extraction: null }
+          : await readLearnedShorthand(job, job.text ?? '', messageInstant);
       let extraction =
         learned.extraction ??
         (await extractAttendance(
@@ -262,6 +265,19 @@ export async function processSlackInbox(limit = 2, messageKey?: string, revision
           : context.entries.length
             ? []
             : descriptionRows(extraction, job.text ?? '', messageInstant);
+      // Resolve a bounded set of explicit Slack identities, never model-generated names.
+      const recipients = mentionIds.length
+        ? await db
+            .select({ id: users.userId, slackId: users.slackUserId })
+            .from(users)
+            .where(
+              and(
+                eq(users.slackTeamId, job.teamId),
+                inArray(users.slackUserId, mentionIds),
+                eq(users.slackDeactivated, false)
+              )
+            )
+        : [];
       const hasRows = rows.length > 0;
       failureReason = 'status_write_failed';
       const applied = await db.transaction(async (tx) => {
@@ -289,16 +305,30 @@ export async function processSlackInbox(limit = 2, messageKey?: string, revision
           const inserted = await tx
             .insert(status)
             .values(
-              rows.map((row) => ({
-                ...row,
-                emoji: statusEmoji(row.status, job.text),
-                userID: user.id,
-                sourceMessageKey: job.messageKey,
-                createdAt: new Date(Number(job.revision) * 1000).toISOString(),
-                announcedAt: new Date(Number(job.revision) * 1000),
-              }))
+              rows.flatMap((row, index) => {
+                const selected =
+                  extraction.decision === 'apply'
+                    ? (extraction.intervals[index]?.mentionedUserIds ?? [])
+                    : [];
+                const userIds = new Set([
+                  user.id,
+                  ...recipients
+                    .filter(
+                      (recipient) => recipient.slackId && selected.includes(recipient.slackId)
+                    )
+                    .map((recipient) => recipient.id),
+                ]);
+                return [...userIds].map((userID) => ({
+                  ...row,
+                  emoji: statusEmoji(row.status, job.text),
+                  userID,
+                  sourceMessageKey: job.messageKey,
+                  createdAt: new Date(Number(job.revision) * 1000).toISOString(),
+                  announcedAt: new Date(Number(job.revision) * 1000),
+                }));
+              })
             )
-            .returning({ id: status.id });
+            .returning({ id: status.id, userID: status.userID });
           const directTargets = (extraction.replaces ?? []).flatMap((id) => context.sourceIds[id]);
           // A correction of a correction inherits its ancestors. Deleting the
           // intermediate message must not resurrect a plan the latest one replaced.
@@ -311,12 +341,14 @@ export async function processSlackInbox(limit = 2, messageKey?: string, revision
           const targets = [...new Set([...directTargets, ...ancestors.map((row) => row.id)])];
           if (targets.length)
             await tx.insert(statusSupersessions).values(
-              inserted.flatMap((replacement) =>
-                targets.map((targetStatusId) => ({
-                  targetStatusId,
-                  replacementStatusId: replacement.id,
-                }))
-              )
+              inserted
+                .filter((replacement) => replacement.userID === user.id)
+                .flatMap((replacement) =>
+                  targets.map((targetStatusId) => ({
+                    targetStatusId,
+                    replacementStatusId: replacement.id,
+                  }))
+                )
             );
         }
         await tx

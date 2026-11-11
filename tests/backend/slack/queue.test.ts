@@ -31,7 +31,9 @@ describe('Slack queue publication', () => {
     await publishSlackMessage(job);
     await publishSlackMessage(job);
     await publishSlackMessage({ ...job, revision: '1788766500.000001' });
+    await publishSlackMessage({ ...job, messageKey: 'TTEST:COTHER:1788766200.000001' });
     const calls = vi.mocked(send).mock.calls;
+    expect(send).toHaveBeenCalledTimes(4);
     expect(calls[0]).toEqual([
       'slack-status',
       job,
@@ -39,6 +41,7 @@ describe('Slack queue publication', () => {
     ]);
     expect(calls[0][2]?.idempotencyKey).toBe(calls[1][2]?.idempotencyKey);
     expect(calls[0][2]?.idempotencyKey).not.toBe(calls[2][2]?.idempotencyKey);
+    expect(calls[0][2]?.idempotencyKey).not.toBe(calls[3][2]?.idempotencyKey);
   });
   it('propagates publication failure so Slack delivery can retry', async () => {
     vi.mocked(send).mockRejectedValueOnce(new Error('queue offline'));
@@ -52,8 +55,8 @@ describe('Slack queue publication', () => {
 
 describe('Slack queue consumer', () => {
   it('processes the referenced revision and permits acknowledgement on completion', async () => {
-    await callbacks.handler!(job);
-    expect(processQueuedSlackMessage).toHaveBeenCalledWith(job.messageKey, job.revision);
+    await expect(callbacks.handler!(job)).resolves.toBeUndefined();
+    expect(processQueuedSlackMessage).toHaveBeenCalledExactlyOnceWith(job.messageKey, job.revision);
   });
   it('reschedules pending jobs using the database backoff instead of acknowledging', async () => {
     const pending = new SlackMessagePendingError(117);
@@ -85,5 +88,33 @@ describe('Slack queue consumer', () => {
     expect(
       config.crons.filter((cron: { path: string }) => cron.path.startsWith('/api/slack'))
     ).toEqual([]);
+    expect(config.crons).not.toEqual(
+      expect.arrayContaining([expect.objectContaining({ path: '/api/slack/process' })])
+    );
+  });
+});
+
+describe('Slack queue payload bounds', () => {
+  it.each([
+    null,
+    {},
+    { ...job, messageKey: '' },
+    { ...job, messageKey: 'x'.repeat(257) },
+    { ...job, revision: '1788766200' },
+    { ...job, revision: '1788766200.1' },
+    { ...job, revision: '1788766200.000001extra' },
+    { ...job, text: 'private' },
+  ])('refuses malformed publication and acknowledges malformed consumption %#', async (payload) => {
+    await expect(publishSlackMessage(payload as typeof job)).rejects.toThrow();
+    expect(send).not.toHaveBeenCalled();
+    const log = vi.spyOn(console, 'error').mockImplementation(() => {});
+    await expect(callbacks.handler!(payload)).resolves.toBeUndefined();
+    expect(processQueuedSlackMessage).not.toHaveBeenCalled();
+    expect(log).toHaveBeenCalledExactlyOnceWith('slack_queue', { outcome: 'invalid_job' });
+  });
+  it('allows the maximum reference length without copying unknown data', async () => {
+    const boundary = { ...job, messageKey: 'x'.repeat(256) };
+    await publishSlackMessage(boundary);
+    expect(vi.mocked(send).mock.calls[0][1]).toEqual(boundary);
   });
 });

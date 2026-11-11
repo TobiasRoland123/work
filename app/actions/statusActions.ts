@@ -53,7 +53,7 @@ export async function createNewStatusAction(newStatus: NewStatus, options?: { ec
  * days. Echoed unless the person unticked "Post in #wørk".
  */
 export async function planStatusAction(input: unknown) {
-  return savePlan(await requireUserId(), input, { echo: true });
+  return savePlan(await requireUserId(), input);
 }
 
 /**
@@ -66,15 +66,19 @@ export async function planColleagueStatusAction(colleagueUserId: unknown, input:
     return { ok: false as const, error: 'Only admins can change a colleague’s status.' };
   if (typeof colleagueUserId !== 'string' || !(await getUserRole(colleagueUserId)))
     return { ok: false as const, error: 'That person is not an active member of the workspace.' };
-  return savePlan(colleagueUserId, input, { echo: false });
+  return savePlan(colleagueUserId, input, adminUserId);
 }
 
-async function savePlan(userID: string, input: unknown, { echo }: { echo: boolean }) {
+/** `adminUserId` is set when an admin saves the plan for a colleague; the change is recorded. */
+async function savePlan(userID: string, input: unknown, adminUserId?: string) {
   try {
     const planned = planStatuses(input);
-    const echoed = echo && planSchema.parse(input).echo !== false;
-    for (const row of planned)
-      await statusService.createNewStatus({ ...row, userID }, { echo: echoed });
+    if (adminUserId) await statusService.createColleagueStatuses(adminUserId, userID, planned);
+    else {
+      const echoed = planSchema.parse(input).echo !== false;
+      for (const row of planned)
+        await statusService.createNewStatus({ ...row, userID }, { echo: echoed });
+    }
     // Also edits this person's posted Echoes whose days the new status replaced.
     syncEchoesAfterResponse(userID);
     return { ok: true as const, count: planned.length };

@@ -39,9 +39,18 @@ describe('test database setup', () => {
 
     expect(query).not.toHaveBeenCalledWith('CREATE ROLE service_role NOLOGIN');
     expect(apply).toHaveBeenCalledOnce();
+    expect(pushSchema).toHaveBeenCalledOnce();
   });
 
-  it('propagates connection and introspection errors', async () => {
+  it('stops before schema introspection if the database connection fails', async () => {
+    query.mockRejectedValueOnce(new Error('connection refused'));
+
+    await expect(prepareTestDatabase()).rejects.toThrow('connection refused');
+    expect(pushSchema).not.toHaveBeenCalled();
+    expect(apply).not.toHaveBeenCalled();
+  });
+
+  it('propagates schema introspection errors', async () => {
     pushSchema.mockRejectedValueOnce(new Error('The server does not support SSL connections'));
 
     await expect(prepareTestDatabase()).rejects.toThrow(

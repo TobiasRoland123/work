@@ -1,7 +1,7 @@
 # Wørk
 
 Wørk tells Charlie Tango who is in the Copenhagen office today. Colleagues announce
-their own exceptions in a Slack channel in ordinary language; the app interprets those
+their own exceptions, including shared plans with explicitly mentioned colleagues, in a Slack channel in ordinary language; the app interprets those
 announcements and shows the resulting presence on a shared week overview and directory.
 
 ## Language
@@ -10,6 +10,9 @@ announcements and shows the resulting presence on a shared week overview and dir
 
 **Declaration**:
 An announcement a person makes about their own attendance, in their own words.
+An explicitly shared plan can also apply to colleagues tagged with Slack mentions.
+For example, "At the client today together with @Peter" can apply the same interval
+to both people. Incidental mentions and plain names do not assign attendance.
 One Declaration can cover several days or several intervals. Only top-level channel
 messages are Declarations; thread replies never are, even in the person's own thread.
 _Avoid_: Status update, message, post

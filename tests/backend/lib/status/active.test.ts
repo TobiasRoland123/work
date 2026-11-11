@@ -58,9 +58,8 @@ it('does not expire approximate arrival at its nominal clock time', () => {
     startsAt: new Date('2026-09-06T22:00:00Z'),
     endsAt: new Date('2026-09-07T08:00:00Z'),
   });
-  expect(
-    selectActiveStatus([{ ...late, endsAtApproximate: true }], new Date('2026-09-07T09:00:00Z'))
-  ).not.toBeNull();
+  const approximate = { ...late, endsAtApproximate: true };
+  expect(selectActiveStatus([approximate], new Date('2026-09-07T09:00:00Z'))).toBe(approximate);
   expect(
     selectActiveStatus([{ ...late, endsAtApproximate: true }], new Date('2026-09-07T22:00:00Z'))
   ).toBeNull();
@@ -76,4 +75,13 @@ it('orders UTC announcement instants across mixed database wall-clock createdAt 
     announcedAt: new Date('2026-09-07T09:00:00Z'),
   };
   expect(selectActiveStatus([manual, imported], new Date('2026-09-07T10:00:00Z'))).toBe(imported);
+});
+
+it('selects the newest applicable announcement independently of input order', () => {
+  const older = row({ id: 1, createdAt: '2026-09-07T07:00:00Z' });
+  const newer = row({ id: 2, createdAt: '2026-09-07T08:00:00Z' });
+  const now = new Date('2026-09-07T09:00:00Z');
+  expect(selectActiveStatus([newer, older], now)).toBe(newer);
+  expect(selectActiveStatus([older, newer], now)).toBe(newer);
+  expect(selectActiveStatus([], now)).toBeNull();
 });

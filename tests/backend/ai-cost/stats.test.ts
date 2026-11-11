@@ -13,6 +13,8 @@ describe('AI cost periods', () => {
   it('accepts only the offered periods and defaults to 30 days', () => {
     expect(aiCostPeriod('7')).toBe(7);
     expect(aiCostPeriod('90')).toBe(90);
+    expect(aiCostPeriod('30')).toBe(30);
+    expect(aiCostPeriod(7)).toBe(30);
     expect(aiCostPeriod(undefined)).toBe(30);
     expect(aiCostPeriod('365')).toBe(30);
     expect(aiCostPeriod(['7'])).toBe(30);
@@ -65,10 +67,42 @@ describe('AI usage totals', () => {
     });
   });
 
+  it('converts numeric database aggregates without losing reported zero costs', () => {
+    expect(
+      aiUsageFromRow({
+        costUsd: '0',
+        calls: '2',
+        unpricedCalls: '1',
+        failedCalls: '1',
+        inputTokens: '100',
+        outputTokens: null,
+      })
+    ).toEqual({
+      costUsd: 0,
+      calls: 2,
+      unpricedCalls: 1,
+      failedCalls: 1,
+      inputTokens: 100,
+      outputTokens: 0,
+    });
+    const first = { ...emptyAiUsage(), costUsd: 0, calls: 1 };
+    const second = { ...emptyAiUsage(), costUsd: 0.25, calls: 2, outputTokens: 3 };
+    expect(addAiUsage(first, second)).toEqual({
+      ...emptyAiUsage(),
+      costUsd: 0.25,
+      calls: 3,
+      outputTokens: 3,
+    });
+    expect(first).toEqual({ ...emptyAiUsage(), costUsd: 0, calls: 1 });
+    expect(second.costUsd).toBe(0.25);
+  });
+
   it('averages over priced calls only', () => {
     const usage = { ...emptyAiUsage(), costUsd: 0.003, calls: 5, unpricedCalls: 2 };
     expect(averageCostPerPricedCall(usage)).toBeCloseTo(0.001);
     expect(averageCostPerPricedCall({ ...usage, costUsd: null })).toBeNull();
     expect(averageCostPerPricedCall(emptyAiUsage())).toBeNull();
+    expect(averageCostPerPricedCall({ ...usage, calls: 2, unpricedCalls: 2 })).toBeNull();
+    expect(averageCostPerPricedCall({ ...usage, costUsd: 0 })).toBe(0);
   });
 });

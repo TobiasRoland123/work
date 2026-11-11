@@ -1,6 +1,5 @@
 import { InferSelectModel, InferInsertModel } from 'drizzle-orm';
 import { users, status, userStatus } from './schema';
-import { Status } from '@/components/ui/Status/Status';
 
 // Type for querying users (SELECT operations)
 export type User = InferSelectModel<typeof users>;
@@ -28,7 +27,10 @@ export type DayPresence = {
 // Type for inserting new users (INSERT operations)
 export type NewUser = InferInsertModel<typeof users>;
 
-export type Status = InferSelectModel<typeof status>;
+export type Status = InferSelectModel<typeof status> & {
+  /** Present only when another colleague authored the source Slack announcement. */
+  sourceAuthor?: { name: string | null };
+};
 
 export type NewStatus = InferInsertModel<typeof status>;
 

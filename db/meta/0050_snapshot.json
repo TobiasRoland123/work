@@ -1,9 +1,167 @@
 {
-  "id": "2717733d-4c8b-4d8e-8cb6-e7958583bb3d",
+  "id": "ded36779-730f-458b-a4f6-4536aacb2d06",
   "prevId": "19e11221-1c3b-44c6-8a28-f607a1223eea",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
+    "public.admin_status_changes": {
+      "name": "admin_status_changes",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "serial",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "admin_user_id": {
+          "name": "admin_user_id",
+          "type": "varchar(36)",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "user_id": {
+          "name": "user_id",
+          "type": "varchar(36)",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "status_id": {
+          "name": "status_id",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "status": {
+          "name": "status",
+          "type": "user_status",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "details": {
+          "name": "details",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "time": {
+          "name": "time",
+          "type": "timestamp",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "from_date": {
+          "name": "from_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "to_date": {
+          "name": "to_date",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "replaced": {
+          "name": "replaced",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "overrides_import": {
+          "name": "overrides_import",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "admin_status_changes_created_idx": {
+          "name": "admin_status_changes_created_idx",
+          "columns": [
+            {
+              "expression": "created_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "admin_status_changes_user_idx": {
+          "name": "admin_status_changes_user_idx",
+          "columns": [
+            {
+              "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "admin_status_changes_admin_user_id_users_user_id_fk": {
+          "name": "admin_status_changes_admin_user_id_users_user_id_fk",
+          "tableFrom": "admin_status_changes",
+          "tableTo": "users",
+          "columnsFrom": [
+            "admin_user_id"
+          ],
+          "columnsTo": [
+            "user_id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "admin_status_changes_user_id_users_user_id_fk": {
+          "name": "admin_status_changes_user_id_users_user_id_fk",
+          "tableFrom": "admin_status_changes",
+          "tableTo": "users",
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "user_id"
+          ],
+          "onDelete": "cascade",
+          "onUpdate": "no action"
+        },
+        "admin_status_changes_status_id_status_id_fk": {
+          "name": "admin_status_changes_status_id_status_id_fk",
+          "tableFrom": "admin_status_changes",
+          "tableTo": "status",
+          "columnsFrom": [
+            "status_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": true
+    },
     "public.business_phone_numbers": {
       "name": "business_phone_numbers",
       "schema": "",
@@ -59,8 +217,12 @@
           "name": "employee_stats_access_user_id_users_user_id_fk",
           "tableFrom": "employee_stats_access",
           "tableTo": "users",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["user_id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "user_id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -68,8 +230,12 @@
           "name": "employee_stats_access_granted_by_user_id_users_user_id_fk",
           "tableFrom": "employee_stats_access",
           "tableTo": "users",
-          "columnsFrom": ["granted_by_user_id"],
-          "columnsTo": ["user_id"],
+          "columnsFrom": [
+            "granted_by_user_id"
+          ],
+          "columnsTo": [
+            "user_id"
+          ],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -164,8 +330,12 @@
           "name": "learned_shorthands_blocked_by_correction_id_status_corrections_id_fk",
           "tableFrom": "learned_shorthands",
           "tableTo": "status_corrections",
-          "columnsFrom": ["blocked_by_correction_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "blocked_by_correction_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -175,7 +345,11 @@
         "learned_shorthands_phrase_unique": {
           "name": "learned_shorthands_phrase_unique",
           "nullsNotDistinct": false,
-          "columns": ["team_id", "channel_id", "phrase"]
+          "columns": [
+            "team_id",
+            "channel_id",
+            "phrase"
+          ]
         }
       },
       "policies": {},
@@ -262,8 +436,12 @@
           "name": "pinned_colleagues_user_id_users_user_id_fk",
           "tableFrom": "pinned_colleagues",
           "tableTo": "users",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["user_id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "user_id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -271,8 +449,12 @@
           "name": "pinned_colleagues_colleague_user_id_users_user_id_fk",
           "tableFrom": "pinned_colleagues",
           "tableTo": "users",
-          "columnsFrom": ["colleague_user_id"],
-          "columnsTo": ["user_id"],
+          "columnsFrom": [
+            "colleague_user_id"
+          ],
+          "columnsTo": [
+            "user_id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -280,7 +462,10 @@
       "compositePrimaryKeys": {
         "pinned_colleagues_user_id_colleague_user_id_pk": {
           "name": "pinned_colleagues_user_id_colleague_user_id_pk",
-          "columns": ["user_id", "colleague_user_id"]
+          "columns": [
+            "user_id",
+            "colleague_user_id"
+          ]
         }
       },
       "uniqueConstraints": {},
@@ -399,8 +584,12 @@
           "name": "shorthand_observations_message_key_slack_messages_message_key_fk",
           "tableFrom": "shorthand_observations",
           "tableTo": "slack_messages",
-          "columnsFrom": ["message_key"],
-          "columnsTo": ["message_key"],
+          "columnsFrom": [
+            "message_key"
+          ],
+          "columnsTo": [
+            "message_key"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -408,8 +597,12 @@
           "name": "shorthand_observations_learned_shorthand_id_learned_shorthands_id_fk",
           "tableFrom": "shorthand_observations",
           "tableTo": "learned_shorthands",
-          "columnsFrom": ["learned_shorthand_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "learned_shorthand_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -417,8 +610,12 @@
           "name": "shorthand_observations_correction_id_status_corrections_id_fk",
           "tableFrom": "shorthand_observations",
           "tableTo": "status_corrections",
-          "columnsFrom": ["correction_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "correction_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -621,8 +818,12 @@
           "name": "slack_message_feedback_message_key_slack_messages_message_key_fk",
           "tableFrom": "slack_message_feedback",
           "tableTo": "slack_messages",
-          "columnsFrom": ["message_key"],
-          "columnsTo": ["message_key"],
+          "columnsFrom": [
+            "message_key"
+          ],
+          "columnsTo": [
+            "message_key"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -630,8 +831,12 @@
           "name": "slack_message_feedback_reviewer_user_id_users_user_id_fk",
           "tableFrom": "slack_message_feedback",
           "tableTo": "users",
-          "columnsFrom": ["reviewer_user_id"],
-          "columnsTo": ["user_id"],
+          "columnsFrom": [
+            "reviewer_user_id"
+          ],
+          "columnsTo": [
+            "user_id"
+          ],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -641,7 +846,10 @@
         "slack_message_feedback_revision_unique": {
           "name": "slack_message_feedback_revision_unique",
           "nullsNotDistinct": false,
-          "columns": ["message_key", "revision"]
+          "columns": [
+            "message_key",
+            "revision"
+          ]
         }
       },
       "policies": {},
@@ -933,8 +1141,12 @@
           "name": "status_user_id_users_user_id_fk",
           "tableFrom": "status",
           "tableTo": "users",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["user_id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "user_id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -946,7 +1158,9 @@
           "name": "allow_service_role_select",
           "as": "PERMISSIVE",
           "for": "SELECT",
-          "to": ["service_role"],
+          "to": [
+            "service_role"
+          ],
           "using": "true"
         }
       },
@@ -1055,8 +1269,12 @@
           "name": "status_corrections_user_id_users_user_id_fk",
           "tableFrom": "status_corrections",
           "tableTo": "users",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["user_id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "user_id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1064,8 +1282,12 @@
           "name": "status_corrections_original_status_id_status_id_fk",
           "tableFrom": "status_corrections",
           "tableTo": "status",
-          "columnsFrom": ["original_status_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "original_status_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
           "onUpdate": "no action"
         },
@@ -1073,8 +1295,12 @@
           "name": "status_corrections_correction_status_id_status_id_fk",
           "tableFrom": "status_corrections",
           "tableTo": "status",
-          "columnsFrom": ["correction_status_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "correction_status_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "set null",
           "onUpdate": "no action"
         }
@@ -1137,8 +1363,12 @@
           "name": "status_supersessions_target_status_id_status_id_fk",
           "tableFrom": "status_supersessions",
           "tableTo": "status",
-          "columnsFrom": ["target_status_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "target_status_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1146,8 +1376,12 @@
           "name": "status_supersessions_replacement_status_id_status_id_fk",
           "tableFrom": "status_supersessions",
           "tableTo": "status",
-          "columnsFrom": ["replacement_status_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "replacement_status_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1155,7 +1389,10 @@
       "compositePrimaryKeys": {
         "status_supersessions_target_status_id_replacement_status_id_pk": {
           "name": "status_supersessions_target_status_id_replacement_status_id_pk",
-          "columns": ["target_status_id", "replacement_status_id"]
+          "columns": [
+            "target_status_id",
+            "replacement_status_id"
+          ]
         }
       },
       "uniqueConstraints": {},
@@ -1268,8 +1505,12 @@
           "name": "users_organisation_id_organisations_id_fk",
           "tableFrom": "users",
           "tableTo": "organisations",
-          "columnsFrom": ["organisation_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "organisation_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "restrict",
           "onUpdate": "no action"
         }
@@ -1279,12 +1520,17 @@
         "users_email_unique": {
           "name": "users_email_unique",
           "nullsNotDistinct": false,
-          "columns": ["email"]
+          "columns": [
+            "email"
+          ]
         },
         "users_slack_identity_unique": {
           "name": "users_slack_identity_unique",
           "nullsNotDistinct": false,
-          "columns": ["slack_team_id", "slack_user_id"]
+          "columns": [
+            "slack_team_id",
+            "slack_user_id"
+          ]
         }
       },
       "policies": {},
@@ -1320,8 +1566,12 @@
           "name": "users_business_phone_numbers_user_id_users_user_id_fk",
           "tableFrom": "users_business_phone_numbers",
           "tableTo": "users",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["user_id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "user_id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1329,8 +1579,12 @@
           "name": "users_business_phone_numbers_business_phone_numbers_id_business_phone_numbers_id_fk",
           "tableFrom": "users_business_phone_numbers",
           "tableTo": "business_phone_numbers",
-          "columnsFrom": ["business_phone_numbers_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "business_phone_numbers_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1370,8 +1624,12 @@
           "name": "users_organisation_roles_user_id_users_user_id_fk",
           "tableFrom": "users_organisation_roles",
           "tableTo": "users",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["user_id"],
+          "columnsFrom": [
+            "user_id"
+          ],
+          "columnsTo": [
+            "user_id"
+          ],
           "onDelete": "cascade",
           "onUpdate": "no action"
         },
@@ -1379,8 +1637,12 @@
           "name": "users_organisation_roles_organisation_role_id_organisation_roles_id_fk",
           "tableFrom": "users_organisation_roles",
           "tableTo": "organisation_roles",
-          "columnsFrom": ["organisation_role_id"],
-          "columnsTo": ["id"],
+          "columnsFrom": [
+            "organisation_role_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1390,218 +1652,17 @@
       "policies": {},
       "checkConstraints": {},
       "isRLSEnabled": false
-    },
-    "public.status_echoes": {
-      "name": "status_echoes",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "serial",
-          "primaryKey": true,
-          "notNull": true
-        },
-        "status_id": {
-          "name": "status_id",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "user_id": {
-          "name": "user_id",
-          "type": "varchar(36)",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "post_on": {
-          "name": "post_on",
-          "type": "date",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "status": {
-          "name": "status",
-          "type": "user_status",
-          "typeSchema": "public",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "emoji": {
-          "name": "emoji",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "details": {
-          "name": "details",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "from_date": {
-          "name": "from_date",
-          "type": "date",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "to_date": {
-          "name": "to_date",
-          "type": "date",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "time_note": {
-          "name": "time_note",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "state": {
-          "name": "state",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "'scheduled'"
-        },
-        "attempts": {
-          "name": "attempts",
-          "type": "integer",
-          "primaryKey": false,
-          "notNull": true,
-          "default": 0
-        },
-        "next_attempt_at": {
-          "name": "next_attempt_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        },
-        "last_error": {
-          "name": "last_error",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "channel_id": {
-          "name": "channel_id",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "ts": {
-          "name": "ts",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "posted_text": {
-          "name": "posted_text",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "posted_at": {
-          "name": "posted_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "deleted_in_slack_at": {
-          "name": "deleted_in_slack_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "created_at": {
-          "name": "created_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "status_echoes_state_post_on_idx": {
-          "name": "status_echoes_state_post_on_idx",
-          "columns": [
-            {
-              "expression": "state",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "post_on",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "status_echoes_user_idx": {
-          "name": "status_echoes_user_idx",
-          "columns": [
-            {
-              "expression": "user_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "status_echoes_status_id_status_id_fk": {
-          "name": "status_echoes_status_id_status_id_fk",
-          "tableFrom": "status_echoes",
-          "tableTo": "status",
-          "columnsFrom": ["status_id"],
-          "columnsTo": ["id"],
-          "onDelete": "set null",
-          "onUpdate": "no action"
-        },
-        "status_echoes_user_id_users_user_id_fk": {
-          "name": "status_echoes_user_id_users_user_id_fk",
-          "tableFrom": "status_echoes",
-          "tableTo": "users",
-          "columnsFrom": ["user_id"],
-          "columnsTo": ["user_id"],
-          "onDelete": "cascade",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {
-        "status_echoes_status_unique": {
-          "name": "status_echoes_status_unique",
-          "nullsNotDistinct": false,
-          "columns": ["status_id"]
-        },
-        "status_echoes_message_unique": {
-          "name": "status_echoes_message_unique",
-          "nullsNotDistinct": false,
-          "columns": ["channel_id", "ts"]
-        }
-      },
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": true
     }
   },
   "enums": {
     "public.system_role": {
       "name": "system_role",
       "schema": "public",
-      "values": ["ADMIN", "MANAGER", "EMPLOYEE"]
+      "values": [
+        "ADMIN",
+        "MANAGER",
+        "EMPLOYEE"
+      ]
     },
     "public.user_status": {
       "name": "user_status",

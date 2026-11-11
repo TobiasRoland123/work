@@ -18,7 +18,7 @@
 .dark .person-sheet-plan-button:hover {
   background: var(--office-primary-hover);
 }
-.dark .office-status-dialog,
+.dark .office-status-dialog[data-swipe-direction='right'],
 .dark .person-sheet {
   box-shadow: -12px 0 40px #0007;
 }

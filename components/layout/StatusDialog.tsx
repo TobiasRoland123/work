@@ -1,10 +1,18 @@
 'use client';
 
-import { useState, type ReactNode } from 'react';
+import { useState, type ReactElement } from 'react';
 import { useRouter } from 'next/navigation';
-import * as Dialog from '@radix-ui/react-dialog';
 import { X } from 'lucide-react';
 import { StatusForm } from '@/components/StatusForm/StatusForm';
+import {
+  Drawer,
+  DrawerClose,
+  DrawerContent,
+  DrawerDescription,
+  DrawerTitle,
+  DrawerTrigger,
+} from '@/components/ui/drawer';
+import { useMediaQuery } from '@/hooks/useMediaQuery';
 
 export type StatusDialogProps = {
   userId: string;
@@ -15,10 +23,13 @@ export type StatusDialogProps = {
   initialDays?: string[];
   /** First week offered in the planner. */
   weekStart?: string;
-  trigger?: ReactNode;
+  trigger?: ReactElement;
   /** Set when an admin sets the status on behalf of this colleague. */
   colleague?: { userId: string; name: string };
 };
+
+/** Same breakpoint as the phone layout in shell.css. */
+const PHONE_QUERY = '(max-width: 760px)';
 
 export function StatusDialog({
   userId,
@@ -32,26 +43,29 @@ export function StatusDialog({
 }: StatusDialogProps) {
   const router = useRouter();
   const [step, setStep] = useState(1);
-  function changeOpen(value: boolean) {
-    onOpenChange(value);
-    setStep(1);
-  }
+  // Phones get a bottom sheet with a swipe handle, larger screens a panel sliding in from the right.
+  const isPhone = useMediaQuery(PHONE_QUERY);
   return (
-    <Dialog.Root open={open} onOpenChange={changeOpen}>
-      {trigger && <Dialog.Trigger asChild>{trigger}</Dialog.Trigger>}
-      <Dialog.Portal>
-        <Dialog.Overlay className="office-dialog-overlay" />
-        <Dialog.Content className="office-status-dialog">
-          <Dialog.Title className="sr-only">
+    <Drawer
+      open={open}
+      onOpenChange={onOpenChange}
+      // Reset the step once the close animation has finished, so the sheet doesn't jump mid-slide.
+      onOpenChangeComplete={(isOpen) => !isOpen && setStep(1)}
+      swipeDirection={isPhone ? 'down' : 'right'}
+      showSwipeHandle={isPhone}
+    >
+      {trigger && <DrawerTrigger render={trigger} />}
+      <DrawerContent className="office-status-dialog" overlayClassName="office-drawer-overlay">
+        <div className="office-status-dialog-scroll">
+          <DrawerTitle className="sr-only">
             {colleague ? `Set status for ${colleague.name}` : 'Set my status'}
-          </Dialog.Title>
-          <Dialog.Description className="sr-only">
+          </DrawerTitle>
+          <DrawerDescription className="sr-only">
             {colleague
               ? `Tell colleagues where ${colleague.name} will be working, today or on days ahead.`
               : 'Tell your colleagues where you will be working, today or on days ahead.'}
-          </Dialog.Description>
+          </DrawerDescription>
           <StatusForm
-            key={open ? 'open' : 'closed'}
             userId={userId}
             currentStep={step}
             setCurrentStep={setStep}
@@ -59,18 +73,18 @@ export function StatusDialog({
             weekStart={weekStart}
             colleague={colleague}
             onSaved={() => {
-              changeOpen(false);
+              onOpenChange(false);
               onSaved?.();
               router.refresh();
             }}
             closeButton={
-              <Dialog.Close className="status-form-close" aria-label="Close status form">
+              <DrawerClose className="status-form-close" aria-label="Close status form">
                 <X size={20} />
-              </Dialog.Close>
+              </DrawerClose>
             }
           />
-        </Dialog.Content>
-      </Dialog.Portal>
-    </Dialog.Root>
+        </div>
+      </DrawerContent>
+    </Drawer>
   );
 }

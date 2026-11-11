@@ -2,14 +2,14 @@ import React from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Status } from '@/db/types';
-import { copenhagenDate } from '@/lib/status/active';
-import { addDays, workWeekDays } from '@/lib/status/week';
+import { workWeekDays } from '@/lib/status/week';
 
 const mocked = vi.hoisted(() => ({
   requireUserId: vi.fn(),
   isAdmin: vi.fn(),
   getUserRole: vi.fn(),
   createNewStatus: vi.fn(),
+  createColleagueStatuses: vi.fn(),
 }));
 
 vi.mock('@/lib/auth/require-user', () => ({ requireUserId: mocked.requireUserId }));
@@ -18,46 +18,59 @@ vi.mock('@/lib/auth/roles', () => ({
   getUserRole: mocked.getUserRole,
 }));
 vi.mock('@/lib/services/statusService', () => ({
-  statusService: { createNewStatus: mocked.createNewStatus },
+  statusService: {
+    createNewStatus: mocked.createNewStatus,
+    createColleagueStatuses: mocked.createColleagueStatuses,
+  },
 }));
 vi.mock('@/lib/services/echoService', () => ({ syncUserEchoes: vi.fn() }));
 
 import { planColleagueStatusAction, planStatusAction } from '@/app/actions/statusActions';
 
-const from = addDays(copenhagenDate(), 7);
-const plan = { status: 'FROM_HOME', when: { kind: 'range', from, to: addDays(from, 1) } };
+const from = '2026-09-28';
+const plan = { status: 'FROM_HOME', when: { kind: 'range', from, to: '2026-09-29' } };
 
 describe('setting a colleague’s status', () => {
   beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-09-21T10:00:00Z'));
     vi.clearAllMocks();
     mocked.requireUserId.mockResolvedValue('admin');
     mocked.isAdmin.mockResolvedValue(true);
     mocked.getUserRole.mockResolvedValue('EMPLOYEE');
     mocked.createNewStatus.mockResolvedValue({});
+    mocked.createColleagueStatuses.mockResolvedValue([]);
   });
 
-  it('saves the plan on the colleague’s behalf for an admin, never echoing it', async () => {
+  afterEach(() => vi.useRealTimers());
+
+  it('saves the plan on the colleague’s behalf for an admin', async () => {
     await expect(planColleagueStatusAction('colleague', plan)).resolves.toEqual({
       ok: true,
       count: 1,
     });
     expect(mocked.isAdmin).toHaveBeenCalledWith('admin');
-    expect(mocked.createNewStatus).toHaveBeenCalledWith(
-      expect.objectContaining({ userID: 'colleague', status: 'FROM_HOME', fromDate: from }),
-      { echo: false }
-    );
+    // Saved through the recorded path, attributed to the admin.
+    expect(mocked.createColleagueStatuses).toHaveBeenCalledWith('admin', 'colleague', [
+      expect.objectContaining({ status: 'FROM_HOME', fromDate: from, toDate: '2026-09-29' }),
+    ]);
+    expect(mocked.createNewStatus).not.toHaveBeenCalled();
   });
 
   it('does not echo a colleague’s status even when the form asks for it', async () => {
     await planColleagueStatusAction('colleague', { ...plan, echo: true });
-    expect(mocked.createNewStatus).toHaveBeenCalledWith(expect.anything(), { echo: false });
+    expect(mocked.createColleagueStatuses).toHaveBeenCalledWith('admin', 'colleague', [
+      expect.objectContaining({ status: 'FROM_HOME', fromDate: from, toDate: '2026-09-29' }),
+    ]);
+    expect(mocked.createNewStatus).not.toHaveBeenCalled();
   });
 
   it('refuses managers and employees', async () => {
     mocked.isAdmin.mockResolvedValue(false);
     const result = await planColleagueStatusAction('colleague', plan);
     expect(result.ok).toBe(false);
-    expect(mocked.createNewStatus).not.toHaveBeenCalled();
+    expect(mocked.getUserRole).not.toHaveBeenCalled();
+    expect(mocked.createColleagueStatuses).not.toHaveBeenCalled();
   });
 
   it('refuses people outside the active workspace', async () => {
@@ -67,19 +80,39 @@ describe('setting a colleague’s status', () => {
       ok: false,
       error: 'That person is not an active member of the workspace.',
     });
-    expect(mocked.createNewStatus).not.toHaveBeenCalled();
+    expect(mocked.getUserRole).toHaveBeenCalledWith('departed');
+    expect(mocked.createColleagueStatuses).not.toHaveBeenCalled();
   });
 
   it('rejects a non-string colleague id', async () => {
     const result = await planColleagueStatusAction({ userId: 'colleague' }, plan);
     expect(result.ok).toBe(false);
-    expect(mocked.createNewStatus).not.toHaveBeenCalled();
+    expect(mocked.createColleagueStatuses).not.toHaveBeenCalled();
+  });
+
+  it('rejects unauthenticated requests before checking permissions or saving', async () => {
+    mocked.requireUserId.mockRejectedValueOnce(new Error('LOGIN'));
+    await expect(planColleagueStatusAction('colleague', plan)).rejects.toThrow('LOGIN');
+    expect(mocked.isAdmin).not.toHaveBeenCalled();
+    expect(mocked.getUserRole).not.toHaveBeenCalled();
+    expect(mocked.createColleagueStatuses).not.toHaveBeenCalled();
+  });
+
+  it('rejects an invalid plan without writing a colleague declaration', async () => {
+    await expect(
+      planColleagueStatusAction('colleague', {
+        ...plan,
+        when: { kind: 'range', from: '2026-09-20', to: '2026-09-20' },
+      })
+    ).resolves.toMatchObject({ ok: false });
+    expect(mocked.createColleagueStatuses).not.toHaveBeenCalled();
   });
 
   it('saves and echoes the signed-in person’s own plan without an admin check', async () => {
     mocked.requireUserId.mockResolvedValue('employee');
     await expect(planStatusAction(plan)).resolves.toEqual({ ok: true, count: 1 });
     expect(mocked.isAdmin).not.toHaveBeenCalled();
+    expect(mocked.createColleagueStatuses).not.toHaveBeenCalled();
     expect(mocked.createNewStatus).toHaveBeenCalledWith(
       expect.objectContaining({ userID: 'employee' }),
       { echo: true }

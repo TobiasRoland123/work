@@ -1,10 +1,23 @@
 import { describe, expect, it } from 'vitest';
-import { defaultStatusEmoji, statusEmoji } from '@/lib/status/emoji';
+import { statusEmoji } from '@/lib/status/emoji';
 
 describe('automatic declaration emoji', () => {
   it('has a default for every attendance status and none for description-only declarations', () => {
-    for (const [status, emoji] of Object.entries(defaultStatusEmoji)) {
-      expect(statusEmoji(status as keyof typeof defaultStatusEmoji)).toBe(emoji);
+    const defaults = {
+      IN_OFFICE: '🏢',
+      FROM_HOME: '🏠',
+      REMOTE: '💻',
+      AT_CLIENT: '💼',
+      SICK: '🤒',
+      IN_LATE: '🕒',
+      LEAVING_EARLY: '🚪',
+      VACATION: '🌴',
+      CHILD_SICK: '🧸',
+      ON_LEAVE: '🌿',
+      AWAY: '🚶',
+    } as const;
+    for (const [status, emoji] of Object.entries(defaults)) {
+      expect(statusEmoji(status as keyof typeof defaults)).toBe(emoji);
     }
     expect(statusEmoji(null, '🌴')).toBeNull();
   });

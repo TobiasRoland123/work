@@ -39,6 +39,8 @@ terminal or sign out and back in, then rerun the project command.
 Do not use `pnpm db:migrate` to initialize a blank database. The historical migration
 chain starts from an introspected existing schema; fresh development databases use
 `pnpm local:db` for Docker or `pnpm db:push` for an existing PostgreSQL server.
+`pnpm db:migrate` refuses to run against a database without a migration ledger. Vercel
+builds apply migrations themselves; see [Database migrations](database-migrations.md).
 
 CI prepares its disposable database with `NODE_ENV=test pnpm db:prepare-test`, using the
 `PG*` connection settings. This creates the required policy role before applying the

@@ -52,6 +52,7 @@ describe('learningPhrase', () => {
     ['Danish negation', 'ikke på kontoret'],
     ['a contraction', "won't make it in"],
     ['a question', 'office today?'],
+    ['a shared attendance mention', 'at client with <@UABC>'],
     ['a long message', 'at the client '.repeat(10)],
   ])('does not learn a phrase with %s', (_, text) => {
     expect(learningPhrase(text, sent)).toBeNull();
@@ -59,6 +60,28 @@ describe('learningPhrase', () => {
 });
 
 describe('learned templates', () => {
+  it('keeps empty recipient lists compatible with existing learned templates', () => {
+    const template = templateFromExtraction(apply(interval({ mentionedUserIds: [] })), sent);
+    expect(template).toEqual({
+      intervals: [
+        {
+          status: 'AT_CLIENT',
+          fromOffset: 0,
+          toOffset: 0,
+          startTime: null,
+          endTime: null,
+          startApproximate: false,
+          endApproximate: false,
+          comment: null,
+        },
+      ],
+    });
+  });
+  it('never stores a recipient assignment in a reusable template', () => {
+    expect(
+      templateFromExtraction(apply(interval({ mentionedUserIds: ['UABC'] })), sent)
+    ).toBeNull();
+  });
   it('stores days relative to the message and resolves them from each new message', () => {
     const template = templateFromExtraction(
       apply(interval({ toDate: '2026-09-08', comment: 'Hos  Kunden' })),
@@ -152,4 +175,18 @@ describe('learningThreshold', () => {
       expected
     );
   });
+});
+
+it('learns exactly the allowed whole-message length and rejects longer phrases', () => {
+  expect(learningPhrase('x'.repeat(100), sent)).toBe('x'.repeat(100));
+  expect(learningPhrase('x'.repeat(101), sent)).toBeNull();
+  expect(learningPhrase('  (edited) ... ', sent)).toBeNull();
+});
+
+it('escapes regexp characters when matching learned comments', () => {
+  const template = templateFromExtraction(apply(interval({ comment: 'Client (A+B).' })), sent)!;
+  expect(extractionFromTemplate(template, 'CLIENT (A+B). today', sent)?.intervals[0].comment).toBe(
+    'CLIENT (A+B). today'
+  );
+  expect(extractionFromTemplate(template, 'CLIENT AABx today', sent)).toBeNull();
 });

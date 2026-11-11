@@ -2,6 +2,7 @@ import { visibleStatusCondition } from '@/lib/status/visible';
 import { and, desc, eq, inArray } from 'drizzle-orm';
 import { db } from '@/db';
 import {
+  adminStatusChanges,
   learnedShorthands,
   slackMessages,
   status,
@@ -454,6 +455,9 @@ export function sandboxResetStatements() {
     .from(users)
     .where(eq(users.slackTeamId, SANDBOX_TEAM_ID));
   return {
+    adminStatusChanges: db
+      .delete(adminStatusChanges)
+      .where(inArray(adminStatusChanges.userId, sandboxUsers)),
     statusCorrections: db
       .delete(statusCorrections)
       .where(inArray(statusCorrections.userId, sandboxUsers)),
@@ -468,6 +472,7 @@ export function sandboxResetStatements() {
 
 export async function resetSandboxData() {
   const statements = sandboxResetStatements();
+  await statements.adminStatusChanges;
   await statements.statusCorrections;
   const deletedEchoes = await statements.statusEchoes.returning({ id: statusEchoes.id });
   const deletedStatus = await statements.status.returning({ id: status.id });

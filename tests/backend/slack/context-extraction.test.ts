@@ -26,9 +26,10 @@ const correction = {
   reason: 'clear',
   replaces: ['prior_1'],
   intervals: [
-    { ...prior.intervals[0], endTime: '11:00', comment: null },
+    { ...prior.intervals[0], endTime: '11:00', comment: null, mentionedUserIds: [] },
     {
       ...prior.intervals[0],
+      mentionedUserIds: [],
       status: 'IN_OFFICE',
       startTime: '11:00',
       endTime: null,
@@ -46,7 +47,7 @@ describe('contextual attendance extraction', () => {
   it('accepts a referenced arrival correction while retaining the prior target date', () => {
     expect(
       validateContextualExtraction(correction, sent, 'Actually make that 11', [prior])
-    ).toMatchObject({ replaces: ['prior_1'], intervals: correction.intervals });
+    ).toEqual(correction);
   });
 
   it.each([
@@ -99,7 +100,7 @@ describe('contextual attendance extraction', () => {
     );
     vi.stubGlobal('fetch', request);
     const result = await extractAttendance('11:00', sent, undefined, [prior]);
-    expect(result).toMatchObject(correction);
+    expect(result).toEqual(correction);
     expect(request).toHaveBeenCalledOnce();
     const body = JSON.parse(String((request.mock.calls[0][1] as RequestInit).body));
     const prompt = JSON.parse(
@@ -115,4 +116,18 @@ describe('contextual attendance extraction', () => {
       body.messages.find((message: { role: string }) => message.role === 'system').content
     ).not.toContain(prior.text);
   });
+});
+
+it('allows an independent announcement or uncertain review without replacing history', () => {
+  expect(
+    validateContextualExtraction({ ...correction, replaces: [] }, sent, 'Independent plan', [prior])
+  ).toEqual({ ...correction, replaces: [] });
+  expect(
+    validateContextualExtraction(
+      { decision: 'review', reason: 'uncertain_time', intervals: [], replaces: [] },
+      sent,
+      'Maybe',
+      [prior]
+    )
+  ).toEqual({ decision: 'review', reason: 'uncertain_time', intervals: [], replaces: [] });
 });

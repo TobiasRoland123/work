@@ -65,3 +65,65 @@ describe('AI Gateway usage response parser', () => {
     });
   });
 });
+
+describe('Gateway usage trust boundaries', () => {
+  it.each([null, undefined, [], 'invalid', 1])(
+    'tolerates an absent or malformed response %j',
+    (body) => {
+      expect(parseGatewayUsage(body)).toEqual({
+        costUsd: null,
+        inputTokens: null,
+        outputTokens: null,
+        responseId: null,
+      });
+    }
+  );
+  it.each([-1, Infinity, NaN, '0.25', null])(
+    'never estimates a malformed billed cost %s from market cost',
+    (cost) => {
+      expect(parseGatewayUsage({ usage: { cost, market_cost: 1 } }).costUsd).toBeNull();
+    }
+  );
+  it('preserves free calls and zero tokens as known values', () => {
+    expect(
+      parseGatewayUsage({
+        id: 'response',
+        usage: { cost: 0, prompt_tokens: 0, completion_tokens: 0 },
+      })
+    ).toEqual({
+      costUsd: '0',
+      inputTokens: 0,
+      outputTokens: 0,
+      responseId: 'response',
+    });
+  });
+  it.each([-1, 0.5, Infinity, Number.MAX_SAFE_INTEGER + 1, '12'])(
+    'rejects unsafe raw token count %s',
+    (count) => {
+      expect(
+        parseGatewayUsage({ usage: { prompt_tokens: count, completion_tokens: count } })
+      ).toEqual({
+        costUsd: null,
+        inputTokens: null,
+        outputTokens: null,
+        responseId: null,
+      });
+    }
+  );
+  it('prefers raw token counts individually and falls back only for invalid fields', () => {
+    const sdk = { inputTokens: 4, outputTokens: 6 } as Parameters<typeof parseGatewayUsage>[1];
+    expect(parseGatewayUsage({ usage: { prompt_tokens: 0, completion_tokens: -1 } }, sdk)).toEqual({
+      costUsd: null,
+      inputTokens: 0,
+      outputTokens: 6,
+      responseId: null,
+    });
+  });
+  it.each([
+    [{ generationId: '', id: 'raw' }, 'raw'],
+    [{ generationId: 123, id: '' }, 'fallback'],
+    [{ generationId: 'gateway', id: 'raw' }, 'gateway'],
+  ])('selects the first usable response identifier %#', (body, expected) => {
+    expect(parseGatewayUsage(body, undefined, 'fallback').responseId).toBe(expected);
+  });
+});

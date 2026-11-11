@@ -8,6 +8,7 @@ import {
   isWeekPanelOpen,
   rememberWeekPanel,
 } from '@/components/week/panelPreference';
+import { WEEK_SCOPE_COOKIE, rememberWeekScope, weekScope } from '@/components/week/scopePreference';
 import { workWeekDays } from '@/lib/status/week';
 
 vi.mock('@/components/layout/PageHeader', () => ({
@@ -82,9 +83,14 @@ describe('side panel toggle', () => {
 
   it('keeps the toggle in the toolbar next to the attendance view switch', () => {
     const { html } = render(false);
-    expect(html).toMatch(
-      /<div class="week-toolbar-actions"><div class="week-filters"[\s\S]*?<\/div><button[^>]*class="week-panel-toggle"/
-    );
+    const actions = html.match(
+      /<div class="week-toolbar-actions">([\s\S]*?)<\/div><button[^>]*class="week-search-toggle"/
+    )?.[1];
+    expect(actions, 'the shared toolbar actions must exist').toBeDefined();
+    expect(actions).toContain('aria-label="Attendance view"');
+    expect(actions).toContain('aria-label="Board order"');
+    expect(actions).toContain('aria-label="Side panel"');
+    expect(actions!.match(/class="week-panel-toggle"/g)).toHaveLength(1);
   });
 });
 
@@ -105,6 +111,24 @@ describe('side panel preference', () => {
     rememberWeekPanel(open);
     expect(document.cookie).toBe(
       `${WEEK_PANEL_COOKIE}=${value}; path=/; max-age=31536000; samesite=lax`
+    );
+  });
+});
+
+describe('remembered day or week', () => {
+  it('is a single day unless the cookie says week', () => {
+    expect(weekScope(undefined)).toBe('day');
+    expect(weekScope('day')).toBe('day');
+    expect(weekScope('garbage')).toBe('day');
+    expect(weekScope('week')).toBe('week');
+  });
+
+  it.each(['day', 'week'] as const)('remembers %s in a year-long site-wide cookie', (scope) => {
+    const document = { cookie: '' };
+    vi.stubGlobal('document', document);
+    rememberWeekScope(scope);
+    expect(document.cookie).toBe(
+      `${WEEK_SCOPE_COOKIE}=${scope}; path=/; max-age=31536000; samesite=lax`
     );
   });
 });

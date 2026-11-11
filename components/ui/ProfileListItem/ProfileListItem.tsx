@@ -1,4 +1,6 @@
+import { announcementAttribution } from '@/lib/status/attribution';
 import { getSlackImageUrl } from '@/lib/slack/image';
+import { slackText } from '@/lib/slack/text';
 import Image from 'next/image';
 import { Status } from '../Status/Status';
 import { AIIndicator } from '../Status/AIIndicator';
@@ -40,6 +42,7 @@ function formatInterval(
 }
 
 export function ProfileListItem({ user, showStatus = false }: ProfileListItemProps) {
+  const attribution = announcementAttribution(user.status);
   const profilePicture = getSlackImageUrl(user.profilePicture);
   const imported = Boolean(user.status?.sourceMessageKey);
   const actionBound = imported ? null : user.status?.time;
@@ -141,11 +144,14 @@ export function ProfileListItem({ user, showStatus = false }: ProfileListItemPro
             </a>
           ) : null}
         </div>
+        {showStatus && attribution && <p className="text-sm">{attribution}</p>}
         {showStatus && user?.status?.details && (
           <div className={'mt-2'}>
             <small>Details:</small>
             <div className={'flex justify-between'}>
-              <p className="max-w-[50ch] bg-white-blue p-2 rounded-md">{user.status.details}</p>
+              <p className="max-w-[50ch] bg-white-blue p-2 rounded-md">
+                {slackText(user.status.details)}
+              </p>
             </div>
           </div>
         )}

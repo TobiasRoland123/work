@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { Status } from '@/db/types';
 import {
-  CorrectionError,
+  CORRECTION_UNAVAILABLE,
   importedRevision,
   isSuperseded,
   planCorrection,
@@ -73,18 +73,24 @@ describe('correcting an imported status', () => {
 
   it('rejects manual statuses, days outside the import and unchanged statuses', () => {
     expect(() => correct({ status: 'SICK' }, { ...imported, sourceMessageKey: null })).toThrow(
-      CorrectionError
+      CORRECTION_UNAVAILABLE
     );
     expect(() => correct({ status: 'SICK', day: '2026-09-24' })).toThrow(
       'That day is not part of this Slack announcement.'
     );
-    expect(() => correct({ status: 'FROM_HOME' })).toThrow(CorrectionError);
+    expect(() => correct({ status: 'FROM_HOME' })).toThrow(
+      'Slack already set this status. Choose the one it should be.'
+    );
+    expect(() => correct({ status: 'SICK', day: '2026-09-20' })).toThrow(
+      'That day is not part of this Slack announcement.'
+    );
   });
 
   it('records the revision only when it wrote the imported Declaration', () => {
     expect(importedRevision(imported, { revision })).toBe(revision);
     expect(importedRevision(imported, { revision: '1790000300.000001' })).toBeNull();
     expect(importedRevision(imported, undefined)).toBeNull();
+    expect(importedRevision({ announcedAt: null }, { revision })).toBeNull();
   });
 
   it('treats a correction as superseded only by a newer overlapping Declaration', () => {
@@ -106,6 +112,14 @@ describe('correcting an imported status', () => {
     );
     expect(
       isSuperseded(correction, [correction, later('2026-09-29')], '2026-09-22', '2026-09-22')
+    ).toBe(false);
+    expect(
+      isSuperseded(
+        correction,
+        [{ ...later('2026-09-22'), announcedAt: correction.announcedAt }],
+        '2026-09-22',
+        '2026-09-22'
+      )
     ).toBe(false);
     expect(
       isSuperseded(correction, [correction, later('2026-09-22')], '2026-09-22', '2026-09-22')

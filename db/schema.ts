@@ -58,6 +58,8 @@ export const users = pgTable(
     slackUserId: varchar('slack_user_id', { length: 32 }),
     slackTeamId: varchar('slack_team_id', { length: 32 }),
     slackDeactivated: boolean('slack_deactivated').default(false).notNull(),
+    // When the person closed the invitation to try WØRK on their phone. Null until then.
+    phoneInviteDismissedAt: timestamp('phone_invite_dismissed_at', { withTimezone: true }),
   },
   (table) => [
     unique('users_email_unique').on(table.email),
@@ -358,6 +360,50 @@ export const statusEchoes = pgTable(
     unique('status_echoes_message_unique').on(table.channelId, table.ts),
     index('status_echoes_state_post_on_idx').on(table.state, table.postOn),
     index('status_echoes_user_idx').on(table.userId),
+  ]
+).enableRLS();
+
+/** A status shown on some of the days an admin overwrote, as it was just before the change. */
+export type ReplacedAnnouncement = {
+  statusId: number;
+  status: (typeof userStatus.enumValues)[number] | null;
+  details: string | null;
+  /** Set when Slack import wrote the replaced status. */
+  sourceMessageKey: string | null;
+  /** Null when the inbox no longer identifies the revision that produced it. */
+  sourceRevision: string | null;
+  fromDay: string;
+  toDay: string;
+};
+
+// A status an admin set on a colleague's behalf, with what the colleague's days showed before.
+// Kept to spot recurring misreadings by Slack import. Rows are never updated.
+// No public RLS policies: only the server database role may access this table.
+export const adminStatusChanges = pgTable(
+  'admin_status_changes',
+  {
+    id: serial().primaryKey().notNull(),
+    // Null once the admin's account is removed; the change itself stays useful.
+    adminUserId: varchar('admin_user_id', { length: 36 }).references(() => users.userId, {
+      onDelete: 'set null',
+    }),
+    userId: varchar('user_id', { length: 36 })
+      .notNull()
+      .references(() => users.userId, { onDelete: 'cascade' }),
+    statusId: integer('status_id').references(() => status.id, { onDelete: 'set null' }),
+    status: userStatus('status').notNull(),
+    details: text('details'),
+    time: timestamp('time'),
+    fromDate: date('from_date').notNull(),
+    toDate: date('to_date').notNull(),
+    replaced: jsonb('replaced').$type<ReplacedAnnouncement[]>().notNull(),
+    /** Whether any replaced status came from Slack import. */
+    overridesImport: boolean('overrides_import').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    index('admin_status_changes_created_idx').on(table.createdAt),
+    index('admin_status_changes_user_idx').on(table.userId),
   ]
 ).enableRLS();
 

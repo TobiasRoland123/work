@@ -5,7 +5,6 @@ import {
   deletedEnvelope,
   editedEnvelope,
   messageEnvelope,
-  sandboxMessageKey,
   sandboxTs,
 } from '@/lib/sandbox/envelope';
 
@@ -34,7 +33,7 @@ describe('sandbox envelopes', () => {
   it('build a message the intake accepts as pending', () => {
     const result = inspect(messageEnvelope({ slackUserId: 'U_LOCAL_A', text: 'wfh', messageTs }));
     expect(result.event).toMatchObject({
-      messageKey: sandboxMessageKey(messageTs),
+      messageKey: `T_LOCAL:C_LOCAL:${messageTs}`,
       teamId: SANDBOX_TEAM_ID,
       channelId: SANDBOX_CHANNEL_ID,
       messageTs,
@@ -50,7 +49,7 @@ describe('sandbox envelopes', () => {
       editedEnvelope({ slackUserId: 'U_LOCAL_A', text: 'wfh tomorrow', messageTs, revision })
     );
     expect(result.event).toMatchObject({
-      messageKey: sandboxMessageKey(messageTs),
+      messageKey: `T_LOCAL:C_LOCAL:${messageTs}`,
       messageTs,
       revision,
       text: 'wfh tomorrow',
@@ -61,7 +60,7 @@ describe('sandbox envelopes', () => {
     const revision = '1789000120.000001';
     const result = inspect(deletedEnvelope({ slackUserId: 'U_LOCAL_A', messageTs, revision }));
     expect(result.event).toMatchObject({
-      messageKey: sandboxMessageKey(messageTs),
+      messageKey: `T_LOCAL:C_LOCAL:${messageTs}`,
       revision,
       slackUserId: 'U_LOCAL_A',
       text: null,

@@ -29,7 +29,8 @@ vi.mock('@/db', () => {
 });
 vi.mock('next/cache', () => ({ revalidateTag: mocks.invalidate }));
 vi.mock('@/lib/supabaseClient', () => ({ supabase: { channel: () => ({ send: mocks.send }) } }));
-vi.mock('@/lib/slack/extraction', () => ({
+vi.mock('@/lib/slack/extraction', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/lib/slack/extraction')>()),
   extractAttendance: mocks.extract,
   statusRows: () => [{ status: 'REMOTE' }],
   descriptionRows: () => [],
@@ -98,6 +99,21 @@ describe('Slack board cache invalidation', () => {
       expect(mocks.send).toHaveBeenCalledTimes(1);
     }
   );
+  it('keeps a committed import successful when realtime broadcast fails', async () => {
+    mocks.transaction.mockResolvedValueOnce(job).mockResolvedValueOnce(true);
+    mocks.select.mockResolvedValueOnce([{ id: 'person' }]);
+    mocks.extract.mockResolvedValueOnce({ decision: 'apply', reason: 'clear', intervals: [] });
+    mocks.send.mockRejectedValueOnce(new Error('realtime offline'));
+    await expect(processSlackInbox(1)).resolves.toEqual({
+      applied: 1,
+      review: 0,
+      ignored: 0,
+      retried: 0,
+      superseded: 0,
+    });
+    expect(mocks.invalidate).toHaveBeenCalledExactlyOnceWith('week-overview');
+    expect(mocks.send).toHaveBeenCalledOnce();
+  });
   it('does not invalidate or broadcast an import whose transaction failed', async () => {
     mocks.transaction.mockResolvedValueOnce(job).mockRejectedValueOnce(new Error('rollback'));
     mocks.select.mockResolvedValueOnce([{ id: 'person' }]);

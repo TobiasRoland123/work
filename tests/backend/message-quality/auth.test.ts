@@ -1,6 +1,8 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const auth = vi.hoisted(() => ({ requireUserId: vi.fn(), limit: vi.fn() }));
+import { PgDialect } from 'drizzle-orm/pg-core';
+
+const auth = vi.hoisted(() => ({ requireUserId: vi.fn(), limit: vi.fn(), where: vi.fn() }));
 vi.mock('@/lib/auth/require-user', () => ({ requireUserId: auth.requireUserId }));
 vi.mock('next/navigation', () => ({
   notFound: () => {
@@ -8,7 +10,7 @@ vi.mock('next/navigation', () => ({
   },
 }));
 vi.mock('@/db', () => ({
-  db: { select: () => ({ from: () => ({ where: () => ({ limit: auth.limit }) }) }) },
+  db: { select: () => ({ from: () => ({ where: auth.where }) }) },
 }));
 import { canReviewMessages, requireMessageReviewer } from '@/lib/auth/message-review';
 
@@ -17,7 +19,10 @@ beforeEach(() => {
   vi.stubEnv('SLACK_TEAM_ID', 'T_CONFIGURED');
   auth.requireUserId.mockReset().mockResolvedValue('selected-user');
   auth.limit.mockReset().mockResolvedValue([]);
+  auth.where.mockReset().mockReturnValue({ limit: auth.limit });
 });
+
+afterEach(() => vi.unstubAllEnvs());
 
 describe('administrative message review and AI costs', () => {
   it.each(['production', 'development'])('allows only admins in %s', async (environment) => {
@@ -29,6 +34,15 @@ describe('administrative message review and AI costs', () => {
       auth.limit.mockResolvedValueOnce([{ role }]);
       await expect(requireMessageReviewer()).rejects.toThrow('NOT_FOUND');
     }
+  });
+
+  it('reads the role only for the requested active mapped workspace member', async () => {
+    auth.limit.mockResolvedValueOnce([{ role: 'ADMIN' }]);
+    await expect(canReviewMessages('requested-user')).resolves.toBe(true);
+    const query = new PgDialect().sqlToQuery(auth.where.mock.calls[0][0]);
+    expect(query.params).toEqual(['requested-user', 'T_CONFIGURED', false, '']);
+    expect(query.sql).toContain('"slack_user_id" is not null');
+    expect(query.sql).toContain('"slack_user_id" <>');
   });
 
   it('rejects an unauthenticated request before querying', async () => {

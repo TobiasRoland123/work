@@ -1,12 +1,14 @@
+import { withStatusAttribution } from './statusAttribution';
 import { visibleStatusCondition } from '@/lib/status/visible';
 import { invalidateWeekOverview } from './weekOverviewCache';
 import { NewStatus } from '@/db/types';
-import { slackMessages, status, statusCorrections } from '@/db/schema';
+import { adminStatusChanges, slackMessages, status, statusCorrections } from '@/db/schema';
 import { db } from '@/db';
-import { and, eq, isNotNull, isNull } from 'drizzle-orm';
+import { and, eq, inArray, isNotNull, isNull } from 'drizzle-orm';
 import { supabase } from '../supabaseClient';
 import { resolvePresenceStatus } from '@/lib/status/active';
-import { upcomingStatuses } from '@/lib/status/plan';
+import { type PlannedStatus, upcomingStatuses } from '@/lib/status/plan';
+import { replacedAnnouncements } from '@/lib/status/admin-change';
 import {
   CORRECTION_UNAVAILABLE,
   CorrectionError,
@@ -22,7 +24,7 @@ export const statusService = {
   // GET METHODS
   async getAllStatuses() {
     const allStatuses = await db.select().from(status).where(visibleStatusCondition());
-    return allStatuses;
+    return withStatusAttribution(allStatuses);
   },
 
   async getStatusByUserUserId(userID: string) {
@@ -30,7 +32,7 @@ export const statusService = {
       .select()
       .from(status)
       .where(and(eq(status.userID, userID), visibleStatusCondition()));
-    return userStatus;
+    return withStatusAttribution(userStatus);
   },
 
   // This gets the latest active status by user
@@ -39,7 +41,7 @@ export const statusService = {
       .select()
       .from(status)
       .where(and(eq(status.userID, userID), visibleStatusCondition()));
-    return resolvePresenceStatus(userStatuses, userID);
+    return resolvePresenceStatus(await withStatusAttribution(userStatuses), userID);
   },
 
   // Declarations that still cover today or a later day, with whether their Echo was not posted
@@ -77,6 +79,66 @@ export const statusService = {
     }
     // Re-fetch the updated user with extras
     return createdStatus[0];
+  },
+
+  /**
+   * Save an admin's plan for a colleague and record, per Declaration, what the colleague's
+   * days showed before, so recurring overrides of Slack import can be investigated.
+   */
+  async createColleagueStatuses(
+    adminUserId: string,
+    userID: string,
+    planned: readonly PlannedStatus[],
+    now: Date = new Date()
+  ) {
+    const created = await db.transaction(async (tx) => {
+      const before = await tx
+        .select()
+        .from(status)
+        .where(and(eq(status.userID, userID), visibleStatusCondition()));
+      const keys = [
+        ...new Set(before.flatMap((row) => (row.sourceMessageKey ? [row.sourceMessageKey] : []))),
+      ];
+      const messages = keys.length
+        ? await tx
+            .select({ key: slackMessages.messageKey, revision: slackMessages.revision })
+            .from(slackMessages)
+            .where(inArray(slackMessages.messageKey, keys))
+        : [];
+      const revisions = new Map(messages.map((message) => [message.key, message.revision]));
+      const rows = [];
+      for (const plan of planned) {
+        const replaced = replacedAnnouncements(before, plan, revisions);
+        const [declaration] = await tx
+          .insert(status)
+          .values({ ...plan, userID, announcedAt: now })
+          .returning();
+        await tx.insert(adminStatusChanges).values({
+          adminUserId,
+          userId: userID,
+          statusId: declaration.id,
+          status: declaration.status!,
+          details: declaration.details,
+          time: declaration.time,
+          fromDate: plan.fromDate!,
+          toDate: plan.toDate!,
+          replaced,
+          overridesImport: replaced.some((entry) => entry.sourceMessageKey !== null),
+          createdAt: now,
+        });
+        rows.push(declaration);
+      }
+      return rows;
+    });
+    if (created.length) invalidateWeekOverview();
+    if (created.length && supabase) {
+      await supabase.channel('status-sync').send({
+        type: 'broadcast',
+        event: 'status_updated',
+        payload: {},
+      });
+    }
+    return created;
   },
 
   /**

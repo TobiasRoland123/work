@@ -218,25 +218,49 @@
   background: #0007;
   z-index: 40;
 }
+/* The status form lives in a Drawer (components/ui/drawer.tsx): a bottom sheet on phones and a
+   panel sliding in from the right on larger screens. The drawer handles position and motion. */
+.office-drawer-overlay {
+  background: #0007;
+}
+/* The drawer's default 4px backdrop blur is heavy across a wide desktop page. */
+@media (min-width: 761px) {
+  .office-drawer-overlay {
+    -webkit-backdrop-filter: blur(1.5px);
+    backdrop-filter: blur(1.5px);
+  }
+}
 .office-status-dialog {
-  position: fixed;
-  right: 0;
-  top: 0;
-  height: 100dvh;
-  width: min(440px, 100%);
-  padding: calc(28px + env(safe-area-inset-top, 0px)) calc(24px + env(safe-area-inset-right, 0px))
-    calc(24px + env(safe-area-inset-bottom, 0px)) calc(24px + env(safe-area-inset-left, 0px));
-  z-index: 41;
+  --drawer-content-width: min(440px, 100%);
+  --drawer-bleed-background: var(--office-surface);
   background: var(--office-surface);
   color: var(--office-ink);
+  border-color: var(--office-border);
+}
+.office-status-dialog[data-swipe-direction='right'] {
+  box-shadow: -12px 0 40px #0000001a;
+}
+.office-status-dialog-scroll {
+  position: relative;
   display: flex;
+  flex: 1;
+  min-height: 0;
   flex-direction: column;
   gap: 28px;
   overflow-y: auto;
-  box-shadow: -12px 0 40px #0000001a;
+  overscroll-behavior: contain;
+  padding: calc(28px + env(safe-area-inset-top, 0px)) calc(24px + env(safe-area-inset-right, 0px))
+    calc(24px + env(safe-area-inset-bottom, 0px)) calc(24px + env(safe-area-inset-left, 0px));
 }
-.office-status-dialog > div {
+.office-status-dialog-scroll > .status-form-body {
   flex: 1;
+}
+/* The bottom sheet starts below the status bar, and the swipe handle sits above the content. */
+.office-status-dialog[data-swipe-direction='down'] .office-status-dialog-scroll {
+  padding-top: 18px;
+}
+.office-status-dialog[data-swipe-direction='down'] [data-slot='drawer-swipe-handle']::after {
+  background: var(--office-border);
 }
 .status-form-header {
   display: flex;
@@ -268,11 +292,15 @@
   position: absolute;
   top: calc(20px + env(safe-area-inset-top, 0px));
   right: calc(18px + env(safe-area-inset-right, 0px));
+  z-index: 1;
   display: grid;
   place-items: center;
   width: 36px;
   height: 36px;
   border-radius: 5px;
+}
+.office-status-dialog[data-swipe-direction='down'] .status-form-close {
+  top: 10px;
 }
 .status-form-close:hover {
   background: var(--office-hover);
@@ -548,6 +576,28 @@
   place-items: center;
   width: 44px;
   height: 44px;
+}
+.office-phone-invite {
+  text-align: center;
+}
+.office-phone-invite h2 {
+  padding-right: 0;
+}
+.office-phone-invite ol {
+  text-align: left;
+}
+.office-phone-invite-icon {
+  margin: 0 auto 12px;
+  color: var(--office-muted);
+}
+.office-phone-invite-qr {
+  display: block;
+  width: 200px;
+  height: 200px;
+  margin: 0 auto 20px;
+  padding: 8px;
+  border-radius: 8px;
+  background: #fff;
 }
 .office-install-dialog button:focus-visible {
   outline: 2px solid var(--office-link);
