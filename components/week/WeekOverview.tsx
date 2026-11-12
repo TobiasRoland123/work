@@ -625,7 +625,7 @@ export function WeekOverview({
   const weekHref = `/today?week=${todayOnly ? currentWeekStart : weekStart}`;
 
   return (
-    <div className="week-page">
+    <div className="week-page" data-view={todayOnly ? 'today' : 'week'}>
       <PageHeader
         title={title}
         subtitle={subtitle}

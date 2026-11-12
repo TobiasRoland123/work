@@ -221,6 +221,9 @@
   background: var(--office-surface);
   border-bottom: 1px solid var(--office-border-soft);
 }
+.week-page[data-view='today'] .week-head {
+  position: static;
+}
 .week-person-head {
   display: flex;
   align-items: flex-end;
