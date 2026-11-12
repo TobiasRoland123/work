@@ -133,6 +133,11 @@ const dayRange = (first: string, last: string) =>
   first === last ? shortDay(first) : `${shortDay(first)} – ${shortDay(last)}`;
 const strike = (text: string) => (text.trim() ? `~${text}~` : text);
 
+const echoStatusLabels: Partial<Record<UserStatus, string>> = {
+  FROM_HOME: 'From Home',
+  REMOTE: 'Working remotely',
+};
+
 /** The dates an Echo names, with replaced days crossed out and the others kept. */
 function echoDates(content: EchoContent, replaced: ReadonlySet<string>): string {
   if (!replaced.size) return dayRange(content.fromDate, content.toDate);
@@ -154,13 +159,18 @@ function echoDates(content: EchoContent, replaced: ReadonlySet<string>): string 
 }
 
 /**
- * The Slack text of an Echo: status, dates, any arrival or leaving time, and the person's note
- * word for word as a quote. Replaced days are crossed out; a cancelled Echo is crossed out whole.
+ * The Slack text of an Echo: status, multi-day dates, any arrival or leaving time, and the
+ * person's note word for word as a quote. Replaced days are crossed out; a cancelled Echo
+ * is crossed out whole.
  */
 export function renderEcho(content: EchoContent, replaced: readonly string[] = []): string {
   const cancelled = isEchoCancelled(content, replaced);
-  const label = statusLabel(content.status);
+  const label = echoStatusLabels[content.status] ?? statusLabel(content.status);
   const emoji = content.emoji ? `${content.emoji} ` : '';
+  const dates =
+    content.fromDate === content.toDate
+      ? ''
+      : ` · ${cancelled ? dayRange(content.fromDate, content.toDate) : echoDates(content, new Set(replaced))}`;
   const time = content.timeNote ? ` · ${content.timeNote}` : '';
   const note = content.details
     ? escapeSlackText(content.details)
@@ -168,7 +178,7 @@ export function renderEcho(content: EchoContent, replaced: readonly string[] = [
         .map((line) => `>${line ? ' ' : ''}${cancelled ? strike(line) : line}`)
     : [];
   const headline = cancelled
-    ? `~${emoji}${label} · ${dayRange(content.fromDate, content.toDate)}${time}~ · *Cancelled*`
-    : `${emoji}*${label}* · ${echoDates(content, new Set(replaced))}${time}`;
+    ? `~${emoji}${label}${dates}${time}~ · *Cancelled*`
+    : `${emoji}*${label}*${dates}${time}`;
   return [headline, ...note].join('\n');
 }

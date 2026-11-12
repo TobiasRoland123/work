@@ -108,7 +108,7 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')('Echoes on isolated Post
         channel,
         username: 'Anna Attendee',
         iconUrl: photo,
-        text: '🏠 *Home* · Mon 2 Nov\n> Plumber &amp; co',
+        text: '🏠 *From Home*\n> Plumber &amp; co',
       },
     ]);
     expect(await echoOf(home.id)).toMatchObject({
@@ -228,7 +228,7 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')('Echoes on isolated Post
     await run(at('2026-11-04T07:05:00Z'), slack.transport);
     expect(slack.posts.map((post) => post.text)).toEqual([
       '🌴 *Vacation* · Mon 2 Nov – Fri 6 Nov',
-      '🏠 *Home* · Wed 4 Nov',
+      '🏠 *From Home*',
     ]);
     expect(await echoOf(home.id)).toMatchObject({ state: 'posted' });
 
@@ -267,7 +267,7 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')('Echoes on isolated Post
     });
 
     await run(at('2026-11-02T07:05:00Z'), slack.transport);
-    expect(slack.posts.map((post) => post.text)).toEqual(['🏠 *Home* · Mon 2 Nov']);
+    expect(slack.posts.map((post) => post.text)).toEqual(['🏠 *From Home*']);
     expect(await echoOf(home.id)).toMatchObject({ state: 'posted' });
 
     await statusService.deleteStatusById(correction.id);
