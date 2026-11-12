@@ -33,6 +33,36 @@ export default defineConfig({
     workspace: [
       {
         extends: true,
+        resolve: {
+          alias: {
+            '@/app/actions/statusActions': path.resolve(
+              dirname,
+              'tests/components/status-actions.mock.ts'
+            ),
+            '@': path.resolve(dirname, '.'),
+          },
+        },
+        esbuild: { jsx: 'automatic' },
+        define: { 'process.env': '{}' },
+        css: { postcss: { plugins: [] } },
+        optimizeDeps: {
+          include: ['react/jsx-runtime', 'react/jsx-dev-runtime'],
+          esbuildOptions: { define: { 'process.env': '{}' } },
+        },
+        test: {
+          name: 'components',
+          include: ['tests/components/**/*.test.tsx'],
+          browser: {
+            enabled: true,
+            headless: true,
+            instances: [{ browser: 'chromium' }],
+            provider: 'playwright',
+            screenshotDirectory: 'test-results/components',
+          },
+        },
+      },
+      {
+        extends: true,
         plugins: [storybookTest({ configDir: path.join(dirname, '.storybook') })],
         test: {
           name: 'storybook',
