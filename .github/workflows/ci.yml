@@ -163,10 +163,15 @@ jobs:
               - 'components/**'
               - 'tests/components/**'
               - 'vitest.config.ts'
+              - '.storybook/**'
+              - '.github/workflows/ci.yml'
+              - 'package.json'
+              - 'pnpm-lock.yaml'
 
   storybook-tests:
     needs: [setup, changes]
-    runs-on: ubuntu-latest
+    # Playwright 1.52 supports Ubuntu 24.04; keep the browser cache key in sync.
+    runs-on: ubuntu-24.04
     if: needs.changes.outputs.components == 'true'
     steps:
       - name: Checkout repository
@@ -195,15 +200,14 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.cache/ms-playwright
-          key: ${{ runner.os }}-playwright-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-playwright-
+          key: ${{ runner.os }}-ubuntu-24.04-${{ runner.arch }}-playwright-${{ hashFiles('**/pnpm-lock.yaml') }}
 
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
       - name: Install Playwright
-        run: npx playwright install --with-deps
+        # System dependencies are still required when browser binaries are cached.
+        run: pnpm exec playwright install --with-deps
 
       - name: Test component interactions
         run: pnpm exec vitest run --project components
