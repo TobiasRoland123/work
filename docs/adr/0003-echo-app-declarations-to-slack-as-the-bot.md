@@ -42,8 +42,10 @@ covering several days gets one Echo on its first day naming the whole range, so 
 two-week holiday does not post ten near-identical messages. A Declaration removed before
 its day is never posted.
 
-The Echo shows the status, its dates, any arrival or leaving time, and the person's note
-word for word. Anyone who can read the channel sees the note, including people who cannot
+The Echo shows the status, any arrival or leaving time, and the person's note word for word.
+Single-day Echoes omit the date because they are posted on the day they apply; multi-day
+Echoes show the date range. Home and remote statuses are labelled "From Home" and
+"Working remotely". Anyone who can read the channel sees the note, including people who cannot
 sign in to Wørk; the opt-out is how a person keeps a plan or note out of Slack.
 
 Wørk has to remember which Echo belongs to which Declaration, because Echoes are edited

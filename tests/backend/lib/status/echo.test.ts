@@ -136,13 +136,13 @@ describe('Echo text', () => {
         time: copenhagenWallClock('2026-11-03', 9, 30),
       })
     )!;
-    expect(renderEcho(late)).toBe('🕒 *In late* · Tue 3 Nov · from 09:30');
+    expect(renderEcho(late)).toBe('🕒 *In late* · from 09:30');
   });
   it('quotes the note word for word, escaping what Slack reads as markup', () => {
     const note = 'Dentist <3 & then\nback "after" lunch > 12';
     expect(
       renderEcho(content({ fromDate: '2026-11-03', toDate: '2026-11-03', details: note }))
-    ).toBe('🌴 *Vacation* · Tue 3 Nov\n> Dentist &lt;3 &amp; then\n> back "after" lunch &gt; 12');
+    ).toBe('🌴 *Vacation*\n> Dentist &lt;3 &amp; then\n> back "after" lunch &gt; 12');
   });
   it('crosses out replaced days and keeps the rest', () => {
     expect(renderEcho(content(), ['2026-11-04', '2026-11-05'])).toBe(
