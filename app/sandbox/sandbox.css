@@ -194,6 +194,50 @@
   display: grid;
   gap: 10px;
 }
+.sandbox-echoes {
+  display: grid;
+  gap: 14px;
+}
+.sandbox-echo {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 10px;
+}
+.sandbox-echo-avatar {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 6px;
+  object-fit: cover;
+  background: var(--office-avatar-soft);
+  color: var(--office-avatar);
+  font-size: 12.5px;
+  font-weight: 600;
+}
+.sandbox-echo header {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+.sandbox-echo header .sandbox-badge {
+  font-size: 10px;
+  padding: 0 4px;
+}
+.sandbox-echo time {
+  color: var(--office-muted);
+  font-size: 12px;
+}
+.sandbox-echo-text p {
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.sandbox-echo-text blockquote {
+  margin-top: 4px;
+  padding-left: 10px;
+  border-left: 3px solid var(--office-border);
+  color: var(--office-muted-strong);
+}
 .sandbox-message {
   border: 1px solid var(--office-border-soft);
   border-radius: 6px;

@@ -24,9 +24,12 @@ vi.mock('@/db', () => {
 vi.mock('next/cache', () => ({ revalidateTag: mocks.invalidate }));
 vi.mock('@/lib/supabaseClient', () => ({ supabase: { channel: () => ({ send: mocks.send }) } }));
 import { statusService } from '@/lib/services/statusService';
+import { db } from '@/db';
 beforeEach(() => {
   vi.clearAllMocks();
   mocks.returning.mockResolvedValue([{ id: 1 }]);
+  // Saving a status runs in a transaction, so it can schedule its Echo atomically.
+  mocks.transaction.mockImplementation(async (run: (tx: typeof db) => unknown) => run(db));
 });
 
 describe('manual status cache invalidation', () => {

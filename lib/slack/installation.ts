@@ -1,7 +1,14 @@
 import { createHmac, randomBytes, timingSafeEqual } from 'node:crypto';
 
 export const installationCookie = '__Host-slack-install';
-export const installationScopes = ['users:read', 'users:read.email', 'channels:history'];
+// chat:write and chat:write.customize let the bot post Echoes under a person's name and photo.
+export const installationScopes = [
+  'users:read',
+  'users:read.email',
+  'channels:history',
+  'chat:write',
+  'chat:write.customize',
+];
 export const installationPath = '/api/slack/install';
 export const installationCallbackPath = '/api/slack/install/callback';
 

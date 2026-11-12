@@ -29,6 +29,10 @@ const currentSchema = [
   { table_name: 'employee_stats_access', column_name: 'user_id' },
   { table_name: 'employee_stats_access', column_name: 'granted_by_user_id' },
   { table_name: 'employee_stats_access', column_name: 'granted_at' },
+  { table_name: 'status_echoes', column_name: 'status_id' },
+  { table_name: 'status_echoes', column_name: 'post_on' },
+  { table_name: 'status_echoes', column_name: 'channel_id' },
+  { table_name: 'status_echoes', column_name: 'ts' },
 ];
 
 describe('local database bootstrap', () => {
