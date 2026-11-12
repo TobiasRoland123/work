@@ -161,6 +161,8 @@ jobs:
           filters: |
             components:
               - 'components/**'
+              - 'tests/components/**'
+              - 'vitest.config.ts'
 
   storybook-tests:
     needs: [setup, changes]
@@ -202,6 +204,9 @@ jobs:
 
       - name: Install Playwright
         run: npx playwright install --with-deps
+
+      - name: Test component interactions
+        run: pnpm exec vitest run --project components
 
       - name: Build Storybook
         run: pnpm build-storybook --quiet

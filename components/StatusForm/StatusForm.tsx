@@ -170,7 +170,7 @@ export function StatusForm({
 
       if (result.ok) {
         const when = describeWhen(values);
-        form.reset();
+        // Keep the saved values visible while the drawer closes. Its unmount resets the form.
         if (colleague)
           toast(
             when ? `Saved for ${colleague.name}: ${when} ✨` : `Saved for ${colleague.name} ✨`
@@ -240,7 +240,7 @@ export function StatusForm({
             )}
             {currentStep === 2 ? (
               <div className="status-form-actions">
-                {when && (
+                {currentStatus && when && (
                   <div className="status-form-summary">
                     <Status status={currentStatus} asLabel={false} /> · {when}
                     {actionTime &&
