@@ -992,8 +992,48 @@
   }
   .week-main,
   .day-panel {
+    --scrollbar-thumb: color-mix(in srgb, var(--office-ink) 28%, transparent);
+    --scrollbar-thumb-hover: color-mix(in srgb, var(--office-ink) 45%, transparent);
     overflow-y: auto;
   }
+
+  /* Hidden scrollbar that appears as a slim pill while the panel is hovered or focused. */
+  .week-main::-webkit-scrollbar,
+  .day-panel::-webkit-scrollbar {
+    width: 10px;
+  }
+  .week-main::-webkit-scrollbar-track,
+  .day-panel::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .week-main::-webkit-scrollbar-thumb,
+  .day-panel::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    background-clip: content-box;
+    border: 3px solid transparent;
+    border-radius: 999px;
+  }
+  .week-main:is(:hover, :focus-within)::-webkit-scrollbar-thumb,
+  .day-panel:is(:hover, :focus-within)::-webkit-scrollbar-thumb {
+    background-color: var(--scrollbar-thumb);
+  }
+  .week-main::-webkit-scrollbar-thumb:hover,
+  .day-panel::-webkit-scrollbar-thumb:hover {
+    background-color: var(--scrollbar-thumb-hover);
+  }
+  /* Firefox has no ::-webkit-scrollbar, so it gets the standard properties instead. */
+  @supports not selector(::-webkit-scrollbar) {
+    .week-main,
+    .day-panel {
+      scrollbar-width: thin;
+      scrollbar-color: transparent transparent;
+    }
+    .week-main:is(:hover, :focus-within),
+    .day-panel:is(:hover, :focus-within) {
+      scrollbar-color: var(--scrollbar-thumb) transparent;
+    }
+  }
+
   .day-panel-inner {
     position: static;
     max-height: none;
