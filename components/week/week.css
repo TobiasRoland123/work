@@ -1134,6 +1134,10 @@
   .week-page > .office-header > :first-child {
     min-width: 0;
   }
+  .week-page > .office-header p {
+    white-space: nowrap;
+    line-height: 21px;
+  }
   .week-page .office-header-actions {
     gap: 6px;
   }
@@ -1210,5 +1214,11 @@
     border-radius: 6px;
     background: var(--office-surface);
     color: var(--office-ink);
+  }
+}
+
+@media (max-width: 360px) {
+  .week-page > .office-header p {
+    font-size: 11px;
   }
 }
