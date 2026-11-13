@@ -65,11 +65,11 @@ function weekTitle(weekStart: string, currentWeekStart: string, includesToday: b
   return `Week ${isoWeekNumber(weekStart)}`;
 }
 
-function weekRange(days: readonly string[]) {
+function weekRange(days: readonly string[], compact = false) {
   const first = days[0];
   const last = days[days.length - 1];
   const sameMonth = first.slice(0, 7) === last.slice(0, 7);
-  return `${formatDay(first, sameMonth ? { day: 'numeric' } : { day: 'numeric', month: 'short' })}–${formatDay(last, { day: 'numeric', month: 'long', year: 'numeric' })}`;
+  return `${formatDay(first, sameMonth ? { day: 'numeric' } : { day: 'numeric', month: 'short' })}–${formatDay(last, { day: 'numeric', month: compact ? 'short' : 'long', year: 'numeric' })}`;
 }
 
 function WeekCell({
@@ -556,6 +556,9 @@ export function WeekOverview({
   const subtitle = todayOnly
     ? formatDay(days[0], { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })
     : `Week ${isoWeekNumber(weekStart)} · ${weekRange(days)}`;
+  const mobileSubtitle = todayOnly
+    ? formatDay(days[0], { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
+    : `W ${isoWeekNumber(weekStart)} · ${weekRange(days, true)}`;
   const statusOn = (person: UserWithExtras, index: number) =>
     dayAnnouncement(person.week?.find((day) => day.date === days[index]));
   const inOfficeOn = (person: UserWithExtras, index: number) =>
@@ -629,6 +632,7 @@ export function WeekOverview({
       <PageHeader
         title={title}
         subtitle={subtitle}
+        mobileSubtitle={mobileSubtitle}
         userId={userId}
         statusWeekStart={weekStart}
         onStatusSaved={onStatusSaved}

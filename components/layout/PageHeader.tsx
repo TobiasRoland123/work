@@ -6,6 +6,7 @@ import { ThemeToggle } from './ThemeToggle';
 export function PageHeader({
   title,
   subtitle,
+  mobileSubtitle,
   userId,
   dateLabel,
   actions,
@@ -14,6 +15,7 @@ export function PageHeader({
 }: {
   title: string;
   subtitle: string;
+  mobileSubtitle?: string;
   userId?: string;
   dateLabel?: string;
   actions?: ReactNode;
@@ -25,7 +27,16 @@ export function PageHeader({
     <header className="office-header">
       <div>
         <h1>{title}</h1>
-        <p>{subtitle}</p>
+        <p>
+          {mobileSubtitle ? (
+            <>
+              <span className="max-[640px]:hidden">{subtitle}</span>
+              <span className="hidden max-[640px]:inline">{mobileSubtitle}</span>
+            </>
+          ) : (
+            subtitle
+          )}
+        </p>
       </div>
       <div className="office-header-actions">
         {actions}
