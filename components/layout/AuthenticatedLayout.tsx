@@ -1,3 +1,5 @@
+import { slackEchoWritesEnabled, IMPORT_STATUS_UNAVAILABLE } from '@/lib/slack/import-mode';
+import { StatusWriteAvailabilityProvider } from './StatusWriteAvailability';
 import type { ReactNode } from 'react';
 import { eq } from 'drizzle-orm';
 import { db } from '@/db';
@@ -22,15 +24,18 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
   ]);
   const showRoleManagement = await isAdmin(userId);
   return (
-    <AppShell
-      showPhoneInvite={!!user && user.phoneInviteDismissedAt === null}
-      firstName={user?.firstName}
-      showMessageQuality={showMessageQuality}
-      showEmployeeStats={showEmployeeStats}
-      showRoleManagement={showRoleManagement}
-    >
-      {children}
-      <Toaster />
-    </AppShell>
+    <StatusWriteAvailabilityProvider enabled={slackEchoWritesEnabled()}>
+      <AppShell
+        showPhoneInvite={!!user && user.phoneInviteDismissedAt === null}
+        firstName={user?.firstName}
+        showMessageQuality={showMessageQuality}
+        showEmployeeStats={showEmployeeStats}
+        showRoleManagement={showRoleManagement}
+      >
+        {!slackEchoWritesEnabled() && <p role="status">{IMPORT_STATUS_UNAVAILABLE}</p>}
+        {children}
+        <Toaster />
+      </AppShell>
+    </StatusWriteAvailabilityProvider>
   );
 }

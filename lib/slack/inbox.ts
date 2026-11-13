@@ -59,6 +59,23 @@ export async function enqueueSlackEvent(input: unknown) {
   if (event.state === 'deleted' && (await markEchoDeletedInSlack(event.channelId, event.messageTs)))
     return { outcome: 'ignored' as const, reason: 'echo_deleted' as const };
   const { changed, statusChanged } = await db.transaction(async (tx) => {
+    // Serialize intake with historical apply and live worker commits. Deletions may
+    // omit their author, so recover the mapping before updating the tombstone.
+    const author =
+      event.slackUserId ??
+      (
+        await tx
+          .select({ author: slackMessages.slackUserId })
+          .from(slackMessages)
+          .where(eq(slackMessages.messageKey, event.messageKey))
+          .limit(1)
+      )[0]?.author;
+    if (author)
+      await tx
+        .select({ id: users.userId })
+        .from(users)
+        .where(and(eq(users.slackTeamId, event.teamId), eq(users.slackUserId, author)))
+        .for('update');
     const [changed] = await tx
       .insert(slackMessages)
       .values({

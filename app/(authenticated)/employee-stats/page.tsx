@@ -1,3 +1,4 @@
+import { HistoryCoverageNotice } from '@/components/attendance/HistoryCoverageNotice';
 import React from 'react';
 import Link from 'next/link';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -97,6 +98,7 @@ export default async function EmployeeStatsPage({ searchParams }: { searchParams
         }
       />
       <div className="content-page-body stats-body">
+        <HistoryCoverageNotice />
         <StatsTabs current="overview" />
         <section aria-labelledby="stats-period-heading" className="stats-section">
           <div className="stats-heading-row">

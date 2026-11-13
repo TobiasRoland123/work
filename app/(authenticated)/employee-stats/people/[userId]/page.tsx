@@ -1,3 +1,4 @@
+import { HistoryCoverageNotice } from '@/components/attendance/HistoryCoverageNotice';
 import React from 'react';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -90,6 +91,7 @@ export default async function EmployeeProfilePage({
         }
       />
       <div className="content-page-body stats-body">
+        <HistoryCoverageNotice />
         <StatsTabs current="employees" />
         <PersonSearch
           variant="compact"

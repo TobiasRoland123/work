@@ -1,5 +1,8 @@
 'use client';
 
+import { useStatusWritesEnabled } from '@/components/layout/StatusWriteAvailability';
+import { IMPORT_STATUS_UNAVAILABLE } from '@/lib/slack/import-mode';
+
 import { useId, useState, useTransition, type FormEvent } from 'react';
 import { toast } from 'sonner';
 import { correctImportedStatusAction } from '@/app/actions/statusActions';
@@ -21,6 +24,7 @@ export function StatusCorrection({
   date: string;
   onSaved: () => void;
 }) {
+  const enabled = useStatusWritesEnabled();
   const id = useId();
   const [open, setOpen] = useState(false);
   const [choice, setChoice] = useState<UserStatus | ''>('');
@@ -32,7 +36,7 @@ export function StatusCorrection({
 
   function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (pending || !choice) return;
+    if (!enabled || pending || !choice) return;
     setError(null);
     startTransition(async () => {
       try {
@@ -61,6 +65,8 @@ export function StatusCorrection({
       }
     });
   }
+
+  if (!enabled) return <p role="status">{IMPORT_STATUS_UNAVAILABLE}</p>;
 
   if (!open)
     return (
