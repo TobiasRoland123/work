@@ -1,3 +1,4 @@
+import { assertManualStatusWritesEnabled } from './import-mode';
 export type SlackProfile = {
   email?: string;
   email_verified?: boolean;
@@ -149,6 +150,7 @@ export async function postSlackMessage(input: {
   username: string;
   iconUrl?: string | null;
 }): Promise<{ channel: string; ts: string }> {
+  assertManualStatusWritesEnabled();
   const result = await slackRequest<{ channel: string; ts: string }>('chat.postMessage', {
     channel: input.channel,
     text: input.text,
@@ -164,5 +166,6 @@ export async function postSlackMessage(input: {
 
 /** Replace the text of a message the bot posted. */
 export async function updateSlackMessage(input: { channel: string; ts: string; text: string }) {
+  assertManualStatusWritesEnabled();
   await slackRequest('chat.update', { channel: input.channel, ts: input.ts, text: input.text });
 }

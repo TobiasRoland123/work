@@ -1,4 +1,9 @@
 'use server';
+import {
+  assertManualStatusWritesEnabled,
+  slackEchoWritesEnabled,
+  IMPORT_STATUS_UNAVAILABLE,
+} from '@/lib/slack/import-mode';
 import { after } from 'next/server';
 import { ZodError } from 'zod';
 import { NewStatus } from '@/db/types';
@@ -40,6 +45,7 @@ export async function getStatusByUserUserIdAction(userID: string) {
 /** Save the signed-in person's own status; it is echoed unless `echo` is false. */
 export async function createNewStatusAction(newStatus: NewStatus, options?: { echo?: boolean }) {
   const userID = await requireUserId();
+  assertManualStatusWritesEnabled();
   const created = await statusService.createNewStatus(
     { ...manualStatus(newStatus), userID },
     { echo: options?.echo !== false }
@@ -71,6 +77,7 @@ export async function planColleagueStatusAction(colleagueUserId: unknown, input:
 
 /** `adminUserId` is set when an admin saves the plan for a colleague; the change is recorded. */
 async function savePlan(userID: string, input: unknown, adminUserId?: string) {
+  if (!slackEchoWritesEnabled()) return { ok: false as const, error: IMPORT_STATUS_UNAVAILABLE };
   try {
     const planned = planStatuses(input);
     if (adminUserId) await statusService.createColleagueStatuses(adminUserId, userID, planned);
@@ -99,6 +106,7 @@ export async function getMyUpcomingStatusesAction() {
 /** Correct the signed-in person's own imported status and record the import error. */
 export async function correctImportedStatusAction(input: unknown) {
   const userID = await requireUserId();
+  if (!slackEchoWritesEnabled()) return { ok: false as const, error: IMPORT_STATUS_UNAVAILABLE };
   try {
     const { duplicate } = await statusService.correctImportedStatus(userID, input);
     syncEchoesAfterResponse(userID);
@@ -116,11 +124,13 @@ export async function updateStatusByUserUserIdAction(
   updatedStatus: Partial<NewStatus>
 ) {
   if (userID !== (await requireUserId())) throw new Error('Forbidden');
+  assertManualStatusWritesEnabled();
   // A correction is a new announcement, preserving the original history/source.
   return statusService.createNewStatus({ ...manualStatus(updatedStatus), userID });
 }
 export async function deleteStatusByIdAction(id: number) {
   const userID = await requireUserId();
+  assertManualStatusWritesEnabled();
   const own = await statusService.getStatusByUserUserId(userID);
   if (!own.some((row) => row.id === id)) throw new Error('Forbidden');
   // Removing a Declaration cancels its Echo: a posted one is crossed out, never deleted.
@@ -130,5 +140,6 @@ export async function deleteStatusByIdAction(id: number) {
 }
 export async function deleteStatusByUserUserIdAction(userID: string) {
   if (userID !== (await requireUserId())) throw new Error('Forbidden');
+  assertManualStatusWritesEnabled();
   return statusService.deleteStatusByUserUserId(userID);
 }

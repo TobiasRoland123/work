@@ -1,5 +1,8 @@
 'use client';
 
+import { useStatusWritesEnabled } from '@/components/layout/StatusWriteAvailability';
+import { IMPORT_STATUS_UNAVAILABLE } from '@/lib/slack/import-mode';
+
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -118,6 +121,7 @@ export function StatusForm({
   weekStart,
   colleague,
 }: StatusFormProps) {
+  const enabled = useStatusWritesEnabled();
   const currentWeek = workWeekStart(copenhagenDate());
   const firstWeek = weekStart && weekStart > currentWeek ? weekStart : currentWeek;
   const presetDays = initialDays?.length ? [...initialDays].sort() : null;
@@ -147,6 +151,7 @@ export function StatusForm({
   }
 
   async function onSubmit(values: StatusFormValues) {
+    if (!enabled) return;
     if (!userId) return;
 
     try {
@@ -194,6 +199,7 @@ export function StatusForm({
     dateRange: form.watch('dateRange'),
   });
 
+  if (!enabled) return <p role="status">{IMPORT_STATUS_UNAVAILABLE}</p>;
   return (
     <>
       <header className="status-form-header" aria-label="Status Form Header">
