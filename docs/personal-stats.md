@@ -41,11 +41,19 @@ Recorded coverage is classified days divided by eligible weekdays. Classified da
 
 Coverage does not measure Slack import completion. The current schema has no per-month import completion proof, and this dashboard cannot distinguish a missing announcement from history that has not been imported. It always reports `historyCompleteness: 'unverified'`. Company comparisons are always provisional, including when recorded coverage is 100%. The page must disclose this limitation.
 
+## Day breakdown and weekday pattern
+
+Below the trend, **Where your days went** shows the whole selected period as a proportional bar and exact counts for office, home/remote, client, away, unknown status and assumed office. These categories add up to the eligible weekdays. Unknown and assumed days remain separate and never increase recorded office attendance; the page does not claim they prove missing Slack history.
+
+**Your weekday pattern** pools all Mondays, Tuesdays and so on within the selected period. Each weekday uses recorded office days divided by recorded working days, rather than an average of weekly percentages. The company bar pools the other active employees over those same dates and applies the comparison thresholds independently to each weekday. Days before an employee joined remain excluded. Zero percent is a real value; N/A means there were no recorded working days. A hidden company value has a disclosure explaining the reason. Turning comparison off removes company bars and values here as well as in the trend.
+
+The cards sit side by side on desktop and stack on narrow screens. Text labels and counts accompany the colors, and both personal and company percentages are available without hovering.
+
 ## Company average policy
 
 The company average pools recorded office days and divides by pooled recorded working days for the other active employees. It is weighted by working days, so someone with one recorded working day does not count as much as someone with twenty. It includes no absence or status-specific company breakdown.
 
-The whole period and every chart bucket independently require:
+The whole period, every chart bucket and each weekday independently require:
 
 - At least four other employees contributing recorded working days in that period or bucket.
 - At least 80% recorded coverage for the subject and at least 80% pooled recorded coverage for eligible colleagues.
@@ -67,4 +75,4 @@ Focused checks run without a database:
 pnpm exec vitest run --project backend tests/backend/personal-stats.test.ts tests/backend/personal-stats-service.test.ts
 ```
 
-The pure tests cover category mapping, synthetic defaults, unknown and prejoin days, timing and daylight saving boundaries, ratio denominators, exact coverage thresholds, minimum contributors, per-bucket suppression and pooled averages. Mocked service tests exercise authentication, all allowed roles, workspace membership predicates, self-only queries when comparison is disabled, ignored target IDs, declaration visibility, bounded date and clock queries, earlier declarations, future join dates and aggregate-only output. They inspect generated Drizzle SQL and parameters without connecting to a database.
+The pure tests cover category mapping, synthetic defaults, unknown and prejoin days, timing and daylight saving boundaries, ratio denominators, exact coverage thresholds, minimum contributors, per-bucket and per-weekday suppression, calendar weekday grouping and pooled averages. Mocked service tests exercise authentication, all allowed roles, workspace membership predicates, self-only queries when comparison is disabled, ignored target IDs, declaration visibility, bounded date and clock queries, earlier declarations, future join dates and aggregate-only output. They inspect generated Drizzle SQL and parameters without connecting to a database.

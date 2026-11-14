@@ -1,11 +1,12 @@
 import React from 'react';
 import { PageHeader } from '@/components/layout/PageHeader';
-import type { AttendanceTotals, ComparisonReason, PersonalStats } from '@/lib/personal-stats/types';
+import type { AttendanceTotals, PersonalStats } from '@/lib/personal-stats/types';
 import { AttendanceChart } from './AttendanceChart';
+import { AttendanceBreakdown } from './AttendanceBreakdown';
+import { ComparisonValue, comparisonExplanation, percent } from './comparison';
 import { CompanyComparison, ReportingPeriod } from './controls';
 import './personal-stats.css';
 
-const percent = (value: number | null) => (value === null ? 'N/A' : `${Math.round(value * 100)}%`);
 const dateLabel = (date: string) =>
   new Intl.DateTimeFormat('en-GB', {
     day: 'numeric',
@@ -14,30 +15,6 @@ const dateLabel = (date: string) =>
     timeZone: 'UTC',
   }).format(new Date(`${date}T12:00:00Z`));
 const unitLabel = { day: 'Daily', week: 'Weekly', month: 'Monthly' };
-
-export function comparisonExplanation(reason: ComparisonReason): string {
-  if (reason === 'small-cohort')
-    return 'Hidden to protect privacy: fewer than 4 other employees have recorded working days.';
-  if (reason === 'low-coverage')
-    return 'Hidden because your recorded coverage or company recorded coverage is below 80%.';
-  if (reason === 'no-working-days')
-    return 'Unavailable because there are no recorded working days to compare.';
-  if (reason === 'off') return 'Company comparison is off.';
-  return 'Company average is available.';
-}
-
-function ComparisonValue({ share, reason }: { share: number | null; reason: ComparisonReason }) {
-  return share === null ? (
-    <details className="personal-reason">
-      <summary>
-        Hidden<span className="sr-only">. Show reason for unavailable company average</span>
-      </summary>
-      <p>{comparisonExplanation(reason)}</p>
-    </details>
-  ) : (
-    <>{percent(share)}</>
-  );
-}
 
 function TotalsCells({ totals }: { totals: AttendanceTotals }) {
   return (
@@ -132,6 +109,8 @@ export function PersonalStatsDashboard({ data }: { data: PersonalStats }) {
             </p>
           )}
         </section>
+
+        <AttendanceBreakdown totals={totals} weekdays={data.weekdays} comparison={comparison} />
 
         <section
           className="personal-card personal-table-card"
@@ -237,15 +216,14 @@ export function PersonalStatsDashboard({ data }: { data: PersonalStats }) {
           </p>
           <p>
             Company average pools office days and recorded working days from other active employees
-            on the same weekdays. You are excluded. Each period and the total need at least 4
-            contributing employees and at least 80% recorded coverage for both you and the company.
-            Otherwise that comparison is hidden.
+            on the same weekdays. You are excluded. Each period, weekday and the total need at least
+            4 contributing employees and at least 80% recorded coverage for both you and the
+            company. Otherwise that comparison is hidden.
           </p>
           <p>
             Totals use pooled days rather than an average of chart percentages. Values are rounded
-            for display. Today is included after 09:00 Copenhagen time and uses your current
-            status. Earlier weekdays use the status at 09:00. Future dates and weekends are
-            excluded.
+            for display. Today is included after 09:00 Copenhagen time and uses your current status.
+            Earlier weekdays use the status at 09:00. Future dates and weekends are excluded.
           </p>
         </details>
         <footer className="personal-footer">

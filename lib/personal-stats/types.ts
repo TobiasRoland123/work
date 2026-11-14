@@ -32,6 +32,15 @@ export type PersonalStatsPoint = {
   comparisonReason: ComparisonReason;
 };
 
+export type PersonalStatsWeekday = {
+  /** Monday is 1 and Friday is 5, matching the calendar's UTC weekday. */
+  weekday: number;
+  label: string;
+  totals: AttendanceTotals;
+  companyShare: number | null;
+  comparisonReason: ComparisonReason;
+};
+
 export type PersonalStats = {
   range: PersonalStatsRange;
   comparison: boolean;
@@ -41,6 +50,7 @@ export type PersonalStats = {
   granularity: Granularity;
   totals: AttendanceTotals;
   series: PersonalStatsPoint[];
+  weekdays: PersonalStatsWeekday[];
   /** Aggregate other employees only. Never includes individual colleague data. */
   company: { officeShare: number | null; comparisonReason: ComparisonReason };
   /** Recorded coverage cannot establish whether all Slack history was imported. */

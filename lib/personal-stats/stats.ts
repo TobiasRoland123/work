@@ -1,5 +1,6 @@
 import type { Status, UserStatus } from '@/db/types';
 import { bucketWorkdays } from '@/lib/employee-stats/history';
+import { weekdayOf } from '@/lib/employee-stats/stats';
 import { copenhagenDate, copenhagenWallClock, resolvePresenceStatus } from '@/lib/status/active';
 import { PERSONAL_STATS_PERIODS } from './types';
 import type {
@@ -7,6 +8,7 @@ import type {
   ComparisonReason,
   PersonalStats,
   PersonalStatsRange,
+  PersonalStatsWeekday,
 } from './types';
 
 export const MIN_COMPANY_CONTRIBUTORS = 4;
@@ -111,6 +113,37 @@ export function companyComparison(
   return { officeShare: totals.officeShare, comparisonReason: null };
 }
 
+/** Pool each weekday across the selected range, with the same comparison policy as the trend. */
+export function weekdayPattern(
+  workdays: readonly string[],
+  own: RecordedPerson,
+  colleagues: readonly RecordedPerson[],
+  comparison: boolean
+): PersonalStatsWeekday[] {
+  return ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map((label, index) => {
+    const weekday = index + 1;
+    const indices = workdays.flatMap((day, index) => (weekdayOf(day) === weekday ? [index] : []));
+    const select = (person: RecordedPerson): RecordedPerson => ({
+      days: indices.map((index) => person.days[index] ?? null),
+    });
+    const totals = tallyRecordedDays([select(own)]);
+    const company = companyComparison(
+      totals,
+      comparison ? colleagues.map(select) : [],
+      comparison,
+      0,
+      indices.length
+    );
+    return {
+      weekday,
+      label,
+      totals,
+      companyShare: company.officeShare,
+      comparisonReason: company.comparisonReason,
+    };
+  });
+}
+
 /** Inputs contain no display identities; the result exposes only the subject and aggregates. */
 export function summarizePersonalStats(input: {
   range: PersonalStatsRange;
@@ -132,6 +165,7 @@ export function summarizePersonalStats(input: {
     workdays: workdays.length,
     granularity,
     totals,
+    weekdays: weekdayPattern(workdays, own, colleagues, comparison),
     series: buckets.map((bucket) => {
       const totals = tallyRecordedDays([own], bucket.from, bucket.to);
       const company = companyComparison(totals, colleagues, comparison, bucket.from, bucket.to);

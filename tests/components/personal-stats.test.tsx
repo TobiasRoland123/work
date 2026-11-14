@@ -87,6 +87,13 @@ const fixture = (overrides: Partial<PersonalStats> = {}): PersonalStats => ({
     point('19', 0.75, 0.5),
     point('26', 0.5, 0.6),
   ],
+  weekdays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'].map((label, index) => ({
+    weekday: index + 1,
+    label,
+    totals: totals({ officeShare: [1, 0.5, 0, null, 0.75][index]! }),
+    companyShare: [0.6, 0.5, 0, null, 0.5][index]!,
+    comparisonReason: index === 3 ? 'low-coverage' : null,
+  })),
   company: { officeShare: 0.55, comparisonReason: null },
   historyCompleteness: 'unverified',
   comparisonProvisional: true,
@@ -146,6 +153,7 @@ it('keeps comparison state in toggle and period changes', async () => {
   await page.getByRole('switch', { name: 'Company average' }).click();
   expect(navigation.push).toHaveBeenCalledWith('/my-stats?range=90', { scroll: false });
   expect(container.querySelector('[data-series="company"]')).toBeNull();
+  expect(container.querySelector('[data-weekday-company]')).toBeNull();
   expect(container.querySelectorAll('thead th')).toHaveLength(4);
   await page.getByRole('combobox', { name: 'Reporting period' }).selectOptions('180');
   expect(navigation.push).toHaveBeenCalledWith('/my-stats?range=180&comparison=off', {
@@ -203,6 +211,9 @@ it.each([320, 390, 1280])('fits the page and exact table at viewport width %s', 
   await page.viewport(width, 1000);
   await render();
   expect(document.documentElement.scrollWidth).toBeLessThanOrEqual(width);
+  for (const card of container.querySelectorAll('.personal-breakdown-grid > section')) {
+    expect(card.getBoundingClientRect().right).toBeLessThanOrEqual(width);
+  }
   const table = container.querySelector('table')!.getBoundingClientRect();
   expect(table.right).toBeLessThanOrEqual(width);
   await page.getByRole('main').screenshot({ path: `/tmp/personal-stats-${width}-full.png` });
@@ -213,4 +224,36 @@ it.each([320, 390, 1280])('fits the page and exact table at viewport width %s', 
   document.documentElement.classList.add('dark');
   await page.getByRole('main').screenshot({ path: `/tmp/personal-stats-${width}-dark.png` });
   document.documentElement.classList.remove('dark');
+});
+
+it('shows every day category and keeps assumed defaults separate from unknown statuses', async () => {
+  await render();
+  const rows = Array.from(container.querySelectorAll('.personal-day-list > div'));
+  expect(rows.map((row) => row.querySelector('strong')?.textContent)).toEqual([
+    '12',
+    '5',
+    '1',
+    '2',
+    '1',
+    '1',
+  ]);
+  expect(rows[4]?.textContent).toContain('Unknown status');
+  expect(rows[5]?.textContent).toContain('Assumed office');
+  const widths = Array.from(
+    container.querySelectorAll<HTMLElement>('.personal-day-stack > span')
+  ).map((segment) => parseFloat(segment.style.width));
+  expect(widths.reduce((sum, width) => sum + width, 0)).toBeCloseTo(100);
+  expect(container.textContent).not.toContain('Missing history');
+});
+
+it('distinguishes zero office share from unavailable weekday data and explains hidden comparisons', async () => {
+  await render();
+  const weekdays = container.querySelectorAll('.personal-weekdays > li');
+  expect(weekdays[2]?.textContent).toContain('You: 0%');
+  expect(weekdays[2]?.textContent).toContain('Company average: 0%');
+  expect(weekdays[3]?.textContent).toContain('You: N/A');
+  const reason = weekdays[3]!.querySelector('details')!;
+  await userEvent.click(reason.querySelector('summary')!);
+  expect(reason.open).toBe(true);
+  expect(reason.textContent).toContain('below 80%');
 });

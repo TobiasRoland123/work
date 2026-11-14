@@ -3,6 +3,7 @@ import type { Status, UserStatus } from '@/db/types';
 import { calendarDays, startedWorkdays, trackedFrom } from '@/lib/employee-stats/stats';
 import {
   companyComparison,
+  weekdayPattern,
   personalStatsRange,
   resolveRecordedDays,
   summarizePersonalStats,
@@ -220,5 +221,80 @@ describe('company comparison policy', () => {
       officeShare: 1,
       comparisonReason: null,
     });
+  });
+});
+
+describe('personal weekday pattern', () => {
+  const dates = ['2026-09-21', '2026-09-23', '2026-09-28'];
+
+  it('groups Monday through Friday by date and pools day counts rather than percentages', () => {
+    const own = person('office', 'remote', 'remote');
+    const others = [
+      person('office', 'remote', 'remote'),
+      ...Array.from({ length: 3 }, () => person('office', 'office', null)),
+    ];
+    const result = weekdayPattern(dates, own, others, true);
+    expect(result.map(({ label }) => label)).toEqual(['Mon', 'Tue', 'Wed', 'Thu', 'Fri']);
+    expect(result[0]).toMatchObject({
+      weekday: 1,
+      totals: { office: 1, working: 2, officeShare: 0.5 },
+      companyShare: 4 / 5,
+      comparisonReason: null,
+    });
+    expect(result[2]).toMatchObject({
+      weekday: 3,
+      totals: { office: 0, working: 1, officeShare: 0 },
+      companyShare: 3 / 4,
+    });
+    expect(result[1]).toMatchObject({
+      totals: { eligible: 0, officeShare: null },
+      companyShare: null,
+    });
+  });
+
+  it('applies coverage and minimum contributors independently to each weekday', () => {
+    const own = person('office', 'office', 'unknown');
+    const others = Array.from({ length: 4 }, (_, index) =>
+      person('office', index === 3 ? 'away' : 'office', 'office')
+    );
+    const result = weekdayPattern(dates, own, others, true);
+    expect(result[0]).toMatchObject({
+      totals: { coverage: 0.5, officeShare: 1 },
+      companyShare: null,
+      comparisonReason: 'low-coverage',
+    });
+    expect(result[2]).toMatchObject({ companyShare: null, comparisonReason: 'small-cohort' });
+    const sparse = weekdayPattern(
+      dates,
+      person('office', 'office', 'office'),
+      Array.from({ length: 4 }, () => person('office', 'office', 'assumed')),
+      true
+    );
+    expect(sparse[0]).toMatchObject({ companyShare: null, comparisonReason: 'low-coverage' });
+    expect(sparse[2]).toMatchObject({ companyShare: 1, comparisonReason: null });
+  });
+
+  it('keeps absence-only and empty weekdays unavailable instead of assigning zero', () => {
+    const result = weekdayPattern(
+      dates,
+      person('away', null, 'away'),
+      Array.from({ length: 4 }, () => person('office', 'office', 'office')),
+      true
+    );
+    expect(result[0]).toMatchObject({
+      totals: { officeShare: null, coverage: 1 },
+      companyShare: null,
+      comparisonReason: 'no-working-days',
+    });
+    expect(result[2]?.totals.eligible).toBe(0);
+  });
+
+  it('turns every weekday comparison off without removing personal counts', () => {
+    const result = weekdayPattern(dates, person('office', 'remote', 'office'), company, false);
+    expect(result.every((day) => day.companyShare === null && day.comparisonReason === 'off')).toBe(
+      true
+    );
+    expect(result[0]?.totals.officeShare).toBe(1);
+    expect(result[2]?.totals.officeShare).toBe(0);
   });
 });
