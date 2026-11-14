@@ -26,6 +26,8 @@ describe('employee stats navigation', () => {
     const html = renderShell();
     expect(html).not.toContain('/employee-stats');
     expect(html).not.toContain('Roles');
+    expect(html).toContain('href="/my-stats"');
+    expect(html).toContain('My stats');
   });
 
   it('shows the stats link to a manager but not the access controls', () => {
@@ -51,5 +53,7 @@ describe('highlighting the stats link', () => {
     expect(isCurrentPath('/employee-stats/people', '/admin/roles')).toBe(false);
     expect(isCurrentPath('/today', '/employee-stats')).toBe(false);
     expect(isCurrentPath(null, '/employee-stats')).toBe(false);
+    expect(isCurrentPath('/my-stats', '/my-stats')).toBe(true);
+    expect(isCurrentPath('/my-stats', '/employee-stats')).toBe(false);
   });
 });

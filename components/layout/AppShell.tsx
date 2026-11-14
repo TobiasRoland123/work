@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import {
   CalendarDays,
   ChartColumn,
+  ChartNoAxesCombined,
   Coins,
   FlaskConical,
   Menu,
@@ -80,6 +81,7 @@ export function AppShell({
   const pathname = usePathname();
   const moreMenuRef = useRef<HTMLDivElement>(null);
   const special = [
+    { href: '/my-stats', label: 'My stats', Icon: ChartNoAxesCombined, prefetch: null },
     ...(showMessageQuality ? [reviewLink, aiCostLink] : []),
     ...(showEmployeeStats ? [employeeStatsLink] : []),
     ...(showRoleManagement ? [rolesLink] : []),

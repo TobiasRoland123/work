@@ -2,6 +2,8 @@
 
 `/employee-stats` shows how people have worked: an overview of everyone, and a page for each individual. It is restricted to managers and admins. Admins manage application roles.
 
+All active employees can see their own [personal attendance dashboard](personal-stats.md) at `/my-stats`. It compares recorded attendance with the company average and excludes assumed office defaults. Its coverage rules differ from the manager statistics described below.
+
 ## Pages
 
 - **Overview** (`/employee-stats`). Where people were over a chosen period, how that changed over time, how it splits across the weekdays, and a sortable table with one row per employee. Pick **7 days**, **30 days** (the default), **90 days**, **6 months**, **1 year** or **All time**.
