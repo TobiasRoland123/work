@@ -88,8 +88,8 @@ No original behavior scenario was deleted without replacement. No production bug
 | fails closed for unknown roles and missing/inactive workspace accounts | Missing database membership and unrecognized role values deny access. |
 | fails closed before querying when no workspace is configured | Missing workspace configuration denies access before a database lookup. |
 | uses the latest stored role on independent uncached calls | Sequential uncached reads return updated stored roles rather than stale prior results. |
-| does not allow MANAGER to perform admin operations | This non-admin role reaches notFound rather than receiving an authorized actor ID. |
-| does not allow EMPLOYEE to perform admin operations | This non-admin role reaches notFound rather than receiving an authorized actor ID. |
+| does not allow MANAGER to perform admin operations | This non-admin role redirects to /permission-denied before receiving an authorized actor ID. |
+| does not allow EMPLOYEE to perform admin operations | This non-admin role redirects to /permission-denied before receiving an authorized actor ID. |
 | allows an active admin to perform admin operations | An authorized admin receives the authenticated actor ID. |
 | rejects an unauthenticated request before querying | Missing session denies the operation before a role lookup. |
 

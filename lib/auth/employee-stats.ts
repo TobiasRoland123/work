@@ -1,5 +1,5 @@
 import { cache } from 'react';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { requireUserId } from '@/lib/auth/require-user';
 import { isSandbox, SANDBOX_TEAM_ID } from '@/lib/sandbox/enabled';
 import { ADMIN_SLACK_IDENTITY } from './admin-identity';
@@ -35,12 +35,12 @@ async function sessionUserOrNotFound(): Promise<string> {
 
 export async function requireEmployeeStatsViewer(): Promise<string> {
   const userId = await sessionUserOrNotFound();
-  if (!(await canViewEmployeeStats(userId))) notFound();
+  if (!(await canViewEmployeeStats(userId))) redirect('/permission-denied');
   return userId;
 }
 
 export async function requireEmployeeStatsAdmin(): Promise<string> {
   const userId = await sessionUserOrNotFound();
-  if (!(await isEmployeeStatsAdmin(userId))) notFound();
+  if (!(await isEmployeeStatsAdmin(userId))) redirect('/permission-denied');
   return userId;
 }

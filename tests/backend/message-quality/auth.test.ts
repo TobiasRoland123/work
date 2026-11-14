@@ -5,6 +5,9 @@ import { PgDialect } from 'drizzle-orm/pg-core';
 const auth = vi.hoisted(() => ({ requireUserId: vi.fn(), limit: vi.fn(), where: vi.fn() }));
 vi.mock('@/lib/auth/require-user', () => ({ requireUserId: auth.requireUserId }));
 vi.mock('next/navigation', () => ({
+  redirect: (path: string) => {
+    throw new Error(`REDIRECT:${path}`);
+  },
   notFound: () => {
     throw new Error('NOT_FOUND');
   },
@@ -32,7 +35,7 @@ describe('administrative message review and AI costs', () => {
     await expect(requireMessageReviewer()).resolves.toBe('selected-user');
     for (const role of ['MANAGER', 'EMPLOYEE']) {
       auth.limit.mockResolvedValueOnce([{ role }]);
-      await expect(requireMessageReviewer()).rejects.toThrow('NOT_FOUND');
+      await expect(requireMessageReviewer()).rejects.toThrow('REDIRECT:/permission-denied');
     }
   });
 

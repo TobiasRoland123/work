@@ -69,9 +69,9 @@ afterEach(() => vi.unstubAllEnvs());
 
 describe('changing application roles', () => {
   it('rejects a nonadmin before touching role data', async () => {
-    mocked.requireAdmin.mockRejectedValueOnce(new Error('NOT_FOUND'));
+    mocked.requireAdmin.mockRejectedValueOnce(new Error('REDIRECT:/permission-denied'));
     await expect(changeUserRoleAction({ userId: 'colleague', role: 'ADMIN' })).rejects.toThrow(
-      'NOT_FOUND'
+      'REDIRECT:/permission-denied'
     );
     expect(mocked.transaction).not.toHaveBeenCalled();
     expect(mocked.revalidatePath).not.toHaveBeenCalled();
@@ -163,8 +163,8 @@ describe('changing application roles', () => {
 
 describe('listing application roles', () => {
   it('checks admin authorization at the read boundary', async () => {
-    mocked.requireAdmin.mockRejectedValueOnce(new Error('NOT_FOUND'));
-    await expect(listUserRoles()).rejects.toThrow('NOT_FOUND');
+    mocked.requireAdmin.mockRejectedValueOnce(new Error('REDIRECT:/permission-denied'));
+    await expect(listUserRoles()).rejects.toThrow('REDIRECT:/permission-denied');
     expect(mocked.listWhere).not.toHaveBeenCalled();
   });
 
