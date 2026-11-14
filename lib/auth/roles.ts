@@ -1,6 +1,6 @@
 import { cache } from 'react';
 import { and, eq, isNotNull, ne } from 'drizzle-orm';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 import { db } from '@/db';
 import { users } from '@/db/schema';
 import { requireUserId } from './require-user';
@@ -40,6 +40,6 @@ export async function requireAdmin(): Promise<string> {
   } catch {
     notFound();
   }
-  if (!(await isAdmin(userId))) notFound();
+  if (!(await isAdmin(userId))) redirect('/permission-denied');
   return userId;
 }

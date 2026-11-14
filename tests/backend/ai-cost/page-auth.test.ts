@@ -44,8 +44,10 @@ describe('AI cost page authorization', () => {
   });
 
   it('does not fetch usage if the live permission is denied', async () => {
-    mocked.requireMessageReviewer.mockRejectedValueOnce(new Error('NOT_FOUND'));
-    await expect(AiCostPage({ searchParams: Promise.resolve({}) })).rejects.toThrow('NOT_FOUND');
+    mocked.requireMessageReviewer.mockRejectedValueOnce(new Error('REDIRECT:/permission-denied'));
+    await expect(AiCostPage({ searchParams: Promise.resolve({}) })).rejects.toThrow(
+      'REDIRECT:/permission-denied'
+    );
     expect(mocked.getAiCostDashboard).not.toHaveBeenCalled();
   });
 

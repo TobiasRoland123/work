@@ -10,7 +10,12 @@ const auth = vi.hoisted(() => ({
   where: vi.fn(),
 }));
 vi.mock('@/lib/auth/require-user', () => ({ requireUserId: auth.requireUserId }));
-vi.mock('next/navigation', () => ({ notFound: auth.notFound }));
+vi.mock('next/navigation', () => ({
+  notFound: auth.notFound,
+  redirect: (path: string) => {
+    throw new Error(`REDIRECT:${path}`);
+  },
+}));
 vi.mock('@/db', () => ({
   db: {
     select: () => ({
@@ -70,11 +75,11 @@ describe('workspace roles', () => {
     await expect(isAdmin('selected-user')).resolves.toBe(false);
   });
 
-  it.each(['MANAGER', 'EMPLOYEE'])(
+  it.each(['MANAGER', 'EMPLOYEE', null])(
     'does not allow %s to perform admin operations',
     async (role) => {
       auth.limit.mockResolvedValueOnce([{ role }]);
-      await expect(requireAdmin()).rejects.toThrow('NOT_FOUND');
+      await expect(requireAdmin()).rejects.toThrow('REDIRECT:/permission-denied');
     }
   );
 

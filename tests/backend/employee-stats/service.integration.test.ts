@@ -14,6 +14,9 @@ import { changeUserRoleAction } from '@/app/actions/roleActions';
 vi.mock('@/lib/auth/require-user', () => ({ requireUserId: vi.fn() }));
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 vi.mock('next/navigation', () => ({
+  redirect: (path: string) => {
+    throw new Error(`REDIRECT:${path}`);
+  },
   notFound: () => {
     throw new Error('NOT_FOUND');
   },
@@ -193,7 +196,7 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
       as(people.outsider);
       const select = vi.spyOn(db, 'select');
       await expect(getEmployeeStats({}, new Date('2026-09-25T10:00:00Z'))).rejects.toThrow(
-        'NOT_FOUND'
+        'REDIRECT:/permission-denied'
       );
       // Only the permission lookup ran.
       expect(select).toHaveBeenCalledTimes(1);
@@ -323,9 +326,9 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
     it('denies profiles and the directory to everyone without a manager or admin role', async () => {
       as(people.outsider);
       await expect(getEmployeeProfile({ userId: people.member.userId }, friday)).rejects.toThrow(
-        'NOT_FOUND'
+        'REDIRECT:/permission-denied'
       );
-      await expect(listEmployees()).rejects.toThrow('NOT_FOUND');
+      await expect(listEmployees()).rejects.toThrow('REDIRECT:/permission-denied');
     });
 
     it('lets admins promote managers and admins, with immediate permission changes', async () => {
@@ -342,10 +345,10 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
       expect(roles.find((entry) => entry.userId === people.deactivated.userId)).toBeUndefined();
 
       as(people.grantee);
-      await expect(listUserRoles()).rejects.toThrow('NOT_FOUND');
+      await expect(listUserRoles()).rejects.toThrow('REDIRECT:/permission-denied');
       await expect(
         changeUserRoleAction({ userId: people.impostor.userId, role: 'ADMIN' })
-      ).rejects.toThrow('NOT_FOUND');
+      ).rejects.toThrow('REDIRECT:/permission-denied');
 
       as(people.admin);
       expect(await changeUserRoleAction({ userId, role: 'ADMIN' })).toEqual({ ok: true });
