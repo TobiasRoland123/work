@@ -1,0 +1,191 @@
+.personal-breakdown-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+.personal-breakdown-grid .personal-card-head p {
+  margin: 0;
+  white-space: nowrap;
+}
+.personal-day-stack {
+  display: flex;
+  height: 12px;
+  margin: 24px 0 12px;
+  overflow: hidden;
+  border-radius: 3px;
+  background: var(--office-inset);
+}
+.personal-day-stack > span {
+  flex: none;
+  background: var(--category-color);
+}
+.personal-day-stack > span + span {
+  border-left: 1px solid var(--office-surface);
+}
+.personal-breakdown-grid [data-category='office'] {
+  --category-color: var(--office-link);
+}
+.personal-breakdown-grid [data-category='remote'] {
+  --category-color: var(--office-accent);
+}
+.personal-breakdown-grid [data-category='client'] {
+  --category-color: var(--office-marker);
+}
+.personal-breakdown-grid [data-category='away'] {
+  --category-color: var(--office-muted-strong);
+}
+.personal-breakdown-grid [data-category='unknown'] {
+  --category-color: var(--office-faint);
+}
+.personal-breakdown-grid [data-category='assumed'] {
+  --category-color: var(--office-inset);
+}
+.personal-day-stack > [data-category='assumed'],
+[data-category='assumed'] .personal-category-dot {
+  background: repeating-linear-gradient(
+    135deg,
+    var(--office-inset) 0 3px,
+    var(--office-muted) 3px 4px
+  );
+}
+.personal-day-list {
+  margin: 0;
+}
+.personal-day-list > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 44px;
+  border-bottom: 1px solid var(--office-border-soft);
+  font-size: 12px;
+}
+.personal-day-list > div:last-child {
+  border: 0;
+}
+.personal-day-list dt {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.personal-category-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  background: var(--category-color);
+  flex: none;
+}
+.personal-day-list dd {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin: 0;
+}
+.personal-day-list dd strong {
+  font-size: 15px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+.personal-day-list dd > span {
+  width: 28px;
+  color: var(--office-muted);
+  font-size: 11px;
+}
+.personal-breakdown-note {
+  color: var(--office-muted);
+  font-size: 11px;
+  line-height: 1.65;
+  margin-top: 16px;
+}
+.personal-weekday-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  margin: 24px 0;
+  color: var(--office-muted);
+  font-size: 10px;
+}
+.personal-weekday-legend > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.personal-weekday-legend i {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 1px;
+  background: var(--personal-you);
+}
+.personal-weekday-legend i.personal-weekday-company {
+  background: var(--personal-company);
+}
+.personal-weekdays {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 19px;
+}
+.personal-weekdays > li {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+.personal-weekday-name {
+  color: var(--office-muted);
+  font-size: 11px;
+  line-height: 18px;
+}
+.personal-weekday-values {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.personal-weekday-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 52px;
+  align-items: center;
+  gap: 10px;
+  min-height: 18px;
+}
+.personal-weekday-track {
+  display: block;
+  height: 7px;
+  background: var(--office-inset);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.personal-weekday-track[data-unavailable] {
+  background: none;
+  border: 1px dashed var(--office-border-strong);
+}
+.personal-weekday-fill {
+  display: block;
+  height: 100%;
+  background: var(--personal-you);
+  border-radius: 2px;
+}
+.personal-weekday-fill.personal-weekday-company {
+  background: var(--personal-company);
+}
+.personal-weekday-number {
+  text-align: right;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+  min-width: 0;
+}
+.personal-weekday-number .personal-reason {
+  font-weight: 400;
+}
+.personal-weekday-number .personal-reason p {
+  text-align: left;
+}
+@media (max-width: 760px) {
+  .personal-breakdown-grid {
+    grid-template-columns: 1fr;
+  }
+}
