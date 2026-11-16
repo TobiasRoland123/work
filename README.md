@@ -1,144 +1,150 @@
 # Wørk
 
-Slack login, directory sync and #wørk attendance import are configured in [Slack setup](docs/slack-setup.md). Read that guide before database cutover or deployment.
+Wørk shows who is in Charlie Tango's Copenhagen office. Colleagues announce attendance
+exceptions in Slack or in the app, and Wørk displays them on a shared day and week overview.
+It is built with Next.js, React, PostgreSQL and Drizzle.
 
-The restricted [message quality review](docs/message-quality.md) explains weekly import conversion, missed messages and reviewer access.
+## Local development
 
-The restricted [employee stats](docs/employee-stats.md) pages show attendance statistics for everyone and for each person, against the team norm and over the full history, and explain how the admin chooses who can see them.
+Use pnpm 9.15.5, as pinned in `package.json` and `mise.toml`, and install Docker with
+permission to run `docker compose` as your user.
 
-Colour palettes (Default, Ocean, Sunset, Lavender), each in light and dark, are picked on the profile page and described in [Theming](docs/theming.md).
+1. Install dependencies with `pnpm install`.
+2. Copy `.env.example` to `.env.local`. Set `AUTH_SECRET` to a long random string and
+   configure `AI_GATEWAY_API_KEY` for AI attendance parsing. Keep `SLACK_TEAM_ID=T_LOCAL`
+   and `SLACK_CHANNEL_ID=C_LOCAL` for sandbox data.
+3. Prepare the local database and fixture profiles, then start the app:
 
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+   ```sh
+   pnpm local:db
+   pnpm sandbox:seed
+   pnpm dev
+   ```
 
-# Getting Started
+Open [http://127.0.0.1:3000/sandbox](http://127.0.0.1:3000/sandbox). The Local Sandbox
+replaces Slack during development, so no tunnel or development Slack app is needed.
+On repeated starts, run `pnpm dev`; use `pnpm db:up` first if the database container is stopped.
 
-Set up the database and sandbox profiles once using the [local development guide](docs/local-development.md), then start the app with `pnpm run dev`. Locally, Slack is replaced by the Local Sandbox page; no tunnel or development Slack app is needed.
+The sandbox page is `app/sandbox/page.tsx`; the attendance overview is
+`app/(authenticated)/today/page.tsx`. Changes appear as you edit.
 
-First, run the development server:
+See [Local development](docs/local-development.md) for sandbox controls, existing database
+setup, legacy role migration and checks that require a Slack preview deployment.
 
-`pnpm run dev`
+## Documentation
 
-Open [http://127.0.0.1:3000/sandbox](http://127.0.0.1:3000/sandbox) with your browser to see the result.
+- [Office presence](docs/office-presence.md): attendance rules, planning, corrections,
+  pinned colleagues and Echoes posted to #wørk.
+- [Slack setup](docs/slack-setup.md): login, directory sync, attendance import and
+  deployment configuration. Read before database cutover or deployment.
+- [Application access](docs/access-control.md): Employee, Manager and Admin permissions.
+- [Message quality review](docs/message-quality.md): import conversion, missed messages
+  and reviewer access.
+- [Employee stats](docs/employee-stats.md): team and individual attendance statistics.
+- [Theming](docs/theming.md): Default, Ocean, Sunset and Lavender palettes in light and dark.
+- [Install on your phone](docs/pwa.md): installation, the phone invitation and offline behavior.
+- [Domain vocabulary](CONTEXT.md): Declarations, Resolved Status, Echoes and sandbox terminology.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Database commands
 
-# Branch strategy
+| Command                       | Purpose                                                                                  |
+| ----------------------------- | ---------------------------------------------------------------------------------------- |
+| `pnpm local:db`               | Start the disposable Docker database and prepare its schema.                             |
+| `pnpm sandbox:seed`           | Seed local Sandbox Profiles.                                                             |
+| `pnpm local:db:reset`         | Delete the disposable Docker volume and rebuild it. Rerun `pnpm sandbox:seed` afterward. |
+| `pnpm db:up` / `pnpm db:down` | Start or stop the PostgreSQL container.                                                  |
+| `pnpm db:generate`            | Generate migration files after schema changes.                                           |
+| `pnpm db:push`                | Push the current schema directly to a development database.                              |
+| `pnpm db:studio`              | Open the database browser at [Drizzle Studio](https://local.drizzle.studio/).            |
+| `pnpm db:seed`                | Synchronize real Slack workspace users. Requires Slack credentials.                      |
+| `pnpm db:migrate`             | Apply pending migrations to a database with an existing migration ledger.                |
 
-We use main as our production branch, but development will happen by merging into the `develop` branch.
+`pnpm db:start` is a combined command that generates and pushes schema changes, installs
+triggers, synchronizes real Slack users, and starts Studio and the WebSocket server. Use
+the `local:db` and `sandbox:seed` workflow above for local sandbox development.
 
-## Linking to AzureDevOps tasks
+Fresh development databases use schema push rather than replaying the historical migration
+chain. An existing database without a migration ledger needs a verified baseline before
+migrations can run. See [Database migrations](docs/database-migrations.md).
 
-We are using AzureDevOps for managing our tasks and therefore we need to link our branches, commits and pr's to the correct task when working on a feature or bug.
+## Deployment
 
-### Task linking overview
+Vercel uses `pnpm db:deploy-migrate && pnpm build`. Production builds apply pending migrations
+before building the app. Preview builds apply them only with `DEPLOY_MIGRATIONS_PREVIEW=1`;
+enable that only when previews have a database of their own. Local builds and CI do not
+automatically migrate databases.
 
-read more here: [Link GitHub commits, pull requests, branches, and issues to work items in Azure Boards](http://learn.microsoft.com/en-us/azure/devops/boards/github/link-to-from-github?view=azure-devops)
-To link a task to a commit, include the task id in the commit message using the format `AB#{ID}`.
-If linking a Pr or Issue, then add `AB#{ID}` to either the title or description.
+Follow [Slack setup](docs/slack-setup.md) for environment configuration and
+[Database migrations](docs/database-migrations.md) for baseline checks and deployment controls.
 
-| Commit or pull request message                         | Action                                                                                                                                                                                               |
-| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Fixed AB#123                                           | Links and transitions the work item to the Resolved workflow state category or, if none is defined, then the Completed workflow state category.                                                      |
-| Closed AB#123                                          | Links and transitions the work item to the Closed workflow state. If none is defined, no transitions are made.                                                                                       |
-| Adds a new feature, fixes AB#123.                      | Links and transitions the work item to the Resolved workflow state category or, if none is defined, then the Completed workflow state category.                                                      |
-| Fixes AB#123, AB#124, and AB#126                       | Links to Azure Boards work items 123, 124, and 126. Transitions only the first item, 123 to the Resolved workflow state category or, if none is defined, then the Completed workflow state category. |
-| Fixes AB#123, Fixes AB#124, Fixes AB#125               | Links to Azure Boards work items 123, 124, and 126. Transitions all items to either the Resolved workflow state category or, if none is defined, then the Completed workflow state category.         |
-| Fixing multiple bugs: issue #123 and user story AB#234 | Links to GitHub issue 123 and Azure Boards work item 234. No transitions are made.                                                                                                                   |
+## Testing and checks
 
-## Branch naming
+Vitest has separate `backend`, `components` and `storybook` projects. `pnpm test` starts
+Vitest across its configured projects; it does not run the separate Playwright E2E suite.
 
-When creating new branches they should always be solving a task or bug, which is listed in Azure DevOps. When crating branches they should include the id of the task, so that it's easy to see what task this branch is solving:
+### Backend tests
 
-### Feature branch example:
+Use a disposable test database. Set its `PGHOST`, `PGPORT`, `PGUSER`, `PGPASSWORD` and
+`PGDATABASE` values in the shell or `.env`. With `NODE_ENV=test`, the database module reads
+`.env`, not `.env.local`.
 
-`feat/[task-id]-[actual-branch-name]`
+```sh
+NODE_ENV=test pnpm db:prepare-test
+pnpm exec vitest run --project backend
+```
 
-### Bug Fixing Branch example:
+The preparation command creates the required database policy role and applies the current
+schema. `pnpm test:backend` runs the same project in Vitest's default mode.
 
-`fix/[task-id]-[actual-branch-name]`
+### Components and Storybook
 
-## Deploy on Vercel
+Install Playwright browsers and system dependencies before running browser tests, as CI does:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+```sh
+pnpm exec playwright install --with-deps
+pnpm exec vitest run --project components
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+For the separate Storybook test runner, start `pnpm storybook` and wait for it to be ready
+on port 6006. In another terminal, run `pnpm test-storybook`. CI builds and serves the
+static Storybook before running this command.
 
-# PostGreSQL command overview
+Chromatic provides visual regression checks through `pnpm chromatic`. Component tests
+check interactions and rendered behavior alongside those visual comparisons.
 
-## General command to start and run db
+### End-to-end tests
 
-`pnpm run db:start`
-Visit drizzle dashboard at [https://local.drizzle.studio/](https://local.drizzle.studio/)
+`pnpm test:e2e` seeds the E2E user, then runs `tests/e2e.test.ts` with Playwright. Prepare a
+disposable database first and export `AUTH_SECRET`, `SLACK_TEAM_ID` and the `PG*` connection
+settings into the shell so the seed script, session setup and app use the same values.
+The session setup also reads `.env`. Keep `.env.local` consistent with those database and
+auth settings because the development app reads that file.
 
-### Start PostgreSQL database container
+```sh
+pnpm test:e2e
+```
 
-`pnpm run db:up`
+The Playwright configuration starts `pnpm dev` on port 3000, or reuses an existing server
+outside CI. The suite uses `http://localhost:3000` and creates a signed-in session for its
+test user.
 
-### Stop PostgreSQL database container
+### Static checks and CI
 
-`pnpm run db:down`
+```sh
+pnpm lint
+pnpm typecheck
+```
 
-### Generate migration files based on schema changes
+[GitHub Actions](.github/workflows/ci.yml) defines the current CI checks: lint, TypeScript,
+backend tests, and component and Storybook tests when relevant files change.
 
-`pnpm run db:generate`
+## Branch strategy
 
-Vercel builds apply new migrations automatically; see [docs/database-migrations.md](docs/database-migrations.md).
+`main` is the production branch; merge development work into `develop`.
 
-### Push schema changes directly to the database
+For work tracked in Azure Boards, link commits and pull requests with `AB#<task-id>`, for
+example `AB#123`. Prefixing a reference with `Fixes` or `Closed` can also transition the
+work item. See [Azure Boards linking](https://learn.microsoft.com/en-us/azure/devops/boards/github/link-to-from-github?view=azure-devops).
 
-`pnpm run db:push`
-
-### Open Drizzle Studio web UI to browse and manage data
-
-`pnpm run db:studio`
-
-### Seed database with sample data
-
-`pnpm run db:seed`
-
-## Testing with ViTest
-
-# ViTest Commands to our setup
-
-Since our project is a mono repo, and we want to isolate some testing groups, we have decided split it up into different test groups.
-
-### Run all tests
-
-`pnpm test` (This will potentially fail automatically since it's running storybook tests without a storybook instance running)
-
-### Run all storybook tests
-
-`pnpm run test-storybook`
-
-### Run all backend tests
-
-## `pnpm run test:backend`
-
-# Testing strategy for components
-
-In our project, we use Storybook as a central tool for testing and developing UI components in isolation. Our testing approach combines visual testing and component testing to ensure both design consistency and functionality.
-
-## Visual tests
-
-We use Chromatic for automated visual regression testing. This allows us to catch any unintended UI changes by comparing component snapshots across versions, ensuring that visual changes are intentional and reviewed.
-Everything visual should be handled by the visual test.
-
-## Components test
-
-Alongside visual testing, we perform component-level tests to verify that:
-
-- The correct props are passed and handled by the component.
-- The expected elements and content are rendered properly.
-- The core functionality and behavior of each component work as intended.
-
-This combination of visual and functional testing helps us maintain a high level of quality, confidence in changes, and a smooth developer experience.
-
-# Developing on CI/CD yml files
-
-When working on this projects CI/CD pipeline, it's a good idea to test the pipeline locally before pushing it up to the cloud-runners in GitHub.
-To test it locally, we recommend using Act.
-`brew install act`
-To use act, you simply navigate to the root of the project directory you want to run a pipeline test on and run the command:
-`act <job_name>`
-where <job_name> can be "push", "pull_request" etc.
-This will run the pipeline locally, and you can see the output in your terminal.
+Branches for Azure DevOps tasks include the task ID, for example
+`feat/123-attendance-filter` or `fix/123-status-label`.
