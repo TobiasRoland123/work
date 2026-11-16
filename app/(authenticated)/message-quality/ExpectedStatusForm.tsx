@@ -1,5 +1,6 @@
 'use client';
 
+import { NativeSelect } from '@/components/ui/native-select';
 import { useId, useRef, useState, useTransition } from 'react';
 import type { FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
@@ -106,7 +107,7 @@ export function ExpectedStatusForm({
           </p>
           <div className="quality-expected-field">
             <label htmlFor={`${id}-status`}>Expected status</label>
-            <select
+            <NativeSelect
               id={`${id}-status`}
               value={status}
               onChange={(event) => setStatus(event.target.value as UserStatus | '')}
@@ -123,7 +124,7 @@ export function ExpectedStatusForm({
                   {label}
                 </option>
               ))}
-            </select>
+            </NativeSelect>
           </div>
           <div className="quality-expected-field">
             <label htmlFor={`${id}-note`}>Note, optional</label>

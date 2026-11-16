@@ -1,5 +1,6 @@
 'use client';
 
+import { NativeSelect } from '@/components/ui/native-select';
 import { useId, useState, useTransition, type FormEvent } from 'react';
 import { toast } from 'sonner';
 import { correctImportedStatusAction } from '@/app/actions/statusActions';
@@ -88,7 +89,7 @@ export function StatusCorrection({
         Choose the right status. The mistake is recorded so the import can be improved.
       </p>
       <label htmlFor={id + '-status'}>Correct status</label>
-      <select
+      <NativeSelect
         id={id + '-status'}
         value={choice}
         onChange={(event) => setChoice(event.target.value as UserStatus | '')}
@@ -107,7 +108,7 @@ export function StatusCorrection({
               {statusLabel(value)}
             </option>
           ))}
-      </select>
+      </NativeSelect>
       {multiDay && (
         <fieldset disabled={pending}>
           <legend>Apply to</legend>

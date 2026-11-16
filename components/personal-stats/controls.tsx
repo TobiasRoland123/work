@@ -1,5 +1,6 @@
 'use client';
 
+import { NativeSelect } from '@/components/ui/native-select';
 import React from 'react';
 
 import { useTransition } from 'react';
@@ -19,7 +20,7 @@ export function ReportingPeriod({
   return (
     <label className="personal-period">
       Reporting period
-      <select
+      <NativeSelect
         aria-label="Reporting period"
         value={range}
         disabled={pending}
@@ -35,7 +36,7 @@ export function ReportingPeriod({
             Last {days} days
           </option>
         ))}
-      </select>
+      </NativeSelect>
       <span className="sr-only" role="status">
         {pending ? 'Updating reporting period' : ''}
       </span>

@@ -1,8 +1,9 @@
 'use client';
 
+import { NativeSelect } from '@/components/ui/native-select';
 import React, { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { ChevronDown, LoaderCircle, Search } from 'lucide-react';
+import { LoaderCircle, Search } from 'lucide-react';
 import { changeUserRoleAction } from '@/app/actions/roleActions';
 import type { RoleEntry } from '@/lib/admin/roles';
 import type { AppRole } from '@/lib/auth/role-policy';
@@ -110,7 +111,12 @@ export function RoleManager({
                     data-role={entry.role}
                     aria-busy={pendingUserId === entry.userId}
                   >
-                    <select
+                    <NativeSelect
+                      indicator={
+                        pendingUserId === entry.userId ? (
+                          <LoaderCircle size={14} className="roles-saving" />
+                        ) : undefined
+                      }
                       aria-label={`Role for ${entry.name}`}
                       value={entry.role}
                       disabled={pending}
@@ -121,12 +127,7 @@ export function RoleManager({
                           {label}
                         </option>
                       ))}
-                    </select>
-                    {pendingUserId === entry.userId ? (
-                      <LoaderCircle size={14} className="roles-saving" aria-hidden="true" />
-                    ) : (
-                      <ChevronDown size={14} aria-hidden="true" />
-                    )}
+                    </NativeSelect>
                   </div>
                 )}
               </li>
