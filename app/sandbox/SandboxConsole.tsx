@@ -1,5 +1,6 @@
 'use client';
 
+import { NativeSelect } from '@/components/ui/native-select';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState, useTransition } from 'react';
@@ -248,7 +249,7 @@ export function SandboxConsole({
             </p>
             <div className="sandbox-field">
               <label htmlFor="sandbox-author">Author</label>
-              <select
+              <NativeSelect
                 id="sandbox-author"
                 value={author}
                 onChange={(event) => {
@@ -261,7 +262,7 @@ export function SandboxConsole({
                     {entry.label} · {entry.slackUserId}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
             </div>
             <div className="sandbox-chips" aria-label="Sample messages">
               {samples.map((sample) => (
@@ -512,13 +513,17 @@ export function SandboxConsole({
               <label htmlFor="sandbox-sign-in" className="sr-only">
                 Sign in as
               </label>
-              <select id="sandbox-sign-in" name="userId" defaultValue={activeProfiles[0]?.userId}>
+              <NativeSelect
+                id="sandbox-sign-in"
+                name="userId"
+                defaultValue={activeProfiles[0]?.userId}
+              >
                 {activeProfiles.map((profile) => (
                   <option key={profile.userId} value={profile.userId}>
                     {profileName(profile)}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
               <button
                 className="sandbox-button"
                 type="submit"

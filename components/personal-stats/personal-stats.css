@@ -28,7 +28,7 @@
 .personal-period select {
   min-height: 39px;
   min-width: 142px;
-  padding: 8px 28px 8px 11px;
+  padding: 8px 11px;
   border: 1px solid var(--office-border);
   border-radius: 5px;
   background: var(--office-surface);

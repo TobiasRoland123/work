@@ -203,7 +203,9 @@ it('shows an honest empty state and N/A when no working days are recorded', asyn
     .element(page.getByText('No recorded working days yet', { exact: true }))
     .toBeVisible();
   expect(container.querySelector('.personal-stat-number')?.textContent).toBe('N/A');
-  expect(container.querySelector('svg')).toBeNull();
+  expect(
+    container.querySelector('svg.personal-chart-desktop, svg.personal-chart-mobile')
+  ).toBeNull();
   expect(container.querySelector('tfoot')?.textContent).toContain('N/A');
 });
 

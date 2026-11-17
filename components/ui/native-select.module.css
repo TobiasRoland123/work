@@ -1,0 +1,42 @@
+.root {
+  position: relative;
+  display: grid;
+  height: 100%;
+  min-width: 0;
+  border-radius: inherit;
+  vertical-align: middle;
+}
+
+/* Reserve room for the icon even when a page sets its own control padding. */
+.root > .control {
+  width: 100%;
+  appearance: none;
+  padding-inline-end: 36px;
+}
+
+.indicator {
+  position: absolute;
+  inset-inline-end: 12px;
+  top: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.control:disabled + .indicator {
+  opacity: 0.6;
+}
+
+@media (forced-colors: active) {
+  .root > .control {
+    appearance: auto;
+  }
+
+  .indicator {
+    display: none;
+  }
+}

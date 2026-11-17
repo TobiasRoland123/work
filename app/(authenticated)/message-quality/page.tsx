@@ -1,3 +1,4 @@
+import { NativeSelect } from '@/components/ui/native-select';
 import React from 'react';
 import Link from 'next/link';
 import { PageHeader } from '@/components/layout/PageHeader';
@@ -387,14 +388,14 @@ export default async function MessageQualityPage({ searchParams }: { searchParam
                 defaultValue={data.selectedWeek}
               />
               <label htmlFor="quality-reason">Reason</label>
-              <select id="quality-reason" name="reason" defaultValue={data.reason}>
+              <NativeSelect id="quality-reason" name="reason" defaultValue={data.reason}>
                 <option value="">All reasons</option>
                 {data.reasons.map((reason) => (
                   <option value={reason} key={reason}>
                     {reasonLabel(reason)}
                   </option>
                 ))}
-              </select>
+              </NativeSelect>
               <button type="submit">Filter</button>
             </form>
           </div>
