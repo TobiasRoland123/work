@@ -186,11 +186,6 @@
   display: none;
 }
 
-.week-grouping-note {
-  color: var(--office-muted);
-  font-size: 12px;
-  line-height: 1.5;
-}
 .week-board {
   --from: calc(var(--selected, 0) * 100% / var(--days, 5));
   --to: calc((var(--selected, 0) + 1) * 100% / var(--days, 5));
