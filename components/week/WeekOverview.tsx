@@ -755,20 +755,6 @@ export function WeekOverview({
               )}
             </button>
           </div>
-          {!todayOnly && (
-            <p className="week-grouping-note" id="week-grouping-note">
-              {chronological ? (
-                'Newest announcement first. '
-              ) : (
-                <>
-                  Grouped by{' '}
-                  {formatDay(days[dayIndex], { weekday: 'long', day: 'numeric', month: 'long' })}
-                  .{' '}
-                </>
-              )}
-              Showing colleagues with an attendance exception this week.
-            </p>
-          )}
           {loading ? (
             <WeekBoardSkeleton />
           ) : (
@@ -776,7 +762,6 @@ export function WeekOverview({
               className="week-board"
               role="table"
               aria-label={`Attendance, ${subtitle}`}
-              aria-describedby={todayOnly ? undefined : 'week-grouping-note'}
               style={{ '--selected': dayIndex, '--days': days.length } as CSSProperties}
             >
               <div role="rowgroup" className="week-head">
