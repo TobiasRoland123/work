@@ -30,7 +30,7 @@ const settingsSchema = z
   .strict();
 
 const help = `Usage: pnpm slack:history COMMAND --config PATH [--run UUID] [--limit 10] [--month YYYY-MM]
-Commands: preflight, init, fetch, preview, apply, pause, resume, review, report, undo
+Commands: preflight, init, fetch, preview, withhold, apply, pause, resume, review, report, undo
 One invocation performs one bounded batch. Inspect reports before review advances a month.
 The JSON configuration contains no credentials. See docs/slack-history-import.md.
 `;
@@ -39,11 +39,23 @@ function options(args: string[]) {
   const result: Record<string, string> = {};
   for (let i = 0; i < args.length; i += 2) {
     const key = args[i];
-    if (!['--config', '--run', '--limit', '--month'].includes(key) || !args[i + 1] || result[key])
+    if (
+      !['--config', '--run', '--limit', '--month', '--manifest'].includes(key) ||
+      !args[i + 1] ||
+      result[key]
+    )
       throw new Error(`Invalid or duplicate argument: ${key}`);
     result[key] = args[i + 1];
   }
   return result;
+}
+
+function readManifest(path: string): unknown {
+  try {
+    return JSON.parse(readFileSync(path, 'utf8'));
+  } catch {
+    throw new Error('Unable to read withholding manifest as JSON');
+  }
 }
 
 async function sourcePreflight(teamId: string, channelId: string) {
@@ -78,6 +90,7 @@ async function main() {
       'init',
       'fetch',
       'preview',
+      'withhold',
       'apply',
       'pause',
       'resume',
@@ -88,6 +101,8 @@ async function main() {
   )
     throw new Error(`Unknown command: ${command}`);
   const flags = options(args);
+  if (Boolean(flags['--manifest']) !== (command === 'withhold'))
+    throw new Error('--manifest is required exclusively for withhold');
   if (!flags['--config']) throw new Error('--config is required.');
   const settings = settingsSchema.parse(JSON.parse(readFileSync(flags['--config'], 'utf8')));
   const target = explicitImportTarget(process.env);
@@ -147,6 +162,9 @@ async function main() {
           break;
         case 'preview':
           result = await importer.preview(runId, limit);
+          break;
+        case 'withhold':
+          result = await importer.withhold(runId, readManifest(flags['--manifest']));
           break;
         case 'apply':
           result = await importer.apply(runId, limit);

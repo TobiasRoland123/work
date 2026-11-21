@@ -1,3 +1,7 @@
+import {
+  parseWithholdingManifest,
+  assertPreviousHoldsIncluded,
+} from '@/lib/slack/history/withholding';
 import { describe, expect, it } from 'vitest';
 import { explicitImportTarget, assertImportIsolation } from '@/lib/slack/history/operator';
 
@@ -44,5 +48,35 @@ describe('history operator target', () => {
         'production'
       )
     ).not.toThrow();
+  });
+});
+
+describe('source withholding manifest', () => {
+  const entry = {
+    messageKey: 'T:C:1.000000',
+    revision: '1.000000',
+    reason: 'ambiguous_interpretation',
+  } as const;
+  it('requires exact revisions, controlled reasons and one decision per source', () => {
+    const parse = (revisions: unknown[]) =>
+      parseWithholdingManifest({ month: '2026-01', revisions });
+    expect(parse([entry]).revisions).toEqual([entry]);
+    for (const revisions of [
+      [entry, entry],
+      [{ ...entry, revision: '1' }],
+      [{ ...entry, reason: 'free text' }],
+    ]) {
+      expect(() => parse(revisions)).toThrow();
+    }
+  });
+  it('rejects removal, revision substitution and reason changes', () => {
+    for (const changed of [
+      [],
+      [{ ...entry, revision: '2.000000' }],
+      [{ ...entry, reason: 'unsupported_interpretation' as const }],
+    ]) {
+      expect(() => assertPreviousHoldsIncluded([entry], changed)).toThrow();
+    }
+    expect(() => assertPreviousHoldsIncluded([entry], [entry])).not.toThrow();
   });
 });

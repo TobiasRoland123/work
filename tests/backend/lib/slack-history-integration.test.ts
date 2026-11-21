@@ -123,23 +123,93 @@ describe.skipIf(!url)('history transaction integration', () => {
       }
     }
   );
-  it('allows report, pause and undo on the original parser version but requires a fresh corrected run', async () => {
-    const priorConfig = { ...config, parserVersion: 'history-2026-v1' };
-    const previous = new HistoryImporter(pool, priorConfig);
-    const legacy = (
-      await pool.query(
-        'insert into slack_import_runs(id,config,cutoff,coverage,months) select gen_random_uuid(),$2,cutoff,coverage,months from slack_import_runs where id=$1 returning id',
-        [runId, JSON.stringify(priorConfig)]
-      )
-    ).rows[0].id;
-    await expect(previous.report(legacy)).resolves.toMatchObject({ run: { id: legacy } });
-    await expect(previous.pause(legacy)).resolves.toEqual({ paused: true });
-    await expect(previous.undo(legacy)).resolves.toMatchObject({ undone: 0, conflicts: 0 });
-    await expect(previous.resume(legacy)).rejects.toThrow('Expected parserVersion');
-    await expect(previous.preview(legacy)).rejects.toThrow('Expected parserVersion');
-    await expect(previous.apply(legacy)).rejects.toThrow('Expected parserVersion');
-    await expect(importer.preview(legacy)).rejects.toThrow('Run configuration changed');
+  it('enforces identical private withholding decisions at production apply and review', async () => {
+    // Production mode here exercises policy against the opt-in disposable test database.
+    const prodConfig: ImportConfig = { ...config, mode: 'production' };
+    const production = new HistoryImporter(pool, prodConfig);
+    const target = (
+      await production.init('2026-02-01T00:00:00Z', {
+        earliestAvailable: null,
+        retentionConfirmed: false,
+      })
+    ).runId;
+    await pool.query(
+      "update slack_import_runs set months=jsonb_set(months,'{0,complete}','true') where id=$1",
+      [target]
+    );
+    const revision = '1768964400.000009';
+    const messageKey = `T-history-test:C-history-test:${revision}`;
+    await pool.query(
+      "insert into slack_import_items(run_id,month,message_key,revision,message_ts,author,outcome) values($1,'2026-01',$2,$3,$3,'U-history','proposed')",
+      [target, messageKey, revision]
+    );
+    const row = { messageKey, revision, reason: 'unsupported_interpretation' };
+    const manifest = { month: '2026-01', revisions: [row] };
+    await expect(production.apply(target)).rejects.toThrow('Register');
+    await expect(production.review(target)).rejects.toThrow('Register');
+    await expect(
+      production.withhold(target, {
+        ...manifest,
+        revisions: [row, { ...row, messageKey: 'absent' }],
+      })
+    ).rejects.toThrow('ineligible');
+    const outcome = async () =>
+      (await pool.query('select outcome from slack_import_items where run_id=$1', [target])).rows[0]
+        .outcome;
+    expect(await outcome()).toBe('proposed');
+    await production.withhold(target, manifest);
+    await production.withhold(target, manifest);
+    await production.apply(target);
+    expect(await outcome()).toBe('review');
+    await expect(production.withhold(target, { ...manifest, revisions: [] })).rejects.toThrow(
+      'retain'
+    );
+    await pool.query("update slack_import_items set outcome='ignored' where run_id=$1", [target]);
+    await expect(production.review(target)).rejects.toThrow('no longer matches');
+    await pool.query("update slack_import_items set outcome='review' where run_id=$1", [target]);
+    await expect(production.review(target)).resolves.toMatchObject({ reviewed: '2026-01' });
+    expect(
+      (await pool.query('select 1 from slack_messages where message_key=$1', [messageKey])).rowCount
+    ).toBe(0);
   });
+  it('withholds stored rows that no longer match the reviewed extraction', async () => {
+    const key = await stage('1768820400.000001');
+    await importer.preview(runId);
+    const changed = await pool.query(
+      "update slack_import_items set proposal=jsonb_set(proposal,'{rows,0,status}',to_jsonb('SICK'::text)) where run_id=$1 and message_key=$2 and outcome='proposed'",
+      [runId, key]
+    );
+    expect(changed.rowCount).toBe(1);
+    await importer.apply(runId);
+    const { rows } = await pool.query(
+      'select outcome,reason from slack_import_items where run_id=$1 and message_key=$2',
+      [runId, key]
+    );
+    expect(rows).toEqual([{ outcome: 'review', reason: 'stored_rows_differ_from_extraction' }]);
+    expect(
+      (await pool.query('select 1 from status where source_message_key=$1', [key])).rowCount
+    ).toBe(0);
+  });
+  it.each(['history-2026-v1', 'history-2026-v2'])(
+    'allows recovery but requires a fresh run for %s',
+    async (parserVersion) => {
+      const priorConfig = { ...config, parserVersion };
+      const previous = new HistoryImporter(pool, priorConfig);
+      const legacy = (
+        await pool.query(
+          'insert into slack_import_runs(id,config,cutoff,coverage,months) select gen_random_uuid(),$2,cutoff,coverage,months from slack_import_runs where id=$1 returning id',
+          [runId, JSON.stringify(priorConfig)]
+        )
+      ).rows[0].id;
+      await expect(previous.report(legacy)).resolves.toMatchObject({ run: { id: legacy } });
+      await expect(previous.pause(legacy)).resolves.toEqual({ paused: true });
+      await expect(previous.undo(legacy)).resolves.toMatchObject({ undone: 0, conflicts: 0 });
+      await expect(previous.resume(legacy)).rejects.toThrow('Expected parserVersion');
+      await expect(previous.preview(legacy)).rejects.toThrow('Expected parserVersion');
+      await expect(previous.apply(legacy)).rejects.toThrow('Expected parserVersion');
+      await expect(importer.preview(legacy)).rejects.toThrow('Run configuration changed');
+    }
+  );
   it('previews original dates, applies once, and restores absence', async () => {
     const key = await stage('1767265200.000001');
     await importer.preview(runId);
@@ -325,7 +395,10 @@ describe.skipIf(!url)('history transaction integration', () => {
           [runId, key]
         )
       ).rows[0]
-    ).toMatchObject({ outcome: 'review', reason: 'Run AI budget exhausted' });
+    ).toMatchObject({
+      outcome: 'review',
+      reason: 'Run AI budget exhausted or accounting item unavailable',
+    });
   });
   it('applies follow-up context chronologically and undo restores supersession relationships', async () => {
     const first = await stage('1767697200.000001');

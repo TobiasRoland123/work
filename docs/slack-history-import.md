@@ -97,7 +97,7 @@ Store non-secret configuration in `.local/slack-import/rehearsal.json`. Use the 
   "model": "openai/gpt-6-luna",
   "budgetUsd": 5,
   "maxRequestUsd": 0.05,
-  "parserVersion": "history-2026-v2",
+  "parserVersion": "history-2026-v3",
   "mode": "rehearsal",
   "cutoff": "2026-02-01T00:00:00+01:00",
   "coverage": {
@@ -177,7 +177,7 @@ Run `review` only after inspecting the month's final report. It explicitly advan
 
 Database administrators can read import records; ordinary authenticated users must not receive access to the private history tables. Reports can contain attendance details and personal reasons. Store them with the same restrictions as attendance data. Raw source text is stored in the isolated import tables until explicit month review, which purges it. Proposal details and prior/after snapshots remain for attendance audit and undo, and can themselves contain personal reasons. Set a retention/deletion date for these records and backups under the organization's policy. Unreviewed or failed runs retain source text and require an explicit administrator cleanup decision. Replay after purge requires a new fetch/run. Deleted or expired text cannot be reconstructed from Slack reliably. Do not copy raw source text into operational logs.
 
-Parser `history-2026-v2` holds any proposed combination of AWAY and IN_OFFICE from one historical message for human review. An absence ending at a given time alone cannot establish later office presence. Even an explicit return is held when paired with AWAY. The importer checks again before writing a stored proposal. A v1 run remains available for report, pause and undo using its recorded configuration. Start a fresh v2 run and repeat the January preview and review before applying. Count any earlier preview spending toward the same authorization.
+Parser `history-2026-v3` checks historical interpretations at preview and apply. It holds home-working proposals when the source signals a partial day and the proposed end lacks a matching clock boundary. For example, “WFH until I come in later” requires review. “WFH today” can cover the date, and “WFH until 10:30, then in the office” can produce a timed transition. Check the proposed dates, bounds and office presence against the source during review. The parser also holds any combination of AWAY and IN_OFFICE from one announcement. A v1 or v2 run remains available for report, pause and undo using its recorded configuration. Start a fresh v3 run for preview and include earlier spending in the same authorization.
 
 Existing Slack revisions involving Corrections or supersession relationships, existing earlier/later live messages in the same author/day context, and messages naming colleagues are held for review. This includes inactive mentioned colleagues. The CLI does not offer an automatic resolution command for these cases. Review reports before deciding whether further implementation or a separate audited correction is necessary. Mapped inactive authors are imported without changing their login state; unmapped authors remain in review.
 
@@ -210,3 +210,24 @@ psql --no-psqlrc --set ON_ERROR_STOP=1 --single-transaction --file db/0053_slack
 ```
 
 Do not execute that command against the freshly pushed current schema, where the history tables already exist. Direct SQL testing does not record Drizzle's ledger; production and restored rehearsal migrations must use the documented migration runner after baseline verification. Local assertions use mocked Slack/model responses or rules-only extraction. They do not establish hosted Slack access, retention, AI billing accuracy, rehearsal isolation or successful backup restoration.
+
+### Withholding reviewed source revisions
+
+After preview, record unsupported or ambiguous proposals in a private JSON file. For example, a synthetic January manifest with one decision looks like this.
+
+```json
+{
+  "month": "2026-01",
+  "revisions": [
+    {
+      "messageKey": "T-example:C-example:1767265200.000001",
+      "revision": "1767265200.000001",
+      "reason": "ambiguous_interpretation"
+    }
+  ]
+}
+```
+
+Use the exact message key and revision from the private preview. The other accepted reason is `unsupported_interpretation`. Before applying, run `pnpm slack:history withhold --config PRIVATE_CONFIG --run RUN_UUID --manifest PRIVATE_FILE`. Inspect the updated report and retain the manifest with the rehearsal evidence. The command records the decisions in the current run month, retains the proposals, and marks each specified revision for review. A missing source, changed revision, or ineligible outcome rejects the whole file. To add decisions, register a new file containing the earlier decisions and the additions.
+
+Register the reviewed rehearsal manifest again after production preview. Production apply and final month review both require registration and recheck the held items. For a month with zero manual holds, explicitly register its month and an empty `revisions` array. If a production revision differs from rehearsal, inspect that source and retain the reconciliation evidence before registering a revised production manifest.

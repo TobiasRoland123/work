@@ -1,3 +1,9 @@
+import {
+  parseWithholdingManifest,
+  assertPreviousHoldsIncluded,
+  type WithholdingManifest,
+} from './withholding';
+import { historicalReviewReason } from './interpretation';
 import { historicalUsageObserver, type ReceiptAccounting } from './billing';
 import { randomUUID } from 'node:crypto';
 import { costProjection, type MonthCostInput } from './report';
@@ -33,6 +39,7 @@ type Month = MonthWindow & {
   pageLatest?: string;
   complete?: boolean;
   reviewed?: boolean;
+  withholding?: { revisions: WithholdingManifest['revisions']; recordedAt: string };
   retryAt?: string;
   failures?: number;
 };
@@ -72,15 +79,6 @@ type Snapshot = {
   links: Record<string, unknown>[];
 };
 
-// A bounded absence alone does not establish where the author will be afterwards.
-function needsOfficeReturnReview(rows: Proposal['rows']) {
-  return (
-    rows.some((row) => row.status === 'AWAY') && rows.some((row) => row.status === 'IN_OFFICE')
-  );
-}
-
-const officeReturnReview = 'absence_and_office_presence_requires_review';
-
 /** A dedicated pool is mandatory. Never imports the app database, queue, Echo or Realtime clients. */
 export class HistoryImporter {
   constructor(
@@ -103,7 +101,7 @@ export class HistoryImporter {
     client.setTypeParser(1184, (value) => value);
     if (
       this.config.parserVersion !== PARSER_VERSION &&
-      !(recovery && this.config.parserVersion === 'history-2026-v1')
+      !(recovery && ['history-2026-v1', 'history-2026-v2'].includes(this.config.parserVersion))
     )
       throw new Error(`Expected parserVersion ${PARSER_VERSION}`);
     if (
@@ -390,8 +388,9 @@ export class HistoryImporter {
             context
           );
           const rows = extraction.decision === 'apply' ? statusRows(extraction) : [];
-          if (needsOfficeReturnReview(rows)) {
-            await this.outcome(c, id, item, 'review', officeReturnReview);
+          const reviewReason = historicalReviewReason(item.source.text, extraction.intervals);
+          if (reviewReason) {
+            await this.outcome(c, id, item, 'review', reviewReason);
             continue;
           }
           if (baseline && !rows.length) {
@@ -477,9 +476,56 @@ export class HistoryImporter {
     );
     return !!result.rowCount;
   }
+  async withhold(id: string, input: unknown) {
+    const manifest = parseWithholdingManifest(input);
+    return this.locked(id, async (c, run, month) => {
+      if (!month?.complete || manifest.month !== month.month)
+        throw new Error('Manifest must match the current completely fetched month');
+      assertPreviousHoldsIncluded(month.withholding?.revisions ?? [], manifest.revisions);
+      await c.query('BEGIN');
+      try {
+        for (const row of manifest.revisions) {
+          const held = await c.query(
+            `update slack_import_items set outcome='review',reason=$5,updated_at=now()
+             where run_id=$1 and month=$2 and message_key=$3 and revision=$4
+             and outcome in ('proposed','review')`,
+            [id, month.month, row.messageKey, row.revision, 'operator_' + row.reason]
+          );
+          if (held.rowCount !== 1)
+            throw new Error('Manifest contains an absent, changed or ineligible source revision');
+        }
+        month.withholding = { revisions: manifest.revisions, recordedAt: new Date().toISOString() };
+        await this.saveMonths(c, run);
+        await c.query('COMMIT');
+      } catch (error) {
+        await c.query('ROLLBACK');
+        throw error;
+      }
+      return { month: month.month, withheld: manifest.revisions.length };
+    });
+  }
+  private async verifyWithholding(c: PoolClient, id: string, month: Month) {
+    if (!month.withholding) {
+      if (this.config.mode === 'production')
+        throw new Error(
+          'Register the reviewed withholding manifest before production apply or review'
+        );
+      return;
+    }
+    const mismatches = await c.query(
+      `select 1 from jsonb_to_recordset($3::jsonb) as hold("messageKey" text, revision text, reason text)
+       where not exists (select 1 from slack_import_items i where i.run_id=$1 and i.month=$2
+         and i.message_key=hold."messageKey" and i.revision=hold.revision and i.outcome='review'
+         and i.reason=('operator_' || hold.reason)) limit 1`,
+      [id, month.month, JSON.stringify(month.withholding.revisions)]
+    );
+    if (mismatches.rowCount)
+      throw new Error('Stored source withholding decision no longer matches');
+  }
   async apply(id: string, limit = 10) {
     return this.locked(id, async (c, run, month) => {
       if (!month?.complete) throw new Error('Finish fetching first');
+      await this.verifyWithholding(c, id, month);
       if (
         (
           await c.query(
@@ -499,8 +545,16 @@ export class HistoryImporter {
       ).rows;
       for (const item of items) {
         const proposal = item.proposal!;
-        if (needsOfficeReturnReview(proposal.rows)) {
-          await this.outcome(c, id, item, 'review', officeReturnReview);
+        if (canonical(statusRows(proposal.extraction)) !== canonical(proposal.rows)) {
+          await this.outcome(c, id, item, 'review', 'stored_rows_differ_from_extraction');
+          continue;
+        }
+        const reviewReason =
+          typeof item.source?.text === 'string'
+            ? historicalReviewReason(item.source.text, proposal.extraction.intervals)
+            : 'missing_source_for_review';
+        if (reviewReason) {
+          await this.outcome(c, id, item, 'review', reviewReason);
           continue;
         }
         await c.query('BEGIN');
@@ -706,6 +760,7 @@ export class HistoryImporter {
   async review(id: string) {
     return this.locked(id, async (c, run, month) => {
       if (!month?.complete) throw new Error('Month fetch incomplete');
+      await this.verifyWithholding(c, id, month);
       if (
         (
           await c.query(
