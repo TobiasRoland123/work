@@ -30,7 +30,7 @@ import { StatusEmoji } from '@/components/ui/Status/StatusEmoji';
 import { deleteStatusByIdAction } from '@/app/actions/statusActions';
 import type { UpcomingStatus } from '@/lib/status/plan';
 import { ECHO_CHANNEL_LABEL } from '@/lib/status/echo';
-import { addDays, formatDay, isoWeekNumber, shiftWorkWeek } from '@/lib/status/week';
+import { adjacentWeekday, formatDay, isoWeekNumber, shiftWorkWeek } from '@/lib/status/week';
 import { copenhagenDate } from '@/lib/status/active';
 import {
   announcedSince,
@@ -621,10 +621,10 @@ export function WeekOverview({
     : [...newGroup, ...groupAttendance(visible, days[dayIndex])];
   const colleagues = people.filter((person) => person.userId !== userId);
   const previousHref = todayOnly
-    ? `/today?day=${addDays(days[0], -1)}`
+    ? `/today?day=${adjacentWeekday(days[0], -1)}`
     : `/today?week=${shiftWorkWeek(weekStart, -1)}`;
   const nextHref = todayOnly
-    ? `/today?day=${addDays(days[0], 1)}`
+    ? `/today?day=${adjacentWeekday(days[0], 1)}`
     : `/today?week=${shiftWorkWeek(weekStart, 1)}`;
   const weekHref = `/today?week=${todayOnly ? currentWeekStart : weekStart}`;
 
