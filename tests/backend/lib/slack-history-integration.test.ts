@@ -190,7 +190,7 @@ describe.skipIf(!url)('history transaction integration', () => {
       (await pool.query('select 1 from status where source_message_key=$1', [key])).rowCount
     ).toBe(0);
   });
-  it.each(['history-2026-v1', 'history-2026-v2'])(
+  it.each(['history-2026-v1', 'history-2026-v2', 'history-2026-v3'])(
     'allows recovery but requires a fresh run for %s',
     async (parserVersion) => {
       const priorConfig = { ...config, parserVersion };

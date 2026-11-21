@@ -101,7 +101,12 @@ export class HistoryImporter {
     client.setTypeParser(1184, (value) => value);
     if (
       this.config.parserVersion !== PARSER_VERSION &&
-      !(recovery && ['history-2026-v1', 'history-2026-v2'].includes(this.config.parserVersion))
+      !(
+        recovery &&
+        ['history-2026-v1', 'history-2026-v2', 'history-2026-v3'].includes(
+          this.config.parserVersion
+        )
+      )
     )
       throw new Error(`Expected parserVersion ${PARSER_VERSION}`);
     if (

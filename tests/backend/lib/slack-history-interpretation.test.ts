@@ -72,3 +72,27 @@ describe('historical clock evidence', () => {
     }
   );
 });
+
+describe('office arrival bounding an initial home declaration', () => {
+  const segments = [
+    { ...home, endTime: '14:15' },
+    { ...home, status: 'IN_OFFICE' as const, startTime: '14:15' },
+  ];
+  it.each([
+    'I start at home, then in the office at 2:15 pm.',
+    'Jeg starter hjemmefra, derefter på kontoret kl. 14.15.',
+  ])('keeps the stated same-day switch in %s', (source) => {
+    expect(historicalReviewReason(source, segments)).toBeNull();
+  });
+  it.each([
+    'Starting from home, at the office later.',
+    'Starting from home, maybe at the office at 14:15.',
+    'Jeg starter hjemmefra, på kontoret kl. 14.45.',
+    'Starting at home, someone else is at the office at 14:15.',
+    'Starting at home, at the office at 14:15 if possible.',
+  ])('requires the author’s own unqualified matching office clock in %s', (source) => {
+    expect(historicalReviewReason(source, segments)).toBe(
+      'partial_day_home_boundary_requires_review'
+    );
+  });
+});

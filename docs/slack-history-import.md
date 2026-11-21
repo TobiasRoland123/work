@@ -97,7 +97,7 @@ Store non-secret configuration in `.local/slack-import/rehearsal.json`. Use the 
   "model": "openai/gpt-6-luna",
   "budgetUsd": 5,
   "maxRequestUsd": 0.05,
-  "parserVersion": "history-2026-v3",
+  "parserVersion": "history-2026-v4",
   "mode": "rehearsal",
   "cutoff": "2026-02-01T00:00:00+01:00",
   "coverage": {
@@ -177,7 +177,7 @@ Run `review` only after inspecting the month's final report. It explicitly advan
 
 Database administrators can read import records; ordinary authenticated users must not receive access to the private history tables. Reports can contain attendance details and personal reasons. Store them with the same restrictions as attendance data. Raw source text is stored in the isolated import tables until explicit month review, which purges it. Proposal details and prior/after snapshots remain for attendance audit and undo, and can themselves contain personal reasons. Set a retention/deletion date for these records and backups under the organization's policy. Unreviewed or failed runs retain source text and require an explicit administrator cleanup decision. Replay after purge requires a new fetch/run. Deleted or expired text cannot be reconstructed from Slack reliably. Do not copy raw source text into operational logs.
 
-Parser `history-2026-v3` checks historical interpretations at preview and apply. It holds home-working proposals when the source signals a partial day and the proposed end lacks a matching clock boundary. For example, “WFH until I come in later” requires review. “WFH today” can cover the date, and “WFH until 10:30, then in the office” can produce a timed transition. Check the proposed dates, bounds and office presence against the source during review. The parser also holds any combination of AWAY and IN_OFFICE from one announcement. A v1 or v2 run remains available for report, pause and undo using its recorded configuration. Start a fresh v3 run for preview and include earlier spending in the same authorization.
+Parser `history-2026-v4` checks historical interpretations at preview and apply. It holds home-working proposals when the source signals a partial day and the proposed end lacks a matching clock boundary. For example, “WFH until I come in later” requires review. “WFH today” can cover the date, and “WFH until 10:30, then in the office” can produce a timed transition. An explicit start at home followed by a stated office arrival can also establish the boundary. Check the proposed dates, bounds and office presence against the source during review. The parser also holds any combination of AWAY and IN_OFFICE from one announcement. A v1, v2 or v3 run remains available for report, pause and undo using its recorded configuration. Start a fresh v4 run for preview and include earlier spending in the same authorization.
 
 Existing Slack revisions involving Corrections or supersession relationships, existing earlier/later live messages in the same author/day context, and messages naming colleagues are held for review. This includes inactive mentioned colleagues. The CLI does not offer an automatic resolution command for these cases. Review reports before deciding whether further implementation or a separate audited correction is necessary. Mapped inactive authors are imported without changing their login state; unmapped authors remain in review.
 

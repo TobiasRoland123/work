@@ -44,14 +44,26 @@ function statedBoundary(source: string, interval: Interval, intervals: Interval[
     const homeUntil = home + until + clockPattern(interval.endTime);
     if (!officeRow) return new RegExp(homeUntil, 'iu').test(source);
     // The clock ending home work alone cannot establish an office return.
-    return (
-      officeRow.startTime === interval.endTime &&
-      !officeRow.endTime &&
-      new RegExp(
-        homeUntil + transition + String.raw`(?:back |in |at |the |på |til )*` + office,
-        'iu'
-      ).test(source)
+    if (officeRow.startTime !== interval.endTime || officeRow.endTime) return false;
+    const untilThenOffice = new RegExp(
+      homeUntil + transition + String.raw`(?:back |in |at |the |på |til )*` + office,
+      'iu'
     );
+    // An exact office arrival can also bound an explicitly declared start at home.
+    // Match the whole declaration so another person's arrival or a later qualification
+    // cannot supply the missing boundary.
+    const startsHome =
+      String.raw`^\s*(?:(?:i(?:'m| am| will)?|jeg)\s+)?(?:start(?:ing)?|starter)\s+` + home;
+    const officeAt = String.raw`(?:(?:at|in)\s+(?:the\s+)?office\s+(?:at|@)|på\s+kontoret\s+kl\.?)\s*`;
+    const startsHomeThenOffice = new RegExp(
+      startsHome +
+        transition +
+        officeAt +
+        clockPattern(interval.endTime) +
+        String.raw`\s*[.!]?\s*$`,
+      'iu'
+    );
+    return untilThenOffice.test(source) || startsHomeThenOffice.test(source);
   }
   if (!interval.startTime) return false;
   const start = clockPattern(interval.startTime);
