@@ -196,7 +196,7 @@ describe('attendance groups', () => {
   });
 
   it('keeps week-wide exceptions visible in the selected-day In office or No status group', () => {
-    const { html, grid, sidebar } = renderAttendance([
+    const { grid, sidebar } = renderAttendance([
       {
         userId: 'office',
         status: null,
@@ -219,9 +219,6 @@ describe('attendance groups', () => {
     expect(gridGroup(grid, 'In office')).toContain('Office Person');
     expect(gridGroup(grid, 'In office')).toContain('In office <span>1 shown</span>');
     expect(grid).not.toContain('Alloffice Person');
-    expect(html).toContain('Grouped by Tuesday 22 September.');
-    expect(html).toContain('Showing colleagues with an attendance exception this week.');
-    expect(grid).toContain('aria-describedby="week-grouping-note"');
     expect(sidebar).toContain('<strong>2</strong> of 3 in the office');
     expect(gridGroup(grid, 'No status')).toContain('Unknown Person');
     expect(sidebar).not.toContain('Office Person');

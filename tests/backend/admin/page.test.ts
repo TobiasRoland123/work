@@ -46,8 +46,8 @@ describe('role management page', () => {
   });
 
   it('blocks managers and employees from reading roles', async () => {
-    mocked.requireAdmin.mockRejectedValueOnce(new Error('NOT_FOUND'));
-    await expect(RolesPage()).rejects.toThrow('NOT_FOUND');
+    mocked.requireAdmin.mockRejectedValueOnce(new Error('REDIRECT:/permission-denied'));
+    await expect(RolesPage()).rejects.toThrow('REDIRECT:/permission-denied');
     expect(mocked.listUserRoles).not.toHaveBeenCalled();
   });
 

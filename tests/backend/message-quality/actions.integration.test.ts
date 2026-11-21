@@ -170,10 +170,12 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
     });
 
     it('requires reviewer authorization before accepting a write', async () => {
-      reviewer.requireMessageReviewer.mockRejectedValueOnce(new Error('NOT_FOUND'));
+      reviewer.requireMessageReviewer.mockRejectedValueOnce(
+        new Error('REDIRECT:/permission-denied')
+      );
       await expect(
         saveExpectedStatusAction({ messageKey, revision, status: 'SICK', note: '' })
-      ).rejects.toThrow('NOT_FOUND');
+      ).rejects.toThrow('REDIRECT:/permission-denied');
     });
   }
 );

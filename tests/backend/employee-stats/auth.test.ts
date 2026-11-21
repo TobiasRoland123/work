@@ -8,6 +8,9 @@ vi.mock('@/lib/auth/roles', () => ({
   activeWorkspaceMember: vi.fn(),
 }));
 vi.mock('next/navigation', () => ({
+  redirect: (path: string) => {
+    throw new Error(`REDIRECT:${path}`);
+  },
   notFound: () => {
     throw new Error('NOT_FOUND');
   },
@@ -35,12 +38,12 @@ describe('employee stats role hierarchy', () => {
 
   it.each(['EMPLOYEE', null])('rejects stats for role %s', async (role) => {
     auth.getUserRole.mockResolvedValue(role);
-    await expect(requireEmployeeStatsViewer()).rejects.toThrow('NOT_FOUND');
+    await expect(requireEmployeeStatsViewer()).rejects.toThrow('REDIRECT:/permission-denied');
   });
 
   it('does not let a manager administer roles', async () => {
     auth.getUserRole.mockResolvedValue('MANAGER');
-    await expect(requireEmployeeStatsAdmin()).rejects.toThrow('NOT_FOUND');
+    await expect(requireEmployeeStatsAdmin()).rejects.toThrow('REDIRECT:/permission-denied');
   });
 
   it('allows an admin to administer roles', async () => {
@@ -54,11 +57,14 @@ describe('employee stats role hierarchy', () => {
     await expect(isEmployeeStatsAdmin(ADMIN_SLACK_IDENTITY.slackUserId)).resolves.toBe(false);
   });
 
-  it('rejects an unauthenticated request before reading a role', async () => {
-    auth.requireUserId.mockRejectedValueOnce(new Error('Unauthorized'));
-    await expect(requireEmployeeStatsViewer()).rejects.toThrow('NOT_FOUND');
-    expect(auth.getUserRole).not.toHaveBeenCalled();
-  });
+  it.each([requireEmployeeStatsViewer, requireEmployeeStatsAdmin])(
+    'rejects an unauthenticated request before reading a role (%s)',
+    async (guard) => {
+      auth.requireUserId.mockRejectedValueOnce(new Error('Unauthorized'));
+      await expect(guard()).rejects.toThrow('NOT_FOUND');
+      expect(auth.getUserRole).not.toHaveBeenCalled();
+    }
+  );
 
   it('bootstraps only the exact verified initial admin identity', () => {
     expect(isInitialAdmin('T02HKL21R', 'U05NP1NF3QB')).toBe(true);

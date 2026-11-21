@@ -1,0 +1,546 @@
+.personal-stats-page {
+  --personal-you: var(--office-link);
+  --personal-company: var(--office-muted-strong);
+}
+.personal-stats-page > .office-header h1 {
+  font-size: 34px;
+  letter-spacing: -1.1px;
+}
+.personal-stats-page > .office-header p {
+  font-size: 15px;
+}
+.personal-stats-body {
+  display: grid;
+  gap: 18px;
+  max-width: 1120px;
+}
+.personal-period-caption {
+  color: var(--office-muted);
+  font-size: 12px;
+}
+.personal-period {
+  display: grid;
+  gap: 6px;
+  color: var(--office-muted);
+  font-size: 11px;
+  white-space: nowrap;
+}
+.personal-period select {
+  min-height: 39px;
+  min-width: 142px;
+  padding: 8px 11px;
+  border: 1px solid var(--office-border);
+  border-radius: 5px;
+  background: var(--office-surface);
+  color: var(--office-ink);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+.personal-period select:disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+.personal-stats-summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+.personal-stat,
+.personal-card {
+  min-width: 0;
+  border: 1px solid var(--office-border);
+  border-radius: 7px;
+  background: var(--office-surface);
+}
+.personal-stat {
+  padding: 20px 22px;
+}
+.personal-stat-primary {
+  padding-top: 18px;
+  border-top: 3px solid var(--personal-you);
+}
+.personal-stat h2 {
+  color: var(--office-muted);
+  font-size: 13px;
+  font-weight: 400;
+}
+.personal-stat-number {
+  margin-top: 8px;
+  text-align: right;
+  font-size: 42px;
+  font-weight: 600;
+  letter-spacing: -1.7px;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+}
+.personal-stat-note {
+  margin-top: 9px;
+  color: var(--office-muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+.personal-card {
+  padding: 23px 25px;
+}
+.personal-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 18px;
+}
+.personal-card-head h2,
+.personal-error h2 {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.3px;
+}
+.personal-card-head p {
+  margin-top: 5px;
+  color: var(--office-muted);
+  font-size: 12px;
+  line-height: 1.5;
+}
+.personal-legend {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  gap: 15px;
+  padding-top: 3px;
+  color: var(--office-muted);
+  font-size: 11px;
+}
+.personal-legend > span {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+.personal-legend i {
+  width: 18px;
+  height: 0;
+  border-top: 3px solid var(--personal-you);
+}
+.personal-legend .personal-company-key {
+  border-top: 2px dashed var(--personal-company);
+}
+.personal-plot {
+  margin: 24px -6px 6px -18px;
+}
+.personal-plot svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 215px;
+  overflow: visible;
+}
+.personal-plot .personal-chart-mobile {
+  display: none;
+}
+.personal-grid-line {
+  stroke: var(--office-border-soft);
+  stroke-width: 1;
+}
+.personal-axis {
+  fill: var(--office-muted);
+  font-family: inherit;
+  font-size: 12px;
+}
+.personal-line {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  vector-effect: non-scaling-stroke;
+}
+.personal-line-you {
+  stroke: var(--personal-you);
+  stroke-width: 2.5;
+}
+.personal-line-company {
+  stroke: var(--personal-company);
+  stroke-width: 2;
+  stroke-dasharray: 5 6;
+}
+.personal-dot {
+  fill: var(--office-surface);
+  stroke: var(--personal-you);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+.personal-dot-company {
+  stroke: var(--personal-company);
+  stroke-width: 1.5;
+}
+.personal-chart-empty {
+  display: grid;
+  align-content: center;
+  justify-items: center;
+  min-height: 250px;
+  padding: 24px;
+  gap: 9px;
+  color: var(--office-muted);
+  font-size: 13px;
+  text-align: center;
+}
+.personal-chart-empty strong {
+  color: var(--office-ink);
+  font-size: 16px;
+  font-weight: 500;
+}
+.personal-chart-empty p {
+  max-width: 45ch;
+  line-height: 1.6;
+}
+.personal-chart-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  border-top: 1px solid var(--office-border-soft);
+  padding-top: 13px;
+  color: var(--office-muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+.personal-comparison-toggle {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 8px;
+  min-height: 36px;
+  color: var(--office-ink);
+  font-size: 12px;
+}
+.personal-switch-track {
+  width: 29px;
+  height: 17px;
+  border: 1px solid var(--office-border-strong);
+  border-radius: 20px;
+  background: var(--office-inset);
+}
+.personal-switch-track > span {
+  display: block;
+  width: 11px;
+  height: 11px;
+  margin: 2px;
+  border-radius: 50%;
+  background: var(--office-muted);
+}
+.personal-comparison-toggle[aria-checked='true'] .personal-switch-track {
+  border-color: var(--personal-you);
+  background: var(--personal-you);
+}
+.personal-comparison-toggle[aria-checked='true'] .personal-switch-track > span {
+  transform: translateX(12px);
+  background: var(--office-surface);
+}
+.personal-comparison-notice {
+  margin-top: 10px;
+  color: var(--office-muted);
+  font-size: 11px;
+  line-height: 1.6;
+}
+.personal-tag {
+  flex: none;
+  padding: 4px 7px;
+  border: 1px solid var(--office-border);
+  border-radius: 4px;
+  color: var(--office-muted);
+  font-size: 10px;
+}
+.personal-table-card {
+  padding-bottom: 6px;
+}
+.personal-table-wrap {
+  width: 100%;
+  margin-top: 19px;
+}
+.personal-table-wrap table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+}
+.personal-table-wrap :is(th, td) {
+  padding: 12px 0 12px 12px;
+  border-bottom: 1px solid var(--office-border-soft);
+  text-align: right;
+  vertical-align: middle;
+}
+.personal-table-wrap thead th {
+  color: var(--office-muted);
+  font-size: 11px;
+  font-weight: 400;
+  vertical-align: bottom;
+}
+.personal-table-wrap :is(th, td):first-child {
+  width: 24%;
+  padding-left: 0;
+  text-align: left;
+}
+.personal-table-wrap tbody th {
+  font-weight: 400;
+}
+.personal-table-wrap tfoot :is(th, td) {
+  padding-top: 16px;
+  padding-bottom: 16px;
+  border: 0;
+  font-weight: 600;
+}
+.personal-share {
+  color: var(--personal-you);
+  font-weight: 600;
+}
+.personal-unavailable {
+  color: var(--office-muted);
+}
+.personal-history {
+  display: flex;
+  align-items: flex-start;
+  gap: 13px;
+  padding: 17px 20px;
+  border: 1px solid var(--office-border);
+  border-radius: 7px;
+  background: var(--office-raised-soft);
+  font-size: 12px;
+  line-height: 1.6;
+}
+.personal-history p + p {
+  margin-top: 4px;
+  color: var(--office-muted);
+  font-size: 11px;
+}
+.personal-info {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 23px;
+  height: 23px;
+  border: 1px solid var(--office-border-strong);
+  border-radius: 50%;
+  color: var(--office-muted);
+  font-size: 12px;
+}
+.personal-methodology {
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--office-border);
+  font-size: 12px;
+  line-height: 1.7;
+}
+.personal-methodology summary {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 36px;
+  align-items: center;
+  list-style: none;
+  font-weight: 500;
+  cursor: pointer;
+}
+.personal-methodology summary::-webkit-details-marker {
+  display: none;
+}
+.personal-methodology summary::after {
+  content: '+';
+  color: var(--office-muted);
+  font-size: 21px;
+}
+.personal-methodology[open] summary::after {
+  content: '−';
+}
+.personal-methodology p {
+  max-width: 90ch;
+  margin-top: 12px;
+  color: var(--office-muted);
+}
+.personal-footer {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--office-muted);
+  font-size: 10px;
+}
+.personal-error p {
+  margin: 10px 0 20px;
+  color: var(--office-muted);
+}
+.personal-error button {
+  padding: 11px 18px;
+  border-radius: 5px;
+  background: var(--office-primary);
+  color: var(--office-primary-ink);
+}
+.personal-stats-page :is(select, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--office-link);
+  outline-offset: 4px;
+}
+@media (max-width: 760px) {
+  .personal-stats-page > .office-header {
+    flex-wrap: wrap;
+    gap: 18px;
+  }
+  .personal-stats-page > .office-header h1 {
+    font-size: 30px;
+  }
+  .personal-stats-page > .office-header p {
+    font-size: 13px;
+  }
+  .personal-stats-page .office-header-actions {
+    width: 100%;
+    justify-content: space-between;
+    align-items: end;
+  }
+  .personal-stats-body {
+    gap: 14px;
+  }
+  .personal-period select {
+    min-height: 44px;
+    min-width: 160px;
+  }
+  .personal-stat {
+    padding: 15px 13px;
+  }
+  .personal-stat-primary {
+    padding-top: 13px;
+  }
+  .personal-stat h2 {
+    min-height: 32px;
+    font-size: 12px;
+  }
+  .personal-stat-number {
+    font-size: 34px;
+  }
+  .personal-stat-note {
+    font-size: 10px;
+  }
+  .personal-card {
+    padding: 18px;
+  }
+  .personal-card-head {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .personal-legend {
+    gap: 16px;
+    font-size: 11px;
+  }
+  .personal-card-head p {
+    font-size: 11px;
+  }
+  .personal-chart-footer {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 7px;
+  }
+  .personal-comparison-toggle {
+    min-height: 44px;
+  }
+  .personal-table-card {
+    padding-bottom: 0;
+  }
+}
+@media (max-width: 540px) {
+  .personal-stats-summary {
+    gap: 8px;
+  }
+  .personal-stat {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+  .personal-stat h2 {
+    font-size: 11px;
+  }
+  .personal-stat-number {
+    font-size: 30px;
+    letter-spacing: -1.1px;
+  }
+  .personal-stat-note {
+    font-size: 10px;
+  }
+  .personal-period-caption {
+    font-size: 11px;
+  }
+  .personal-period-caption > span {
+    display: block;
+    margin-top: 4px;
+  }
+  .personal-plot {
+    margin-left: -16px;
+    margin-right: -8px;
+  }
+  .personal-plot .personal-chart-desktop {
+    display: none;
+  }
+  .personal-plot .personal-chart-mobile {
+    display: block;
+    min-height: 0;
+  }
+  .personal-axis {
+    font-size: 14px;
+  }
+  .personal-chart-empty {
+    min-height: 210px;
+    padding: 20px 0;
+  }
+  .personal-table-wrap table {
+    font-size: 11px;
+  }
+  .personal-table-wrap :is(th, td) {
+    padding-left: 7px;
+  }
+  .personal-table-wrap thead th {
+    font-size: 10px;
+    overflow-wrap: normal;
+  }
+  .personal-table-wrap :is(th, td):first-child {
+    width: 24%;
+  }
+  .personal-history {
+    padding: 14px;
+    gap: 10px;
+    font-size: 11px;
+  }
+  .personal-footer {
+    flex-wrap: wrap;
+  }
+}
+.personal-reason {
+  position: relative;
+  color: var(--office-muted);
+  font-size: 11px;
+  font-weight: 400;
+}
+.personal-reason summary {
+  display: inline-block;
+  padding: 5px 0;
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  list-style: none;
+}
+.personal-reason summary::-webkit-details-marker {
+  display: none;
+}
+.personal-reason p {
+  position: absolute;
+  z-index: 2;
+  right: 0;
+  top: 100%;
+  width: min(250px, 65vw);
+  padding: 12px;
+  border: 1px solid var(--office-border);
+  border-radius: 5px;
+  background: var(--office-surface);
+  color: var(--office-ink);
+  box-shadow: 0 4px 15px #0002;
+  text-align: left;
+  line-height: 1.6;
+}
+button.personal-comparison-toggle {
+  border: 0;
+  padding: 0;
+  background: transparent;
+  font-family: inherit;
+  cursor: pointer;
+}

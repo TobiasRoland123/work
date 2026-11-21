@@ -74,7 +74,7 @@
   border-radius: 6px;
   overflow: hidden;
 }
-.week-nav a {
+.week-nav :is(a, button) {
   display: grid;
   place-items: center;
   height: 38px;
@@ -82,7 +82,10 @@
   padding: 0 10px;
   font-size: 13px;
 }
-.week-nav a:hover {
+.week-nav button {
+  border-inline-start: 1px solid var(--office-border);
+}
+.week-nav :is(a, button):hover {
   background: var(--office-hover);
 }
 .week-nav .week-nav-current {
@@ -186,11 +189,6 @@
   display: none;
 }
 
-.week-grouping-note {
-  color: var(--office-muted);
-  font-size: 12px;
-  line-height: 1.5;
-}
 .week-board {
   --from: calc(var(--selected, 0) * 100% / var(--days, 5));
   --to: calc((var(--selected, 0) + 1) * 100% / var(--days, 5));
@@ -1155,7 +1153,7 @@
   .week-nav .week-nav-current {
     display: none;
   }
-  .week-nav a {
+  .week-nav :is(a, button) {
     height: 40px;
     min-width: 40px;
     padding: 0;

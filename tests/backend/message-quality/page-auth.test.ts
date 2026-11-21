@@ -58,9 +58,9 @@ describe('message quality page authorization', () => {
   });
 
   it('does not fetch review records if the live permission is denied', async () => {
-    mocked.requireMessageReviewer.mockRejectedValueOnce(new Error('NOT_FOUND'));
+    mocked.requireMessageReviewer.mockRejectedValueOnce(new Error('REDIRECT:/permission-denied'));
     await expect(MessageQualityPage({ searchParams: Promise.resolve({}) })).rejects.toThrow(
-      'NOT_FOUND'
+      'REDIRECT:/permission-denied'
     );
     expect(mocked.getMessageQualityDashboard).not.toHaveBeenCalled();
   });

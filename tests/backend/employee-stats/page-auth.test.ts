@@ -142,9 +142,11 @@ describe('employee stats page authorization', () => {
   });
 
   it('does not load stats when the live permission is denied', async () => {
-    mocked.requireEmployeeStatsViewer.mockRejectedValueOnce(new Error('NOT_FOUND'));
+    mocked.requireEmployeeStatsViewer.mockRejectedValueOnce(
+      new Error('REDIRECT:/permission-denied')
+    );
     await expect(EmployeeStatsPage({ searchParams: Promise.resolve({}) })).rejects.toThrow(
-      'NOT_FOUND'
+      'REDIRECT:/permission-denied'
     );
     expect(mocked.getEmployeeStats).not.toHaveBeenCalled();
   });
@@ -243,8 +245,10 @@ describe('employee directory page', () => {
   it('does not list employees without a session or without the live permission', async () => {
     mocked.requirePageUserId.mockRejectedValueOnce(new Error('LOGIN'));
     await expect(renderDirectory()).rejects.toThrow('LOGIN');
-    mocked.requireEmployeeStatsViewer.mockRejectedValueOnce(new Error('NOT_FOUND'));
-    await expect(renderDirectory()).rejects.toThrow('NOT_FOUND');
+    mocked.requireEmployeeStatsViewer.mockRejectedValueOnce(
+      new Error('REDIRECT:/permission-denied')
+    );
+    await expect(renderDirectory()).rejects.toThrow('REDIRECT:/permission-denied');
     expect(mocked.listEmployees).not.toHaveBeenCalled();
   });
 
@@ -292,8 +296,10 @@ describe('employee profile page', () => {
   it('does not load anyone without a session or without the live permission', async () => {
     mocked.requirePageUserId.mockRejectedValueOnce(new Error('LOGIN'));
     await expect(renderProfile()).rejects.toThrow('LOGIN');
-    mocked.requireEmployeeStatsViewer.mockRejectedValueOnce(new Error('NOT_FOUND'));
-    await expect(renderProfile()).rejects.toThrow('NOT_FOUND');
+    mocked.requireEmployeeStatsViewer.mockRejectedValueOnce(
+      new Error('REDIRECT:/permission-denied')
+    );
+    await expect(renderProfile()).rejects.toThrow('REDIRECT:/permission-denied');
     expect(mocked.getEmployeeProfile).not.toHaveBeenCalled();
     expect(mocked.listEmployees).not.toHaveBeenCalled();
   });
@@ -416,8 +422,8 @@ describe('legacy stats access page', () => {
   });
 
   it('rejects managers and employees before redirecting', async () => {
-    mocked.requireAdmin.mockRejectedValueOnce(new Error('NOT_FOUND'));
-    await expect(EmployeeStatsAccessPage()).rejects.toThrow('NOT_FOUND');
+    mocked.requireAdmin.mockRejectedValueOnce(new Error('REDIRECT:/permission-denied'));
+    await expect(EmployeeStatsAccessPage()).rejects.toThrow('REDIRECT:/permission-denied');
     expect(mocked.redirect).not.toHaveBeenCalled();
   });
 

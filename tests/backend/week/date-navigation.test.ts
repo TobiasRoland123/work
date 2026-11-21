@@ -109,6 +109,7 @@ describe('date navigation in WeekOverview', () => {
   it('uses selected-day routes and labels for previous, today, and next', () => {
     const html = render(['2026-10-13']);
     expect(html).toContain('aria-label="Choose day"');
+    expect(navigationOf(html)).toContain('aria-label="Choose date"');
     expect(html).toMatch(/<a aria-label="Previous day" href="\/today\?day=2026-10-12"/);
     expect(html).toContain('href="/today"');
     expect(html).toMatch(/<a aria-label="Next day" href="\/today\?day=2026-10-14"/);
@@ -164,6 +165,7 @@ describe('date navigation in WeekOverview', () => {
     const days = workWeekDays('2026-10-12');
     const html = render(days);
     expect(html).toContain('aria-label="Choose week"');
+    expect(navigationOf(html)).not.toContain('aria-label="Choose date"');
     expect(html).toContain('aria-label="Previous week" href="/today?week=2026-10-05"');
     expect(html).toContain('aria-label="Next week" href="/today?week=2026-10-19"');
     expect(html).toContain('href="/today"');
