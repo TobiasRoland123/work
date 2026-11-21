@@ -1,6 +1,6 @@
 import { localInstant } from '../extraction';
 
-export const PARSER_VERSION = 'history-2026-v1';
+export const PARSER_VERSION = 'history-2026-v2';
 export type MonthWindow = { month: string; oldest: string; latest: string };
 export function timestamp(instant: Date): string {
   if (!Number.isFinite(instant.getTime())) throw new Error('Invalid instant');

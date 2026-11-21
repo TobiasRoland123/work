@@ -19,6 +19,7 @@ const settingsSchema = z
     budgetUsd: z.number().finite().nonnegative(),
     maxRequestUsd: z.number().finite().positive(),
     parserVersion: z.string().min(1),
+    receiptAccounting: z.literal('verified-gateway-v1').optional(),
     mode: z.enum(['rehearsal', 'production']),
     cutoff: z.string().datetime({ offset: true }),
     coverage: z.object({

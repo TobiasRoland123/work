@@ -97,7 +97,7 @@ Store non-secret configuration in `.local/slack-import/rehearsal.json`. Use the 
   "model": "openai/gpt-6-luna",
   "budgetUsd": 5,
   "maxRequestUsd": 0.05,
-  "parserVersion": "history-2026-v1",
+  "parserVersion": "history-2026-v2",
   "mode": "rehearsal",
   "cutoff": "2026-02-01T00:00:00+01:00",
   "coverage": {
@@ -177,9 +177,15 @@ Run `review` only after inspecting the month's final report. It explicitly advan
 
 Database administrators can read import records; ordinary authenticated users must not receive access to the private history tables. Reports can contain attendance details and personal reasons. Store them with the same restrictions as attendance data. Raw source text is stored in the isolated import tables until explicit month review, which purges it. Proposal details and prior/after snapshots remain for attendance audit and undo, and can themselves contain personal reasons. Set a retention/deletion date for these records and backups under the organization's policy. Unreviewed or failed runs retain source text and require an explicit administrator cleanup decision. Replay after purge requires a new fetch/run. Deleted or expired text cannot be reconstructed from Slack reliably. Do not copy raw source text into operational logs.
 
+Parser `history-2026-v2` holds any proposed combination of AWAY and IN_OFFICE from one historical message for human review. An absence ending at a given time alone cannot establish later office presence. Even an explicit return is held when paired with AWAY. The importer checks again before writing a stored proposal. A v1 run remains available for report, pause and undo using its recorded configuration. Start a fresh v2 run and repeat the January preview and review before applying. Count any earlier preview spending toward the same authorization.
+
 Existing Slack revisions involving Corrections or supersession relationships, existing earlier/later live messages in the same author/day context, and messages naming colleagues are held for review. This includes inactive mentioned colleagues. The CLI does not offer an automatic resolution command for these cases. Review reports before deciding whether further implementation or a separate audited correction is necessary. Mapped inactive authors are imported without changing their login state; unmapped authors remain in review.
 
-Cost accounting reserves `maxRequestUsd` before each model request and retains the reservation even when a request fails. Set an external AI Gateway/provider hard spending cap as well: an unexpectedly expensive completed request can exceed a reservation before the importer learns the actual charge and pauses. The report is conservative reserved spending, not an invoice. Per-month sample estimates divide reserved cost by processed messages and project that observed average onto fetched pending messages. Unsampled months and unavailable history are not estimated; text complexity and retries can raise actual costs.
+The default accounting mode reserves `maxRequestUsd` before dispatch and keeps that reservation even if the request fails or the completion reports a lower price. Set an independent payment limit across runs and account for retries. If a completed request exceeds its reservation, the importer records the overrun and pauses.
+
+An operator can freeze `"receiptAccounting": "verified-gateway-v1"` in a new run's configuration when using a dedicated Gateway payment guard. Both `budgetUsd` and the guard's cross-run limit must stay within the authorized amount. For example, with a USD 0.60 reservation and a verified USD 0.002311 generation debit, the importer returns USD 0.597689 to the run's remaining budget. The guard must correlate the exact model, run and generation with its own dispatch and independently verify the Gateway billing receipt, including surcharges and any provider-billed costs. The current operator guard retains the full reservation for BYOK. Missing receipts, unverified charges and failed requests keep their reservation and pause the run for investigation. Completed extractions can still be inspected. A missing guard stops a paid extraction before dispatch. Keep using the same durable cross-run ledger after restarting. Source-message text and completion-body cost estimates cannot authorize a refund.
+
+The report's sample estimates project the observed per-message cost onto pending fetched messages. Unresolved reservations can make these estimates conservative. Unsampled and unavailable history have no estimate.
 
 The actual production backup, verified local restore, migration/mapping checks, production isolation, Slack access/retention and any paid model extraction remain operator tasks. No Supabase branch purchase or provisioning is required. Passing local tests is not evidence those steps happened.
 

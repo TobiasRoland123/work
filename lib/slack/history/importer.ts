@@ -1,3 +1,4 @@
+import { historicalUsageObserver, type ReceiptAccounting } from './billing';
 import { randomUUID } from 'node:crypto';
 import { costProjection, type MonthCostInput } from './report';
 import { types, type Pool, type PoolClient } from 'pg';
@@ -21,6 +22,7 @@ export type ImportConfig = {
   model: string;
   budgetUsd: number;
   maxRequestUsd: number;
+  receiptAccounting?: ReceiptAccounting;
   parserVersion: string;
   mode: 'rehearsal' | 'production';
   targetIdentity: string;
@@ -70,6 +72,15 @@ type Snapshot = {
   links: Record<string, unknown>[];
 };
 
+// A bounded absence alone does not establish where the author will be afterwards.
+function needsOfficeReturnReview(rows: Proposal['rows']) {
+  return (
+    rows.some((row) => row.status === 'AWAY') && rows.some((row) => row.status === 'IN_OFFICE')
+  );
+}
+
+const officeReturnReview = 'absence_and_office_presence_requires_review';
+
 /** A dedicated pool is mandatory. Never imports the app database, queue, Echo or Realtime clients. */
 export class HistoryImporter {
   constructor(
@@ -86,11 +97,14 @@ export class HistoryImporter {
       }) as typeof types.getTypeParser,
     };
   }
-  private async authorized(client: PoolClient) {
+  private async authorized(client: PoolClient, recovery = false) {
     client.setTypeParser(1082, (value) => value);
     client.setTypeParser(1114, (value) => value);
     client.setTypeParser(1184, (value) => value);
-    if (this.config.parserVersion !== PARSER_VERSION)
+    if (
+      this.config.parserVersion !== PARSER_VERSION &&
+      !(recovery && this.config.parserVersion === 'history-2026-v1')
+    )
       throw new Error(`Expected parserVersion ${PARSER_VERSION}`);
     if (
       !(this.config.budgetUsd >= 0) ||
@@ -108,12 +122,12 @@ export class HistoryImporter {
   private async locked<T>(
     id: string,
     fn: (client: PoolClient, run: Run, month: Month) => Promise<T>,
-    allowPaused = false
+    access: 'active' | 'resume' | 'recovery' = 'active'
   ): Promise<T> {
     const client = await this.pool.connect();
     let acquired = false;
     try {
-      await this.authorized(client);
+      await this.authorized(client, access === 'recovery');
       acquired = (
         await client.query('select pg_try_advisory_lock(hashtext($1)) as acquired', [
           `slack-history:${this.config.teamId}:${this.config.channelId}`,
@@ -128,7 +142,7 @@ export class HistoryImporter {
         JSON.stringify(this.config, Object.keys(this.config).sort())
       )
         throw new Error('Run configuration changed; use the recorded configuration');
-      if (run.paused && !allowPaused) throw new Error('Run is paused');
+      if (run.paused && access === 'active') throw new Error('Run is paused');
       return await fn(client, run, run.months[run.month_index]);
     } finally {
       if (acquired)
@@ -258,7 +272,9 @@ export class HistoryImporter {
           [id, month.month, Math.max(1, Math.min(10, limit))]
         )
       ).rows;
+      let receiptPaused = false;
       for (const item of items) {
+        if (receiptPaused) break;
         await c.query(
           'update slack_import_items set attempts=attempts+1 where run_id=$1 and message_key=$2',
           [id, item.message_key]
@@ -368,37 +384,16 @@ export class HistoryImporter {
           const extraction = await extractAttendance(
             item.source.text,
             new Date(Number(item.message_ts) * 1000),
-            {
-              onStart: async (model) => {
-                if (model !== this.config.model)
-                  throw new Error('SLACK_EXTRACTION_MODEL differs from frozen run model');
-                const charged = await c.query(
-                  'update slack_import_runs set spent=spent+$2 where id=$1 and paused=false and spent+$2<= $3 returning spent',
-                  [id, this.config.maxRequestUsd, this.config.budgetUsd]
-                );
-                if (!charged.rowCount) throw new Error('Run AI budget exhausted');
-                await c.query(
-                  'update slack_import_items set reserved_usd=reserved_usd+$3 where run_id=$1 and message_key=$2',
-                  [id, item.message_key, this.config.maxRequestUsd]
-                );
-              },
-              onFinish: async (usage) => {
-                if (usage.costUsd !== null && Number(usage.costUsd) > this.config.maxRequestUsd) {
-                  await c.query(
-                    'update slack_import_runs set spent=spent+$2,paused=true where id=$1',
-                    [id, Number(usage.costUsd) - this.config.maxRequestUsd]
-                  );
-                  await c.query(
-                    'update slack_import_items set reserved_usd=reserved_usd+$3 where run_id=$1 and message_key=$2',
-                    [id, item.message_key, Number(usage.costUsd) - this.config.maxRequestUsd]
-                  );
-                  throw new Error('Request exceeded reservation; run paused');
-                }
-              },
-            },
+            historicalUsageObserver(c, this.config, id, item.message_key, () => {
+              receiptPaused = true;
+            }),
             context
           );
           const rows = extraction.decision === 'apply' ? statusRows(extraction) : [];
+          if (needsOfficeReturnReview(rows)) {
+            await this.outcome(c, id, item, 'review', officeReturnReview);
+            continue;
+          }
           if (baseline && !rows.length) {
             await this.outcome(c, id, item, 'review', 'existing_revision_without_intervals');
             continue;
@@ -504,6 +499,10 @@ export class HistoryImporter {
       ).rows;
       for (const item of items) {
         const proposal = item.proposal!;
+        if (needsOfficeReturnReview(proposal.rows)) {
+          await this.outcome(c, id, item, 'review', officeReturnReview);
+          continue;
+        }
         await c.query('BEGIN');
         try {
           await c.query('select user_id from users where user_id=$1 for update', [proposal.userId]);
@@ -685,7 +684,7 @@ export class HistoryImporter {
         await c.query('update slack_import_runs set paused=true where id=$1', [id]);
         return { paused: true };
       },
-      true
+      'recovery'
     );
   }
   async resume(id: string) {
@@ -701,7 +700,7 @@ export class HistoryImporter {
         );
         return { paused: false };
       },
-      true
+      'resume'
     );
   }
   async review(id: string) {
@@ -738,7 +737,7 @@ export class HistoryImporter {
     });
   }
   async report(id: string) {
-    return this.locked(id, (c) => this.reportWith(c, id), true);
+    return this.locked(id, (c) => this.reportWith(c, id), 'recovery');
   }
   private async reportWith(c: PoolClient, id: string) {
     const run = (await c.query('select * from slack_import_runs where id=$1', [id])).rows[0];
@@ -773,8 +772,9 @@ export class HistoryImporter {
       counts,
       examples,
       cost: costProjection(costs, Number(run.config.budgetUsd), Number(run.spent)),
-      costPolicy:
-        'spent is conservative reserved USD including uncertain/failed requests; no Learned Shorthand reads/training',
+      costPolicy: run.config.receiptAccounting
+        ? 'Verified Gateway costs plus full unresolved reservations; the operator guard also enforces its cumulative cap across runs.'
+        : 'Conservative reservations including uncertain and failed requests.',
       coverageWarning:
         'Incomplete/unavailable/unimported history is unknown attendance, never evidence of office presence',
       newRecords:
@@ -878,7 +878,7 @@ export class HistoryImporter {
             'Conflicts preserve later live edits, deletions, Corrections and supersession links; inspect before further action',
         };
       },
-      true
+      'recovery'
     );
   }
 }

@@ -45,7 +45,7 @@ describe.skipIf(!url)('history transaction integration', () => {
   afterAll(async () => {
     await pool.end();
   });
-  async function stage(ts: string, revision = ts) {
+  async function stage(ts: string, revision = ts, text = 'WFH') {
     const key = `T-history-test:C-history-test:${ts}`;
     await pool.query(
       `insert into slack_import_items(run_id,month,message_key,revision,message_ts,author,source) values($1,'2026-01',$2,$3,$4,'U-history',$5)`,
@@ -57,13 +57,89 @@ describe.skipIf(!url)('history transaction integration', () => {
         JSON.stringify({
           ts,
           user: 'U-history',
-          text: 'WFH',
+          text,
           ...(revision !== ts ? { edited: { ts: revision } } : {}),
         }),
       ]
     );
     return key;
   }
+  it.each([
+    ['1768561200.000001', 'Unavailable from 13:15 to 14:45.'],
+    ['1768647600.000001', 'Jeg er væk fra 13.15 til 14.45.'],
+    ['1768734000.000001', 'Away until 14:45, then back in the office.'],
+  ])(
+    'holds absence plus office proposals during preview and before apply (%s)',
+    async (ts, text) => {
+      const key = await stage(ts, ts, text);
+      const day = extraction.copenhagenDate(new Date(Number(ts) * 1000));
+      const absence = {
+        status: 'AWAY' as const,
+        fromDate: day,
+        toDate: day,
+        startTime: '13:15',
+        endTime: '14:45',
+        startApproximate: false,
+        endApproximate: false,
+        comment: null,
+      };
+      const result: extraction.Extraction = {
+        decision: 'apply',
+        reason: 'clear',
+        intervals: [
+          absence,
+          { ...absence, status: 'IN_OFFICE', startTime: '14:45', endTime: null },
+        ],
+      };
+      const spy = vi.spyOn(extraction, 'extractAttendance').mockResolvedValue(result);
+      const report = await importer.preview(runId);
+      expect(spy.mock.calls[0][0]).toBe(text);
+      expect(report.batch).toContainEqual(
+        expect.objectContaining({
+          message_key: key,
+          outcome: 'review',
+          reason: 'absence_and_office_presence_requires_review',
+        })
+      );
+      // Simulate a stored, already-prepared proposal to exercise apply independently.
+      await pool.query(
+        "update slack_import_items set outcome='proposed', proposal=$3 where run_id=$1 and message_key=$2",
+        [runId, key, JSON.stringify({ extraction: result, rows: extraction.statusRows(result) })]
+      );
+      await importer.apply(runId);
+      const item = await pool.query(
+        'select outcome,reason from slack_import_items where run_id=$1 and message_key=$2',
+        [runId, key]
+      );
+      expect(item.rows[0]).toEqual({
+        outcome: 'review',
+        reason: 'absence_and_office_presence_requires_review',
+      });
+      for (const table of ['slack_messages', 'status']) {
+        const column = table === 'status' ? 'source_message_key' : 'message_key';
+        expect(
+          (await pool.query(`select 1 from ${table} where ${column}=$1`, [key])).rows
+        ).toHaveLength(0);
+      }
+    }
+  );
+  it('allows report, pause and undo on the original parser version but requires a fresh corrected run', async () => {
+    const priorConfig = { ...config, parserVersion: 'history-2026-v1' };
+    const previous = new HistoryImporter(pool, priorConfig);
+    const legacy = (
+      await pool.query(
+        'insert into slack_import_runs(id,config,cutoff,coverage,months) select gen_random_uuid(),$2,cutoff,coverage,months from slack_import_runs where id=$1 returning id',
+        [runId, JSON.stringify(priorConfig)]
+      )
+    ).rows[0].id;
+    await expect(previous.report(legacy)).resolves.toMatchObject({ run: { id: legacy } });
+    await expect(previous.pause(legacy)).resolves.toEqual({ paused: true });
+    await expect(previous.undo(legacy)).resolves.toMatchObject({ undone: 0, conflicts: 0 });
+    await expect(previous.resume(legacy)).rejects.toThrow('Expected parserVersion');
+    await expect(previous.preview(legacy)).rejects.toThrow('Expected parserVersion');
+    await expect(previous.apply(legacy)).rejects.toThrow('Expected parserVersion');
+    await expect(importer.preview(legacy)).rejects.toThrow('Run configuration changed');
+  });
   it('previews original dates, applies once, and restores absence', async () => {
     const key = await stage('1767265200.000001');
     await importer.preview(runId);
