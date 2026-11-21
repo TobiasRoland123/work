@@ -4,7 +4,7 @@ import { types, type Pool, type PoolClient } from 'pg';
 import { copenhagenDate, extractAttendance, statusRows, type Extraction } from '../extraction';
 import type { AttendanceContextEntry } from '../attendance-context';
 import { compareTs, monthlyWindows, PARSER_VERSION, type MonthWindow } from './windows';
-import { HistoryRetry, ignoredReason, readSlack, type HistoryMessage } from './slack';
+import { HistoryRetry, ignoredReason, readVerifiedHistory, type HistoryMessage } from './slack';
 
 function canonical(value: unknown): string {
   return JSON.stringify(value, (_key, item) =>
@@ -76,11 +76,11 @@ export class HistoryImporter {
     private pool: Pool,
     private config: ImportConfig
   ) {
-    // DATE values must survive snapshots as calendar strings, never local-midnight instants.
+    // Keep calendar dates and full PostgreSQL timestamp precision in audit snapshots.
     pool.options.types = {
       getTypeParser: ((oid: number, format?: 'text' | 'binary') => {
         if (format === 'binary') return types.getTypeParser(oid, 'binary');
-        return oid === 1082 || oid === 1114
+        return oid === 1082 || oid === 1114 || oid === 1184
           ? (value: string) => value
           : types.getTypeParser(oid, 'text');
       }) as typeof types.getTypeParser,
@@ -89,6 +89,7 @@ export class HistoryImporter {
   private async authorized(client: PoolClient) {
     client.setTypeParser(1082, (value) => value);
     client.setTypeParser(1114, (value) => value);
+    client.setTypeParser(1184, (value) => value);
     if (this.config.parserVersion !== PARSER_VERSION)
       throw new Error(`Expected parserVersion ${PARSER_VERSION}`);
     if (
@@ -183,31 +184,18 @@ export class HistoryImporter {
           'Fetch exhausted retries; inspect failure then resume to reset retry count'
         );
       try {
-        const auth = await readSlack<{ team_id: string }>('auth.test');
-        const info = await readSlack<{
-          channel: { id: string; is_member: boolean; is_private: boolean };
-        }>('conversations.info', { channel: this.config.channelId });
-        if (
-          auth.team_id !== this.config.teamId ||
-          info.channel.id !== this.config.channelId ||
-          !info.channel.is_member ||
-          info.channel.is_private
-        )
-          throw new Error('Slack workspace/public channel membership mismatch');
         if (!month.cursor) month.pageLatest = month.checkpoint ?? month.latest;
-        const result = await readSlack<{
-          messages: HistoryMessage[];
-          has_more?: boolean;
-          response_metadata?: { next_cursor?: string };
-        }>('conversations.history', {
-          channel: this.config.channelId,
-          oldest: month.oldest,
-          latest: month.pageLatest ?? month.latest,
-          inclusive: 'true',
-          limit: '15',
-          ...(month.cursor ? { cursor: month.cursor } : {}),
-        });
-        if (!Array.isArray(result.messages)) throw new Error('Malformed history response');
+        const { history: result } = await readVerifiedHistory(
+          this.config.teamId,
+          this.config.channelId,
+          {
+            oldest: month.oldest,
+            latest: month.pageLatest ?? month.latest,
+            inclusive: 'true',
+            limit: '15',
+            ...(month.cursor ? { cursor: month.cursor } : {}),
+          }
+        );
         const cursor = result.response_metadata?.next_cursor?.trim();
         if (cursor && cursor === month.cursor) throw new Error('Repeated pagination cursor');
         await c.query('BEGIN');
@@ -476,10 +464,21 @@ export class HistoryImporter {
       [id, item.message_key, outcome, reason]
     );
   }
-  private async hasRelationships(c: PoolClient, key: string, ids: number[]): Promise<boolean> {
+  private async hasRelationships(
+    c: PoolClient,
+    key: string,
+    ids: number[],
+    undoing = false
+  ): Promise<boolean> {
     const result = await c.query(
-      `select 1 from status_corrections where source_message_key=$1 or original_status_id=ANY($2::int[]) or correction_status_id=ANY($2::int[]) union all select 1 from status_supersessions where target_status_id=ANY($2::int[]) or replacement_status_id=ANY($2::int[]) limit 1`,
-      [key, ids]
+      `select 1 from status_corrections where source_message_key=$1 or original_status_id=ANY($2::int[]) or correction_status_id=ANY($2::int[])
+       union all select 1 from admin_status_changes where status_id=ANY($2::int[])
+       union all select 1 from status_echoes where status_id=ANY($2::int[])
+       union all select 1 from slack_message_feedback where message_key=$1
+       union all select 1 from shorthand_observations where message_key=$1
+       union all select 1 from status_supersessions where target_status_id=ANY($2::int[]) or (not $3::boolean and replacement_status_id=ANY($2::int[]))
+       limit 1`,
+      [key, ids, undoing]
     );
     return !!result.rowCount;
   }
@@ -817,14 +816,6 @@ export class HistoryImporter {
                 [ids]
               )
             ).rows;
-            const corrections = await c.query(
-              'select 1 from status_corrections where source_message_key=$1 or original_status_id=ANY($2::int[]) or correction_status_id=ANY($2::int[]) limit 1',
-              [item.message_key, ids]
-            );
-            const laterLinks = await c.query(
-              'select 1 from status_supersessions where target_status_id=ANY($1::int[]) and not(replacement_status_id=ANY($1::int[])) limit 1',
-              [ids]
-            );
             const normalize = canonical;
             const expected = item.after_state!;
             const sortLinks = (v: Record<string, unknown>[]) =>
@@ -837,8 +828,7 @@ export class HistoryImporter {
               normalize(message) !== normalize(expected.message) ||
               normalize(rows) !== normalize(expected.rows) ||
               normalize(links) !== normalize(sortLinks(expected.links)) ||
-              corrections.rowCount ||
-              laterLinks.rowCount
+              (await this.hasRelationships(c, item.message_key, ids, true))
             ) {
               conflicts++;
               await c.query('ROLLBACK');

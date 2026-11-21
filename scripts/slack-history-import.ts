@@ -1,6 +1,7 @@
 /** Operator-only CLI. Never imports db/index.ts or loads an application's .env file. */
 import { readFileSync } from 'node:fs';
 import { Pool } from 'pg';
+import { readVerifiedHistory } from '../lib/slack/history/slack';
 import { z } from 'zod';
 import { readMigrations } from '../lib/db-migrations/runner';
 import {
@@ -45,48 +46,17 @@ function options(args: string[]) {
 }
 
 async function sourcePreflight(teamId: string, channelId: string) {
-  const token = process.env.SLACK_IMPORT_BOT_TOKEN;
-  if (!token) throw new Error('Set SLACK_IMPORT_BOT_TOKEN for read-only Slack requests.');
-  const scopes = new Set<string>();
-  async function read(method: string, params: Record<string, string> = {}) {
-    const response = await fetch(`https://slack.com/api/${method}`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
-      body: new URLSearchParams(params),
-      signal: AbortSignal.timeout(15_000),
-    });
-    for (const scope of (response.headers.get('x-oauth-scopes') ?? '').split(','))
-      if (scope.trim()) scopes.add(scope.trim());
-    if (response.status === 429)
-      throw new Error(
-        `Slack throttled preflight. Retry after ${response.headers.get('retry-after') ?? '60'} seconds.`
-      );
-    const result = await response.json();
-    if (!response.ok || !result.ok)
-      throw new Error(`Slack ${method}: ${result.error ?? response.status}`);
-    return result;
-  }
-  const auth = await read('auth.test');
-  if (auth.team_id !== teamId) throw new Error('Slack token belongs to a different workspace.');
-  const info = await read('conversations.info', { channel: channelId });
-  if (info.channel?.id !== channelId || !info.channel.is_member || info.channel.is_private)
-    throw new Error('Expected a public channel with the bot as a member.');
-  const history = await read('conversations.history', {
-    channel: channelId,
+  const { history, channelName, installedScopes } = await readVerifiedHistory(teamId, channelId, {
+    latest: '1769900399.999999',
     limit: '1',
     oldest: '1767222000.000000',
     inclusive: 'true',
   });
-  if (scopes.size && !scopes.has('channels:history'))
-    throw new Error('Installed token lacks channels:history.');
   return {
     teamId,
     channelId,
-    channelName: info.channel.name,
-    installedScopes: [...scopes],
+    channelName,
+    installedScopes,
     historyReadable: true,
     retentionLimited: history.is_limited === true,
     sampleMessagePresent: Boolean(history.messages?.length),

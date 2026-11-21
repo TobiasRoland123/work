@@ -77,6 +77,14 @@ describe.skipIf(!url)('history transaction integration', () => {
     expect(rows).toHaveLength(1);
     expect(rows[0].from_date).toBe('2026-01-01');
     expect(new Date(rows[0].announced_at).getFullYear()).toBe(2026);
+    await pool.query(
+      "insert into slack_message_feedback(message_key,revision,preferred_status) values($1,$2,'FROM_HOME')",
+      [key, '1767265200.000001']
+    );
+    expect((await importer.undo(runId)).conflicts).toBe(1);
+    expect(
+      (await pool.query('delete from slack_message_feedback where message_key=$1', [key])).rowCount
+    ).toBe(1);
     expect((await importer.undo(runId)).undone).toBe(1);
     expect(
       (await pool.query('select count(*)::int n from status where source_message_key=$1', [key]))
@@ -119,6 +127,34 @@ describe.skipIf(!url)('history transaction integration', () => {
       (await pool.query('select revision from slack_messages where message_key=$1', [key])).rows[0]
         .revision
     ).toBe('1767438010.000001');
+    const clock = await pool.query(
+      "select to_char(announced_at, 'US') as micros from status where source_message_key=$1",
+      [key]
+    );
+    expect(clock.rows[0].micros).toBe('000001');
+    await pool.query(
+      "update status set announced_at=announced_at + interval '1 microsecond' where source_message_key=$1",
+      [key]
+    );
+    expect((await importer.undo(runId)).conflicts).toBe(1);
+    await pool.query(
+      "update status set announced_at=announced_at - interval '1 microsecond' where source_message_key=$1",
+      [key]
+    );
+    await pool.query(
+      `insert into status_echoes(status_id,user_id,post_on,status,from_date,to_date)
+       select id,user_id,from_date,status,from_date,to_date from status where source_message_key=$1`,
+      [key]
+    );
+    expect((await importer.undo(runId)).conflicts).toBe(1);
+    expect(
+      (
+        await pool.query(
+          'delete from status_echoes where status_id in (select id from status where source_message_key=$1)',
+          [key]
+        )
+      ).rowCount
+    ).toBe(1);
     expect((await importer.undo(runId)).undone).toBe(1);
     expect(
       (await pool.query('select * from status where source_message_key=$1', [key])).rows
