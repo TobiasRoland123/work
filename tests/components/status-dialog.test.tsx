@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { page } from '@vitest/browser/context';
 import { afterEach, beforeEach, expect, it, vi } from 'vitest';
+import { StatusWriteAvailabilityProvider } from '@/components/layout/StatusWriteAvailability';
 import { StatusDialog } from '@/components/layout/StatusDialog';
 import { StatusForm } from '@/components/StatusForm/StatusForm';
 import { copenhagenDate } from '@/lib/status/active';
@@ -130,3 +131,27 @@ it('renders step two safely when no status is selected', async () => {
   await expect.element(page.getByRole('button', { name: 'Register Status' })).toBeVisible();
   expect(document.querySelector('.status-form-summary')).toBeNull();
 });
+
+it.each([false, true])(
+  'disables personal and admin status entry points while Echo is paused (admin: %s)',
+  async (admin) => {
+    root.render(
+      <StatusWriteAvailabilityProvider enabled={false}>
+        <Harness colleague={admin ? { userId: 'anna', name: 'Anna' } : undefined} />
+      </StatusWriteAvailabilityProvider>
+    );
+    await expect
+      .element(page.getByRole('button', { name: 'Set status', exact: true }))
+      .toBeDisabled();
+    expect(planStatusAction).not.toHaveBeenCalled();
+    expect(planColleagueStatusAction).not.toHaveBeenCalled();
+    root.render(
+      <StatusWriteAvailabilityProvider enabled={true}>
+        <Harness colleague={admin ? { userId: 'anna', name: 'Anna' } : undefined} />
+      </StatusWriteAvailabilityProvider>
+    );
+    await expect
+      .element(page.getByRole('button', { name: 'Set status', exact: true }))
+      .toBeEnabled();
+  }
+);

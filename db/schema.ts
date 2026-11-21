@@ -480,3 +480,44 @@ export const shorthandObservations = pgTable(
     index('shorthand_observations_phrase_idx').on(table.teamId, table.channelId, table.phrase),
   ]
 ).enableRLS();
+
+// Private historical import staging and audit. No public access policies.
+export const slackImportRuns = pgTable('slack_import_runs', {
+  id: text('id').primaryKey(),
+  config: jsonb('config').notNull(),
+  cutoff: timestamp('cutoff', { withTimezone: true }).notNull(),
+  coverage: jsonb('coverage').notNull(),
+  months: jsonb('months').notNull(),
+  monthIndex: integer('month_index').default(0).notNull(),
+  paused: boolean('paused').default(false).notNull(),
+  spent: numeric('spent').default('0').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+}).enableRLS();
+export const slackImportItems = pgTable(
+  'slack_import_items',
+  {
+    runId: text('run_id')
+      .notNull()
+      .references(() => slackImportRuns.id),
+    month: text('month').notNull(),
+    messageKey: text('message_key').notNull(),
+    revision: text('revision').notNull(),
+    messageTs: text('message_ts').notNull(),
+    author: text('author'),
+    source: jsonb('source'),
+    outcome: text('outcome').default('fetched').notNull(),
+    reason: text('reason'),
+    proposal: jsonb('proposal'),
+    beforeState: jsonb('before_state'),
+    afterState: jsonb('after_state'),
+    reservedUsd: numeric('reserved_usd').default('0').notNull(),
+    attempts: integer('attempts').default(0).notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).defaultNow().notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).defaultNow().notNull(),
+  },
+  (table) => [
+    primaryKey({ columns: [table.runId, table.messageKey] }),
+    index('slack_import_items_month').on(table.runId, table.month, table.outcome),
+  ]
+).enableRLS();

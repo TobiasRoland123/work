@@ -1,3 +1,4 @@
+import { slackEchoWritesEnabled, IMPORT_STATUS_UNAVAILABLE } from '@/lib/slack/import-mode';
 import { statusService } from '@/lib/services/statusService';
 import { NextResponse } from 'next/server';
 import { auth } from '@/auth';
@@ -13,6 +14,8 @@ export async function POST(request: Request) {
   const session = await auth();
   if (session?.provider !== 'slack' || !session.userId)
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+  if (!slackEchoWritesEnabled())
+    return NextResponse.json({ error: IMPORT_STATUS_UNAVAILABLE }, { status: 503 });
   let value;
   try {
     value = manualStatus(await request.json());

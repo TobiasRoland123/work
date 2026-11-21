@@ -1,5 +1,7 @@
 'use client';
 
+import { useStatusWritesEnabled } from '@/components/layout/StatusWriteAvailability';
+
 import { useState, type ReactElement } from 'react';
 import { useRouter } from 'next/navigation';
 import { X } from 'lucide-react';
@@ -41,20 +43,21 @@ export function StatusDialog({
   trigger,
   colleague,
 }: StatusDialogProps) {
+  const enabled = useStatusWritesEnabled();
   const router = useRouter();
   const [step, setStep] = useState(1);
   // Phones get a bottom sheet with a swipe handle, larger screens a panel sliding in from the right.
   const isPhone = useMediaQuery(PHONE_QUERY);
   return (
     <Drawer
-      open={open}
-      onOpenChange={onOpenChange}
+      open={open && enabled}
+      onOpenChange={(value) => onOpenChange(value && enabled)}
       // Reset the step once the close animation has finished, so the sheet doesn't jump mid-slide.
       onOpenChangeComplete={(isOpen) => !isOpen && setStep(1)}
       swipeDirection={isPhone ? 'down' : 'right'}
       showSwipeHandle={isPhone}
     >
-      {trigger && <DrawerTrigger render={trigger} />}
+      {trigger && <DrawerTrigger disabled={!enabled} render={trigger} />}
       <DrawerContent className="office-status-dialog" overlayClassName="office-drawer-overlay">
         <div className="office-status-dialog-scroll">
           <DrawerTitle className="sr-only">

@@ -24,7 +24,14 @@ vi.mock('@/db', () => {
   };
   return {
     db: { transaction: mocks.transaction, update: () => query, select: () => select },
-    tx: { insert: () => query, delete: () => query, update: () => query },
+    tx: {
+      insert: () => query,
+      delete: () => query,
+      update: () => query,
+      select: () => ({
+        from: () => ({ where: () => ({ limit: async () => [], for: async () => [] }) }),
+      }),
+    },
   };
 });
 vi.mock('next/cache', () => ({ revalidateTag: mocks.invalidate }));

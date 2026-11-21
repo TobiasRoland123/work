@@ -1,5 +1,8 @@
 'use client';
 
+import { useStatusWritesEnabled } from '@/components/layout/StatusWriteAvailability';
+import { IMPORT_STATUS_UNAVAILABLE } from '@/lib/slack/import-mode';
+
 import { announcementAttribution } from '@/lib/status/attribution';
 
 import { useRef, useState, type CSSProperties, type MouseEvent } from 'react';
@@ -93,6 +96,7 @@ function WeekCell({
   planFor?: string;
   hideInOffice?: boolean;
 }) {
+  const enabled = useStatusWritesEnabled();
   const hiddenOffice = hideInOffice && segment.status?.status === 'IN_OFFICE';
   /** Nothing announced: leave the cell blank and keep "No status" for screen readers. */
   const blank = !segment.status;
@@ -151,6 +155,8 @@ function WeekCell({
     >
       {onPlan && plannable.length ? (
         <button
+          disabled={!enabled}
+          title={!enabled ? IMPORT_STATUS_UNAVAILABLE : undefined}
           className="week-cell-plan"
           onClick={() => onPlan(plannable)}
           aria-label={`${planFor ? `Set status for ${planFor} on` : 'Plan'} ${plannable.map(shortDay).join(', ')}. Currently: ${title}`}
@@ -175,6 +181,7 @@ function UpcomingPlans({
   plans: UpcomingStatus[];
   onRemove: (id: number) => void;
 }) {
+  const enabled = useStatusWritesEnabled();
   if (!plans.length) return <p className="person-sheet-empty">Nothing announced from today on.</p>;
   return (
     <ul className="person-sheet-plans">
@@ -218,6 +225,8 @@ function UpcomingPlans({
             ) : (
               <button
                 className="person-sheet-plan-action"
+                disabled={!enabled}
+                title={!enabled ? IMPORT_STATUS_UNAVAILABLE : undefined}
                 onClick={() => onRemove(plan.id)}
                 aria-label={`Remove ${label} on ${shortDay(plan.firstDay)}`}
               >
@@ -255,6 +264,7 @@ function PersonSheet({
   /** Set only when an admin views a colleague. */
   onSetColleagueStatus?: () => void;
 }) {
+  const enabled = useStatusWritesEnabled();
   return (
     <Dialog.Root open={Boolean(person)} onOpenChange={(open) => !open && onClose()}>
       <Dialog.Portal>
@@ -339,7 +349,12 @@ function PersonSheet({
                 <section>
                   <div className="person-sheet-heading-row">
                     <h3 className="person-sheet-heading">Admin</h3>
-                    <button className="person-sheet-plan-button" onClick={onSetColleagueStatus}>
+                    <button
+                      disabled={!enabled}
+                      title={!enabled ? IMPORT_STATUS_UNAVAILABLE : undefined}
+                      className="person-sheet-plan-button"
+                      onClick={onSetColleagueStatus}
+                    >
                       <CalendarPlus size={16} aria-hidden="true" />
                       Set status
                     </button>
@@ -355,7 +370,12 @@ function PersonSheet({
                   <div className="person-sheet-heading-row">
                     <h3 className="person-sheet-heading">Your upcoming announcements</h3>
                     {onPlan && (
-                      <button className="person-sheet-plan-button" onClick={onPlan}>
+                      <button
+                        disabled={!enabled}
+                        title={!enabled ? IMPORT_STATUS_UNAVAILABLE : undefined}
+                        className="person-sheet-plan-button"
+                        onClick={onPlan}
+                      >
                         <CalendarPlus size={16} aria-hidden="true" />
                         Plan days
                       </button>
@@ -455,6 +475,7 @@ export function WeekOverview({
   /** Clears the new announcements group. */
   onMarkSeen?: () => void;
 }) {
+  const enabled = useStatusWritesEnabled();
   const todayOnly = days.length === 1;
   const [panelOpen, setPanelOpen] = useState(initialPanelOpen);
   const [layout, setLayout] = useState(initialLayout);
@@ -532,6 +553,7 @@ export function WeekOverview({
       : {};
 
   const plan = (planned: string[], forUserId = userId) => {
+    if (!enabled) return;
     setOpenId(null);
     setPlanFor(forUserId);
     setPlanDays(planned);

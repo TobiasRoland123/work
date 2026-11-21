@@ -1,3 +1,4 @@
+import { slackEchoWritesEnabled } from '@/lib/slack/import-mode';
 import { and, desc, eq, gte, inArray, isNotNull, isNull, lt, lte } from 'drizzle-orm';
 import { db } from '@/db';
 import { status, statusEchoes, users } from '@/db/schema';
@@ -82,6 +83,7 @@ const statusesOf = (executor: typeof db | Transaction, userId: string) =>
  * that saves it. Nothing is scheduled for statuses that are never echoed or name no weekday.
  */
 export async function scheduleEcho(tx: Transaction, declaration: Status, savedAt: Date) {
+  if (!slackEchoWritesEnabled()) return null;
   const content = echoContent(declaration);
   const postOn = content && echoPostDay(declaration, savedAt);
   if (!content || !postOn) return null;
@@ -127,6 +129,7 @@ export async function runEchoJob({
   transport?: EchoTransport;
 } = {}): Promise<EchoJobCounts> {
   const counts: EchoJobCounts = { posted: 0, retrying: 0, updated: 0, failed: 0, withdrawn: 0 };
+  if (!slackEchoWritesEnabled()) return counts;
   const today = copenhagenDate(now);
   const forUser = userId ? eq(statusEchoes.userId, userId) : undefined;
 
@@ -233,6 +236,7 @@ async function postEcho(
       .where(eq(users.userId, echo.userId));
     const text = renderEcho(echo, replaced);
     try {
+      if (!slackEchoWritesEnabled()) return null;
       const posted = await transport.post({
         channel: configuredChannel(),
         text,
@@ -281,6 +285,7 @@ async function syncPostedEcho(
     const text = renderEcho(echo, replacedEchoDays(echo, echo.statusId, statuses));
     if (text === echo.postedText) return false;
     try {
+      if (!slackEchoWritesEnabled()) return false;
       await transport.update({ channel: echo.channelId, ts: echo.ts, text });
       await tx.update(statusEchoes).set({ postedText: text }).where(eq(statusEchoes.id, id));
       return true;
