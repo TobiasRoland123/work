@@ -45,7 +45,7 @@ import {
   type Segment,
 } from './presence';
 import { Avatar } from './Avatar';
-import { DayPickerButton } from './DayPickerButton';
+import { DatePickerButton } from './DatePickerButton';
 import { rememberWeekPanel } from './panelPreference';
 import { rememberWeekLayout, type WeekLayout } from './layoutPreference';
 import { PinnedColleagues } from './PinnedColleagues';
@@ -661,7 +661,12 @@ export function WeekOverview({
             >
               <ChevronRight size={18} />
             </Link>
-            {todayOnly && <DayPickerButton day={days[0]} today={today} onNavigate={onNavigate} />}
+            <DatePickerButton
+              date={todayOnly ? days[0] : weekStart}
+              scope={todayOnly ? 'day' : 'week'}
+              today={today}
+              onNavigate={onNavigate}
+            />
           </nav>
         }
       />

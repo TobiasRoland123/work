@@ -170,6 +170,7 @@ describe('date navigation in WeekOverview', () => {
     const html = render(days);
     expect(html).toContain('aria-label="Choose week"');
     expect(navigationOf(html)).not.toContain('aria-label="Choose date"');
+    expect(navigationOf(html)).toContain('aria-label="Choose week" title="Choose week"');
     expect(html).toContain('aria-label="Previous week" href="/today?week=2026-10-05"');
     expect(html).toContain('aria-label="Next week" href="/today?week=2026-10-19"');
     expect(html).toContain('href="/today"');
