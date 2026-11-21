@@ -8,7 +8,7 @@ import { toast } from 'sonner';
 import { supabase } from '@/lib/supabaseClient';
 import { copenhagenDate } from '@/lib/status/active';
 import {
-  addDays,
+  adjacentWeekday,
   resolveWeekView,
   shiftWorkWeek,
   workWeekDays,
@@ -284,8 +284,8 @@ export const WeekOverviewWrapper = ({
           { week: workWeekStart(todayRef.current) },
         ]
       : [
-          { day: addDays(viewDays[0], 1) },
-          { day: addDays(viewDays[0], -1) },
+          { day: adjacentWeekday(viewDays[0], 1) },
+          { day: adjacentWeekday(viewDays[0], -1) },
           { week: workWeekStart(todayRef.current) },
           {},
         ];

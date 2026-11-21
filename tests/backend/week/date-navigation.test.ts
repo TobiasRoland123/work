@@ -118,11 +118,15 @@ describe('date navigation in WeekOverview', () => {
   });
 
   it.each([
-    ['2026-01-01', '2025-12-31', '2026-01-02'],
-    ['2026-03-01', '2026-02-28', '2026-03-02'],
-    ['2026-10-25', '2026-10-24', '2026-10-26'], // DST transition weekend
-    ['2027-01-01', '2026-12-31', '2027-01-02'],
-  ])('navigates one calendar day around %s', (date, previous, next) => {
+    ['2026-10-23', '2026-10-22', '2026-10-26'], // Friday
+    ['2026-10-24', '2026-10-23', '2026-10-26'], // Saturday
+    ['2026-10-25', '2026-10-23', '2026-10-26'], // Sunday and DST transition
+    ['2026-10-26', '2026-10-23', '2026-10-27'], // Monday
+    ['2026-09-01', '2026-08-31', '2026-09-02'], // Month boundary
+    ['2026-10-30', '2026-10-29', '2026-11-02'], // Weekend across a month boundary
+    ['2027-01-01', '2026-12-31', '2027-01-04'], // Year boundary
+    ['2021-12-31', '2021-12-30', '2022-01-03'], // Weekend across a year boundary
+  ])('navigates to the nearest weekdays around %s', (date, previous, next) => {
     const html = render([date]);
     expect(html).toMatch(
       new RegExp(`<a aria-label="Previous day" href="/today\\?day=${previous}"`)
@@ -131,8 +135,8 @@ describe('date navigation in WeekOverview', () => {
   });
 
   it.each([
-    ['2026-10-16', ['2026-10-17', '2026-10-18', '2026-10-19']],
-    ['2026-12-30', ['2026-12-31', '2027-01-01', '2027-01-02']],
+    ['2026-10-16', ['2026-10-19', '2026-10-20', '2026-10-21']],
+    ['2026-12-30', ['2026-12-31', '2027-01-01', '2027-01-04']],
   ])('keeps single-day mode through repeated navigation from %s', (start, sequence) => {
     let day = start;
     for (const expected of sequence) {
