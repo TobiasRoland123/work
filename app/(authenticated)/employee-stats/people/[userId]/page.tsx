@@ -276,9 +276,10 @@ export default async function EmployeeProfilePage({
           {comparing
             ? `The norm is all ${norm.colleagues} other active employees together, over the same workdays as ${firstName}, and it moves with them over time. The shaded band is where the middle half of them were in each ${periodUnit}, shown once at least four colleagues worked. `
             : 'This view shows only this person. '}
-          {firstName} is counted from the day they joined or first announced something. Days without
-          an announcement count as in the office, as on the Week page. Office share leaves out sick
-          days, vacation, leave and days without a status.
+          Stats start on 1 January 2026, and {firstName} is counted from then or from the day they
+          joined or first announced something, whichever is later. Days without an announcement
+          count as in the office, as on the Week page. Office share leaves out sick days, vacation,
+          leave and days without a status.
         </p>
       </div>
     </main>

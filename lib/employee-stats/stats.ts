@@ -12,6 +12,8 @@ export const EMPLOYEE_STATS_RANGES: readonly EmployeeStatsRange[] = [
 export const DEFAULT_EMPLOYEE_STATS_RANGE: EmployeeStatsRange = 30;
 /** How far back "All time" reaches, so one stray date cannot make a page unbounded. */
 export const MAX_HISTORY_DAYS = 1826;
+/** Earliest day included in attendance statistics; earlier records predate reliable tracking. */
+export const STATS_START_DATE = '2026-01-01';
 
 /** Where a person was on a workday. Working days are the days in the office, at home or at a client. */
 export const ATTENDANCE_GROUPS = [
@@ -107,14 +109,21 @@ export function copenhagenDayOf(timestamp: string): string {
   return copenhagenDate(new Date(iso.endsWith('Z') ? iso : `${iso}Z`));
 }
 
+/** The earliest calendar day attendance statistics may include on a given day. */
+export function statsStartFloor(today: string): string {
+  const rollingFloor = addDays(today, 1 - MAX_HISTORY_DAYS);
+  return rollingFloor < STATS_START_DATE ? STATS_START_DATE : rollingFloor;
+}
+
 /**
  * The first day a person can be counted: when their account was created or when they first
- * announced something, whichever is earlier. Before that the Workday Default would count them as
- * in the office on days they were not on record at all.
+ * announced something, whichever is earlier, but never before `STATS_START_DATE`. Before that
+ * the Workday Default would count them as in the office on days they were not on record at all.
  */
 export function trackedFrom(createdAt: string, firstAnnouncedDay: string | null): string {
   const joined = copenhagenDayOf(createdAt);
-  return firstAnnouncedDay && firstAnnouncedDay < joined ? firstAnnouncedDay : joined;
+  const earliest = firstAnnouncedDay && firstAnnouncedDay < joined ? firstAnnouncedDay : joined;
+  return earliest < STATS_START_DATE ? STATS_START_DATE : earliest;
 }
 
 const firstIndexFrom = (days: readonly string[], day: string, start = 0) => {

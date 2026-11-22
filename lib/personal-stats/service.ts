@@ -6,7 +6,12 @@ import { status, users } from '@/db/schema';
 import type { Status } from '@/db/types';
 import { requireUserId } from '@/lib/auth/require-user';
 import { activeWorkspaceMember, getUserRole } from '@/lib/auth/roles';
-import { calendarDays, startedWorkdays, trackedFrom } from '@/lib/employee-stats/stats';
+import {
+  STATS_START_DATE,
+  calendarDays,
+  startedWorkdays,
+  trackedFrom,
+} from '@/lib/employee-stats/stats';
 import { copenhagenDate, copenhagenWallClock } from '@/lib/status/active';
 import { visibleStatusCondition } from '@/lib/status/visible';
 import { addDays } from '@/lib/status/week';
@@ -104,7 +109,7 @@ export async function getPersonalStats(
     ])
   );
   const calendar = calendarDays(range, now);
-  const startDate = calendar[0]!;
+  const startDate = calendar[0]! < STATS_START_DATE ? STATS_START_DATE : calendar[0]!;
   const endDate = copenhagenDate(now);
   // Compare both sides on the subject's eligible weekdays, respecting each colleague's join date.
   const workdays = startedWorkdays(calendar, now).filter((day) => day >= starts.get(userId)!);
