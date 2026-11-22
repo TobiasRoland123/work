@@ -14,6 +14,14 @@ export function addDays(day: string, amount: number): string {
   return date.toISOString().slice(0, 10);
 }
 
+export function adjacentWeekday(day: string, direction: -1 | 1): string {
+  let candidate = addDays(day, direction);
+  while ([0, 6].includes(new Date(`${candidate}T00:00:00Z`).getUTCDay())) {
+    candidate = addDays(candidate, direction);
+  }
+  return candidate;
+}
+
 function isValidDay(value: unknown): value is string {
   if (typeof value !== 'string' || !isoDay.test(value)) return false;
   const parsed = new Date(`${value}T00:00:00Z`);
