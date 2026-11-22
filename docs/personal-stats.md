@@ -16,7 +16,7 @@ When enabled, the comparison population is the other currently active Slack-mapp
 
 Only weekdays that have reached 09:00 Copenhagen time count. Today is included after 09:00 and resolves at the current instant. Past weekdays resolve at 09:00 Copenhagen using the shared `resolvePresenceStatus` rules. The dashboard therefore describes recorded declarations at those points, rather than measured hours or verified physical attendance. Weekends are excluded. There is no holiday calendar or contract-specific workweek in this calculation.
 
-A person is eligible from their account's creation day or earliest visible actual attendance declaration, whichever is earlier. A declaration before account creation can therefore extend tracking backward. A future join date does not create eligible days. Both sides use the subject's eligible weekdays, and each colleague is additionally excluded before their own tracking begins.
+A person is eligible from their account's creation day or earliest visible actual attendance declaration, whichever is earlier, starting no earlier than 1 January 2026 (`STATS_START_DATE` in `lib/employee-stats/stats.ts`). A declaration before account creation can therefore extend tracking backward within that bound. A future join date does not create eligible days. Both sides use the subject's eligible weekdays, and each colleague is additionally excluded before their own tracking begins.
 
 Declarations classify into these personal categories:
 

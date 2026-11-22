@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { DayPresence, Status, UserStatus } from '@/db/types';
 import {
   NO_STATUS_CODE,
+  STATS_START_DATE,
   UNTRACKED_CODE,
   absenceDays,
   calendarDays,
@@ -14,6 +15,7 @@ import {
   resolveEmployeeCodes,
   sortEmployees,
   startedWorkdays,
+  statsStartFloor,
   summarizeEmployeeStats,
   tallyCodes,
   tallyDays,
@@ -417,10 +419,18 @@ describe('where a person’s record starts', () => {
     expect(copenhagenDayOf('2026-03-10 23:30:00-05:30')).toBe('2026-03-11');
   });
 
-  it('starts on the earlier of joining and the first announcement', () => {
+  it('starts on the earlier of joining and the first announcement, never before January 2026', () => {
     expect(trackedFrom('2026-03-10 08:00:00', null)).toBe('2026-03-10');
     expect(trackedFrom('2026-03-10 08:00:00', '2026-02-01')).toBe('2026-02-01');
     expect(trackedFrom('2026-03-10 08:00:00', '2026-04-01')).toBe('2026-03-10');
+    expect(trackedFrom('2025-05-01 08:00:00', null)).toBe(STATS_START_DATE);
+    expect(trackedFrom('2026-03-10 08:00:00', '2025-05-01')).toBe(STATS_START_DATE);
+  });
+
+  it('caps the stats history floor at January 2026 until the rolling five-year floor passes it', () => {
+    expect(statsStartFloor('2026-09-25')).toBe(STATS_START_DATE);
+    expect(statsStartFloor('2030-12-31')).toBe(STATS_START_DATE);
+    expect(statsStartFloor('2031-06-01')).toBe('2026-06-02');
   });
 
   it('spans calendar days inclusively', () => {

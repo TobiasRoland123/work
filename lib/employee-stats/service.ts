@@ -9,13 +9,13 @@ import { copenhagenDate } from '@/lib/status/active';
 import { addDays } from '@/lib/status/week';
 import { bucketWorkdays, buildProfile, officeShareSpread, seriesFor } from './history';
 import {
-  MAX_HISTORY_DAYS,
   calendarDays,
   calendarSpan,
   employeeSort,
   employeeStatsRange,
   resolveEmployeeCodes,
   startedWorkdays,
+  statsStartFloor,
   summarizeEmployeeStats,
   trackedFrom,
 } from './stats';
@@ -77,14 +77,15 @@ async function loadAttendance(range: EmployeeStatsRange, now: Date) {
     ])
   );
 
-  const floor = addDays(today, 1 - MAX_HISTORY_DAYS);
+  const floor = statsStartFloor(today);
   const first =
     range === 'all'
       ? [...starts.values()].reduce((a, b) => (a < b ? a : b))
       : calendarDays(range, now)[0]!;
-  const calendar = calendarSpan(first < floor ? floor : first, today);
+  const start = first < floor ? floor : first;
+  const calendar = calendarSpan(start, today);
   const workdays = startedWorkdays(calendar, now);
-  if (workdays.length === 0) return { ...empty, startDate: calendar[0]! };
+  if (workdays.length === 0) return { ...empty, startDate: calendar[0] ?? start };
 
   // A day can be settled by a declaration that ends at midnight, so read one day either side.
   const statusRows = await db

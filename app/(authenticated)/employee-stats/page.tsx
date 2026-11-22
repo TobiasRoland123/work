@@ -300,9 +300,10 @@ export default async function EmployeeStatsPage({ searchParams }: { searchParams
         <p className="stats-note">
           Each workday is read the way the Week page reads it at 09:00 Copenhagen time, so days
           without an announcement count as in the office. Today is included once it has started.
-          Everyone is counted from the day they joined or first announced something. Office share
-          leaves out sick days, vacation, leave and days without a status. Sick days are sensitive:
-          only people the admin has chosen can see this page.
+          Stats start on 1 January 2026, and everyone is counted from then or from the day they
+          joined or first announced something, whichever is later. Office share leaves out sick
+          days, vacation, leave and days without a status. Sick days are sensitive: only people the
+          admin has chosen can see this page.
         </p>
       </div>
     </main>

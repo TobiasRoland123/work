@@ -246,4 +246,18 @@ describe('personal stats aggregate and query bounds', () => {
     });
     expect(mocks.queries).toHaveLength(2);
   });
+
+  it('starts no earlier than January 2026 even for older accounts and announcements', async () => {
+    mocks.data.push(
+      [{ ...subject, createdAt: '2025-05-01 08:00:00' }],
+      [{ userId: subject.userId, firstDay: '2025-05-02' }],
+      []
+    );
+    const result = await getPersonalStats({ days: '365', compare: 'off' }, now);
+    expect(result.startDate).toBe('2026-01-01');
+    expect(result.series[0]?.startDate).toBe('2026-01-01');
+    const bounded = sqlFor(mocks.queries[2]?.predicate);
+    expect(bounded.params).toContain('2025-12-31');
+    expect(bounded.params).not.toContain('2025-05-01');
+  });
 });

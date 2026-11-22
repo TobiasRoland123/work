@@ -242,23 +242,26 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')(
       expect(byName['Erik Early']).toMatchObject({ office: 3, sick: 1 });
     });
 
-    it('reaches back past 90 days, to where the history begins', async () => {
+    it('reaches back past 90 days, starting no earlier than January 2026', async () => {
       as(people.viewer);
       const year = await getEmployeeStats({ days: '365' }, friday);
-      expect(year).toMatchObject({ range: 365, granularity: 'week' });
-      // A year back is September 2025, so Mette's March 2025 sick days are not in it yet.
+      expect(year).toMatchObject({ range: 365, startDate: '2026-01-01', granularity: 'week' });
+      // Mette's March 2025 sick days predate the January 2026 floor and are excluded.
       expect(countsByName(year.employees)['Mette Member']).toMatchObject({ sick: 0, vacation: 2 });
 
       const all = await getEmployeeStats({ days: 'all' }, friday);
       expect(all.range).toBe('all');
-      // Mette's first announcement is the earliest record, a Monday.
-      expect(all.startDate).toBe('2025-03-03');
-      expect(all.granularity).toBe('month');
+      expect(all.startDate).toBe('2026-01-01');
+      expect(all.granularity).toBe('week');
       const mette = all.employees.find((employee) => employee.name === 'Mette Member')!;
       const otto = all.employees.find((employee) => employee.name === 'Otto Outsider')!;
-      // 410 workdays since 3 March 2025, against 192 since Otto joined on 1 January 2026.
-      expect(mette.counts).toMatchObject({ sick: 3, vacation: 2, office: 405 });
+      // Both Mette and Otto are counted over the 192 workdays from 1 January 2026.
+      expect(mette.counts).toMatchObject({ sick: 0, vacation: 2, office: 190 });
       expect(otto.counts).toMatchObject({ office: 192 });
+
+      const laterAll = await getEmployeeStats({ days: 'all' }, new Date('2027-06-04T10:00:00Z'));
+      expect(laterAll.startDate).toBe('2026-01-01');
+      expect(laterAll.granularity).toBe('month');
     });
 
     it('lists the people who can be looked up, alphabetically and only from the workspace', async () => {

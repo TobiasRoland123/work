@@ -16,9 +16,9 @@ The search also works from the profile, and the period and comparison are kept a
 
 ### History
 
-Nothing is thrown away, so the stats get richer as the history grows. They are worked out from the recorded announcements when the page is opened. **All time** starts at the earliest day anyone is on record, and reaches back at most five years (`MAX_HISTORY_DAYS` in `lib/employee-stats/stats.ts`) so one stray date cannot make a page unbounded. Charts group days to fit the period: by day for up to two weeks, by week up to about a year, and by month beyond that.
+Nothing is thrown away, so the stats get richer as the history grows. They are worked out from the recorded announcements when the page is opened. Stats start on 1 January 2026 (`STATS_START_DATE` in `lib/employee-stats/stats.ts`), so earlier records before reliable tracking are excluded from every period. **All time** starts at the earliest day anyone is on record from that date onward, and reaches back at most five years (`MAX_HISTORY_DAYS` in `lib/employee-stats/stats.ts`) so one stray date cannot make a page unbounded. Charts group days to fit the period: by day for up to two weeks, by week up to about a year, and by month beyond that.
 
-A person is counted from the day they joined or first announced something, whichever is earlier. Without that, the Workday Default would count a new colleague as in the office on all the days before they were here. The first and last week of a view can be partial, so charts show shares rather than totals.
+A person is counted from the day they joined or first announced something, whichever is earlier, starting no earlier than 1 January 2026. Without that, the Workday Default would count a new colleague as in the office on all the days before they were here. The first and last week of a view can be partial, so charts show shares rather than totals.
 
 ### The norm
 
