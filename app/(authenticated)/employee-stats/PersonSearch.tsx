@@ -1,8 +1,8 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { AppLink } from '@/components/layout/NavigationFeedback';
 
 export type SearchPerson = { userId: string; name: string; email: string };
 
@@ -76,10 +76,10 @@ export function PersonSearch({
         <ul className="stats-search-results" aria-label="Matching employees">
           {matches.map((person) => (
             <li key={person.userId}>
-              <Link href={hrefOf(person)}>
+              <AppLink href={hrefOf(person)}>
                 <strong>{person.name}</strong>
                 {person.name !== person.email && <small>{person.email}</small>}
-              </Link>
+              </AppLink>
             </li>
           ))}
           {matches.length === 0 && <li className="stats-search-empty">No employees match.</li>}

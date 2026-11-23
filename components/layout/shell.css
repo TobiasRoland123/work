@@ -8,7 +8,51 @@
   background: var(--office-canvas);
 }
 .app-shell-content {
+  position: relative;
   min-width: 0;
+}
+.app-shell-route {
+  min-width: 0;
+}
+.app-shell-route[hidden] {
+  display: none;
+}
+.app-shell-progress {
+  position: fixed;
+  top: env(safe-area-inset-top, 0px);
+  right: 0;
+  left: 84px;
+  z-index: 45;
+  height: 2px;
+  overflow: hidden;
+  pointer-events: none;
+  background: color-mix(in srgb, var(--office-accent) 25%, transparent);
+}
+.app-shell-progress::after {
+  content: '';
+  display: block;
+  width: 40%;
+  height: 100%;
+  background: var(--office-link);
+  animation: app-shell-progress-slide 1s ease-in-out infinite;
+}
+.app-shell-route a[data-pending] {
+  opacity: 0.68;
+  cursor: progress;
+}
+@keyframes app-shell-progress-slide {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(350%);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .app-shell-progress::after {
+    width: 100%;
+    animation: none;
+  }
 }
 .app-shell > .office-rail {
   position: sticky;
@@ -83,7 +127,8 @@
   border-radius: 5px;
   font-size: 13px;
 }
-.office-nav-links a[aria-current] {
+.office-nav-links a[aria-current]:not([data-nav-leaving]),
+.office-nav-links a[data-pending] {
   background: var(--office-accent);
   color: var(--office-accent-ink);
 }
@@ -409,6 +454,9 @@
   .app-shell {
     grid-template-columns: 72px minmax(0, 1fr);
   }
+  .app-shell-progress {
+    left: 72px;
+  }
   .office-header {
     padding: 20px;
   }
@@ -436,6 +484,9 @@
   }
   .app-shell-content {
     padding-bottom: calc(64px + env(safe-area-inset-bottom, 0px));
+  }
+  .app-shell-progress {
+    left: 0;
   }
   .office-wordmark {
     display: none;
@@ -466,7 +517,8 @@
   .office-nav-more:hover {
     background: var(--office-rail-hover);
   }
-  .office-nav-more[data-current],
+  .office-nav-more[data-current]:not([data-nav-leaving]),
+  .office-nav-more[data-pending],
   .office-nav-more:has(+ .office-nav-special:popover-open) {
     background: var(--office-accent);
     color: var(--office-accent-ink);

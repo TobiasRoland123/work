@@ -8,7 +8,14 @@ import {
   isWeekPanelOpen,
   rememberWeekPanel,
 } from '@/components/week/panelPreference';
-import { WEEK_SCOPE_COOKIE, rememberWeekScope, weekScope } from '@/components/week/scopePreference';
+import {
+  WEEK_SCOPE_COOKIE,
+  readWeekScope,
+  rememberWeekScope,
+  subscribeWeekScope,
+  weekEntryHref,
+  weekScope,
+} from '@/components/week/scopePreference';
 import { workWeekDays } from '@/lib/status/week';
 
 vi.mock('@/components/layout/PageHeader', () => ({
@@ -130,5 +137,28 @@ describe('remembered day or week', () => {
     expect(document.cookie).toBe(
       `${WEEK_SCOPE_COOKIE}=${scope}; path=/; max-age=31536000; samesite=lax`
     );
+  });
+
+  it('reads the remembered scope from document.cookie and notifies subscribers', () => {
+    const document = { cookie: 'other=1; week-scope=week' };
+    vi.stubGlobal('document', document);
+    expect(readWeekScope()).toBe('week');
+
+    const listener = vi.fn();
+    const unsubscribe = subscribeWeekScope(listener);
+    rememberWeekScope('day');
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(readWeekScope()).toBe('day');
+
+    unsubscribe();
+    rememberWeekScope('week');
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(readWeekScope()).toBe('week');
+  });
+
+  it('builds direct Week entry hrefs for day and week scopes', () => {
+    const wednesday = new Date('2026-09-23T10:00:00Z');
+    expect(weekEntryHref('day', wednesday)).toBe('/today');
+    expect(weekEntryHref('week', wednesday)).toBe('/today?week=2026-09-21');
   });
 });

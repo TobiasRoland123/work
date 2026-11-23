@@ -1,6 +1,7 @@
 import { slackEchoWritesEnabled, IMPORT_STATUS_UNAVAILABLE } from '@/lib/slack/import-mode';
 import { StatusWriteAvailabilityProvider } from './StatusWriteAvailability';
 import type { ReactNode } from 'react';
+import { cookies } from 'next/headers';
 import { eq } from 'drizzle-orm';
 import { db } from '@/db';
 import { users } from '@/db/schema';
@@ -8,21 +9,25 @@ import { requirePageUserId } from '@/lib/auth/require-user';
 import { canReviewMessages } from '@/lib/auth/message-review';
 import { canViewEmployeeStats } from '@/lib/auth/employee-stats';
 import { isAdmin } from '@/lib/auth/roles';
+import { WEEK_SCOPE_COOKIE, weekEntryHref, weekScope } from '@/components/week/scopePreference';
 import { AppShell } from './AppShell';
 import { Toaster } from '@/components/ui/sonner';
 
 export default async function AuthenticatedLayout({ children }: { children: ReactNode }) {
   const userId = await requirePageUserId();
-  const [[user], showMessageQuality, showEmployeeStats] = await Promise.all([
-    db
-      .select({ firstName: users.firstName, phoneInviteDismissedAt: users.phoneInviteDismissedAt })
-      .from(users)
-      .where(eq(users.userId, userId))
-      .limit(1),
-    canReviewMessages(userId),
-    canViewEmployeeStats(userId),
-  ]);
-  const showRoleManagement = await isAdmin(userId);
+  const [[user], showMessageQuality, showEmployeeStats, showRoleManagement, cookieStore] =
+    await Promise.all([
+      db
+        .select({ firstName: users.firstName, phoneInviteDismissedAt: users.phoneInviteDismissedAt })
+        .from(users)
+        .where(eq(users.userId, userId))
+        .limit(1),
+      canReviewMessages(userId),
+      canViewEmployeeStats(userId),
+      isAdmin(userId),
+      cookies(),
+    ]);
+  const initialWeekHref = weekEntryHref(weekScope(cookieStore.get(WEEK_SCOPE_COOKIE)?.value));
   return (
     <StatusWriteAvailabilityProvider enabled={slackEchoWritesEnabled()}>
       <AppShell
@@ -31,6 +36,7 @@ export default async function AuthenticatedLayout({ children }: { children: Reac
         showMessageQuality={showMessageQuality}
         showEmployeeStats={showEmployeeStats}
         showRoleManagement={showRoleManagement}
+        initialWeekHref={initialWeekHref}
       >
         {!slackEchoWritesEnabled() && <p role="status">{IMPORT_STATUS_UNAVAILABLE}</p>}
         {children}

@@ -1,6 +1,6 @@
 import { NativeSelect } from '@/components/ui/native-select';
 import React from 'react';
-import Link from 'next/link';
+import { AppLink } from '@/components/layout/NavigationFeedback';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { requirePageUserId } from '@/lib/auth/require-user';
 import { requireMessageReviewer } from '@/lib/auth/message-review';
@@ -198,7 +198,7 @@ function WeekTile({
   reason: string;
 }) {
   return (
-    <Link
+    <AppLink
       className="quality-week"
       data-selected={selected || undefined}
       aria-current={selected ? 'page' : undefined}
@@ -219,7 +219,7 @@ function WeekTile({
       >
         <span style={{ width: `${week.percentage ?? 0}%` }} />
       </span>
-    </Link>
+    </AppLink>
   );
 }
 
@@ -438,15 +438,17 @@ export default async function MessageQualityPage({ searchParams }: { searchParam
           {data.totalPages > 1 && (
             <nav aria-label="Review pages" className="quality-pagination">
               {data.page > 1 && (
-                <Link href={reviewUrl(data.selectedWeek, data.reason, data.page - 1)}>
+                <AppLink href={reviewUrl(data.selectedWeek, data.reason, data.page - 1)}>
                   Previous
-                </Link>
+                </AppLink>
               )}
               <span>
                 Page {data.page} of {data.totalPages}
               </span>
               {data.page < data.totalPages && (
-                <Link href={reviewUrl(data.selectedWeek, data.reason, data.page + 1)}>Next</Link>
+                <AppLink href={reviewUrl(data.selectedWeek, data.reason, data.page + 1)}>
+                  Next
+                </AppLink>
               )}
             </nav>
           )}

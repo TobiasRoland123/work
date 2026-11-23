@@ -1,5 +1,5 @@
 import { linkProps } from '@/types/link';
-import Link from 'next/link';
+import { AppLink } from '@/components/layout/NavigationFeedback';
 import { cn } from '@/lib/className';
 import { cva } from 'class-variance-authority';
 import React from 'react';
@@ -45,7 +45,7 @@ export function Button({
 }: ButtonProps) {
   if ((link && link?.href && link?.label) || (link && link.href && children)) {
     return (
-      <Link
+      <AppLink
         href={link.href}
         aria-label={ariaLabel}
         target={link.target || '_self'}
@@ -58,7 +58,7 @@ export function Button({
       >
         {isLoading ? <span className="loader mr-2" aria-hidden="true" /> : null}
         {link.label || children}
-      </Link>
+      </AppLink>
     );
   }
   return (
