@@ -52,6 +52,8 @@ describe('highlighting the stats link', () => {
     expect(isCurrentPath('/admin/roles', '/admin/roles')).toBe(true);
     expect(isCurrentPath('/employee-stats/people', '/admin/roles')).toBe(false);
     expect(isCurrentPath('/today', '/employee-stats')).toBe(false);
+    expect(isCurrentPath('/today', '/today?week=2026-11-23')).toBe(true);
+    expect(isCurrentPath('/admin/roles', '/today?week=2026-11-23')).toBe(false);
     expect(isCurrentPath(null, '/employee-stats')).toBe(false);
     expect(isCurrentPath('/my-stats', '/my-stats')).toBe(true);
     expect(isCurrentPath('/my-stats', '/employee-stats')).toBe(false);

@@ -1,7 +1,6 @@
 'use client';
 
-import React, { useRef } from 'react';
-import Link from 'next/link';
+import React, { useEffect, useRef, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import {
   CalendarDays,
@@ -18,13 +17,18 @@ import {
 import type { ReactNode } from 'react';
 import { isSandbox } from '@/lib/sandbox/enabled';
 import { PhoneInvite } from '@/components/pwa/PhoneInvite';
+import {
+  readWeekScope,
+  subscribeWeekScope,
+  weekEntryHref,
+} from '@/components/week/scopePreference';
+import {
+  AppLink,
+  NavigationFeedbackProvider,
+  useNavigationFeedback,
+} from './NavigationFeedback';
+import { RouteLoadingFallback } from './RouteLoadingFallback';
 import './shell.css';
-
-const links = [
-  { href: '/today', label: 'Week', Icon: CalendarDays, prefetch: null },
-  { href: '/contact', label: 'Contact', Icon: Users, prefetch: true },
-  { href: '/profile', label: 'Profile', Icon: UserRound, prefetch: true },
-];
 
 // Shown inline on desktop and behind the "More" menu button on mobile.
 const specialLinks = [
@@ -58,52 +62,93 @@ const rolesLink = {
 };
 
 // Keep Stats selected on individual employee pages. Roles has its own navigation entry.
-export const isCurrentPath = (pathname: string | null, href: string) =>
-  pathname === href ||
-  (href === '/employee-stats' && !!pathname?.startsWith('/employee-stats/people'));
+export const isCurrentPath = (pathname: string | null, href: string) => {
+  const target = href.split('#', 1)[0].split('?', 1)[0];
+  return (
+    pathname === target ||
+    (target === '/employee-stats' && Boolean(pathname?.startsWith('/employee-stats/people')))
+  );
+};
 
-export function AppShell({
+type NavLinkItem = {
+  href: string;
+  label: string;
+  Icon: typeof CalendarDays;
+  prefetch: boolean | null;
+};
+
+function AppShellFrame({
   children,
-  showPhoneInvite = false,
+  showPhoneInvite,
   firstName,
-  showMessageQuality = false,
-  showEmployeeStats = false,
-  showRoleManagement = false,
+  showMessageQuality,
+  showEmployeeStats,
+  showRoleManagement,
+  initialWeekHref,
 }: {
   children: ReactNode;
-  /** True until the person has closed the phone app invitation. */
-  showPhoneInvite?: boolean;
+  showPhoneInvite: boolean;
   firstName?: string | null;
-  showMessageQuality?: boolean;
-  showEmployeeStats?: boolean;
-  showRoleManagement?: boolean;
+  showMessageQuality: boolean;
+  showEmployeeStats: boolean;
+  showRoleManagement: boolean;
+  initialWeekHref: string;
 }) {
   const pathname = usePathname();
   const moreMenuRef = useRef<HTMLDivElement>(null);
-  const special = [
+  const [weekHref, setWeekHref] = useState(initialWeekHref);
+  const { showLoadingUi, pendingRoutePathname } = useNavigationFeedback();
+
+  useEffect(() => {
+    const sync = () => setWeekHref(weekEntryHref(readWeekScope()));
+    sync();
+    return subscribeWeekScope(sync);
+  }, [pathname]);
+
+  const links: NavLinkItem[] = [
+    { href: weekHref, label: 'Week', Icon: CalendarDays, prefetch: null },
+    { href: '/contact', label: 'Contact', Icon: Users, prefetch: true },
+    { href: '/profile', label: 'Profile', Icon: UserRound, prefetch: true },
+  ];
+
+  const special: NavLinkItem[] = [
     { href: '/my-stats', label: 'My stats', Icon: ChartNoAxesCombined, prefetch: null },
     ...(showMessageQuality ? [reviewLink, aiCostLink] : []),
     ...(showEmployeeStats ? [employeeStatsLink] : []),
     ...(showRoleManagement ? [rolesLink] : []),
     ...specialLinks,
   ];
-  const specialIsCurrent = special.some(({ href }) => isCurrentPath(pathname, href));
 
-  const renderLink = (
-    { href, label, Icon, prefetch }: (typeof links)[number],
-    onClick?: () => void
-  ) => (
-    <Link
-      key={href}
-      href={href}
-      prefetch={prefetch}
-      aria-current={isCurrentPath(pathname, href) ? 'page' : undefined}
-      onClick={onClick}
-    >
-      <Icon size={21} aria-hidden="true" />
-      {label}
-    </Link>
-  );
+  const specialIsCurrent = special.some(({ href }) => isCurrentPath(pathname, href));
+  const pendingSpecial =
+    pendingRoutePathname !== null &&
+    special.some(({ href }) => isCurrentPath(pendingRoutePathname, href));
+
+  const renderLink = ({ href, label, Icon, prefetch }: NavLinkItem, onClick?: () => void) => {
+    const current = isCurrentPath(pathname, href);
+    const pendingTarget =
+      pendingRoutePathname !== null && isCurrentPath(pendingRoutePathname, href);
+    const leaving = pendingRoutePathname !== null && current && !pendingTarget;
+    return (
+      <AppLink
+        key={label}
+        href={href}
+        prefetch={prefetch}
+        aria-current={current ? 'page' : undefined}
+        data-pending={pendingTarget ? 'true' : undefined}
+        data-nav-leaving={leaving ? 'true' : undefined}
+        onClick={onClick}
+      >
+        <Icon size={21} aria-hidden="true" />
+        {label}
+      </AppLink>
+    );
+  };
+
+  const pendingFallback =
+    showLoadingUi && pendingRoutePathname ? (
+      <RouteLoadingFallback pathname={pendingRoutePathname} />
+    ) : null;
 
   return (
     <div className="app-shell">
@@ -111,9 +156,9 @@ export function AppShell({
         Skip to content
       </a>
       <nav className="office-rail" aria-label="App navigation">
-        <Link href="/today" className="office-wordmark" aria-label="WØRK home">
+        <AppLink href={weekHref} prefetch={null} className="office-wordmark" aria-label="WØRK home">
           WØRK
-        </Link>
+        </AppLink>
         <div className="office-nav-links">
           {links.map((link) => renderLink(link))}
           {special.length > 0 && (
@@ -123,6 +168,12 @@ export function AppShell({
                 className="office-nav-more"
                 popoverTarget="office-nav-special"
                 data-current={specialIsCurrent || undefined}
+                data-pending={pendingSpecial ? 'true' : undefined}
+                data-nav-leaving={
+                  pendingRoutePathname !== null && specialIsCurrent && !pendingSpecial
+                    ? 'true'
+                    : undefined
+                }
               >
                 <Menu size={21} aria-hidden="true" />
                 More
@@ -140,7 +191,7 @@ export function AppShell({
             </>
           )}
         </div>
-        <Link
+        <AppLink
           href="/profile"
           prefetch={true}
           className="office-me"
@@ -149,10 +200,54 @@ export function AppShell({
         >
           <span aria-hidden="true">{firstName?.[0] || 'W'}</span>
           <small>{firstName || 'My profile'}</small>
-        </Link>
+        </AppLink>
       </nav>
-      <div className="app-shell-content">{children}</div>
+      <div className="app-shell-content">
+        {showLoadingUi && <div className="app-shell-progress" aria-hidden="true" />}
+        {pendingFallback}
+        <div
+          className="app-shell-route"
+          hidden={Boolean(pendingFallback)}
+          aria-hidden={pendingFallback ? true : undefined}
+        >
+          {children}
+        </div>
+      </div>
       {showPhoneInvite && <PhoneInvite />}
     </div>
+  );
+}
+
+export function AppShell({
+  children,
+  showPhoneInvite = false,
+  firstName,
+  showMessageQuality = false,
+  showEmployeeStats = false,
+  showRoleManagement = false,
+  initialWeekHref = '/today',
+}: {
+  children: ReactNode;
+  /** True until the person has closed the phone app invitation. */
+  showPhoneInvite?: boolean;
+  firstName?: string | null;
+  showMessageQuality?: boolean;
+  showEmployeeStats?: boolean;
+  showRoleManagement?: boolean;
+  initialWeekHref?: string;
+}) {
+  return (
+    <NavigationFeedbackProvider>
+      <AppShellFrame
+        showPhoneInvite={showPhoneInvite}
+        firstName={firstName}
+        showMessageQuality={showMessageQuality}
+        showEmployeeStats={showEmployeeStats}
+        showRoleManagement={showRoleManagement}
+        initialWeekHref={initialWeekHref}
+      >
+        {children}
+      </AppShellFrame>
+    </NavigationFeedbackProvider>
   );
 }

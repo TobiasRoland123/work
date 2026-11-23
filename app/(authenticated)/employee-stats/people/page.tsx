@@ -1,5 +1,5 @@
 import React from 'react';
-import Link from 'next/link';
+import { AppLink } from '@/components/layout/NavigationFeedback';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { requirePageUserId } from '@/lib/auth/require-user';
 import { isEmployeeStatsAdmin, requireEmployeeStatsViewer } from '@/lib/auth/employee-stats';
@@ -29,9 +29,9 @@ export default async function EmployeeDirectoryPage({
         subtitle="Search an employee to see their own stats"
         actions={
           isAdmin ? (
-            <Link href="/admin/roles" className="stats-header-link">
+            <AppLink href="/admin/roles" className="stats-header-link">
               Manage roles
-            </Link>
+            </AppLink>
           ) : undefined
         }
       />

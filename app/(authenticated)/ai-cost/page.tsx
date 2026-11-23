@@ -1,5 +1,5 @@
 import React from 'react';
-import Link from 'next/link';
+import { AppLink } from '@/components/layout/NavigationFeedback';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { requirePageUserId } from '@/lib/auth/require-user';
 import { requireMessageReviewer } from '@/lib/auth/message-review';
@@ -39,13 +39,13 @@ export default async function AiCostPage({ searchParams }: { searchParams: Searc
             </div>
             <nav aria-label="Period" className="ai-cost-periods">
               {AI_COST_PERIODS.map((days) => (
-                <Link
+                <AppLink
                   key={days}
                   href={`/ai-cost?days=${days}`}
                   aria-current={days === data.days ? 'page' : undefined}
                 >
                   {days} days
-                </Link>
+                </AppLink>
               ))}
             </nav>
           </div>
@@ -157,7 +157,7 @@ export default async function AiCostPage({ searchParams }: { searchParams: Searc
           Slack channel, including retries, edits and deleted messages. Missing costs are not
           estimated; a total marked “+ unknown” leaves out calls without a reported cost. Days and
           months follow the request start time in Copenhagen. Conversion rates are on{' '}
-          <Link href="/message-quality">Review</Link>.
+          <AppLink href="/message-quality">Review</AppLink>.
         </p>
       </div>
     </main>

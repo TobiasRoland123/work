@@ -1,6 +1,6 @@
 import { HistoryCoverageNotice } from '@/components/attendance/HistoryCoverageNotice';
 import React from 'react';
-import Link from 'next/link';
+import { AppLink } from '@/components/layout/NavigationFeedback';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { requirePageUserId } from '@/lib/auth/require-user';
 import { isEmployeeStatsAdmin, requireEmployeeStatsViewer } from '@/lib/auth/employee-stats';
@@ -91,9 +91,9 @@ export default async function EmployeeStatsPage({ searchParams }: { searchParams
         subtitle="Where people worked, based on announced and default attendance"
         actions={
           isAdmin ? (
-            <Link href="/admin/roles" className="stats-header-link">
+            <AppLink href="/admin/roles" className="stats-header-link">
               Manage roles
-            </Link>
+            </AppLink>
           ) : undefined
         }
       />
@@ -256,7 +256,7 @@ export default async function EmployeeStatsPage({ searchParams }: { searchParams
                   <thead>
                     <tr>
                       <th scope="col" aria-sort={data.sort === 'name' ? 'ascending' : undefined}>
-                        <Link href={statsUrl(data.range, 'name')}>Employee</Link>
+                        <AppLink href={statsUrl(data.range, 'name')}>Employee</AppLink>
                       </th>
                       {ATTENDANCE_GROUPS.map(({ key, label }) => (
                         <th
@@ -264,7 +264,7 @@ export default async function EmployeeStatsPage({ searchParams }: { searchParams
                           scope="col"
                           aria-sort={data.sort === key ? 'descending' : undefined}
                         >
-                          <Link href={statsUrl(data.range, key)}>{label}</Link>
+                          <AppLink href={statsUrl(data.range, key)}>{label}</AppLink>
                         </th>
                       ))}
                       <th scope="col">Office share</th>
@@ -275,9 +275,12 @@ export default async function EmployeeStatsPage({ searchParams }: { searchParams
                     {employees.map((employee) => (
                       <tr key={employee.userId}>
                         <th scope="row">
-                          <Link href={employeeUrl(employee.userId)} className="stats-person-link">
+                          <AppLink
+                            href={employeeUrl(employee.userId)}
+                            className="stats-person-link"
+                          >
                             {employee.name}
-                          </Link>
+                          </AppLink>
                           {employee.name !== employee.email && <small>{employee.email}</small>}
                         </th>
                         {ATTENDANCE_GROUPS.map(({ key }) => (

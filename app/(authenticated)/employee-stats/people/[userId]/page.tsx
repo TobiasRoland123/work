@@ -1,7 +1,7 @@
 import { HistoryCoverageNotice } from '@/components/attendance/HistoryCoverageNotice';
 import React from 'react';
-import Link from 'next/link';
 import { notFound } from 'next/navigation';
+import { AppLink } from '@/components/layout/NavigationFeedback';
 import { PageHeader } from '@/components/layout/PageHeader';
 import { requirePageUserId } from '@/lib/auth/require-user';
 import { requireEmployeeStatsViewer } from '@/lib/auth/employee-stats';
@@ -85,9 +85,9 @@ export default async function EmployeeProfilePage({
         title={employee.name}
         subtitle={employee.email}
         actions={
-          <Link href="/employee-stats/people" className="stats-header-link">
+          <AppLink href="/employee-stats/people" className="stats-header-link">
             All employees
-          </Link>
+          </AppLink>
         }
       />
       <div className="content-page-body stats-body">
@@ -116,18 +116,18 @@ export default async function EmployeeProfilePage({
 
           <div className="stats-view-row">
             <nav aria-label="Comparison" className="stats-periods">
-              <Link
+              <AppLink
                 href={profileUrl(userId, range, 'alone')}
                 aria-current={compare === 'alone' ? 'page' : undefined}
               >
                 {firstName} only
-              </Link>
-              <Link
+              </AppLink>
+              <AppLink
                 href={profileUrl(userId, range, 'norm')}
                 aria-current={compare === 'norm' ? 'page' : undefined}
               >
                 Against the norm
-              </Link>
+              </AppLink>
             </nav>
             {compare === 'norm' && !comparing && (
               <p className="stats-muted">There are no colleagues to compare with yet.</p>
