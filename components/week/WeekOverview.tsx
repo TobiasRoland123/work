@@ -648,7 +648,9 @@ export function WeekOverview({
   const nextHref = todayOnly
     ? `/today?day=${adjacentWeekday(days[0], 1)}`
     : `/today?week=${shiftWorkWeek(weekStart, 1)}`;
-  const weekHref = `/today?week=${todayOnly ? currentWeekStart : weekStart}`;
+  const activeDay = days[dayIndex];
+  const dayHref = activeDay === today ? '/today' : `/today?day=${activeDay}`;
+  const weekHref = `/today?week=${weekStart}`;
 
   return (
     <div className="week-page" data-view={todayOnly ? 'today' : 'week'}>
@@ -719,9 +721,9 @@ export function WeekOverview({
             <div className="week-toolbar-actions">
               <div className="week-filters" role="group" aria-label="Attendance view">
                 <Link
-                  href="/today"
+                  href={dayHref}
                   aria-current={todayOnly ? 'page' : undefined}
-                  {...viewLinkProps('/today')}
+                  {...viewLinkProps(dayHref)}
                 >
                   Today
                 </Link>

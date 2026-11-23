@@ -114,7 +114,10 @@ describe('date navigation in WeekOverview', () => {
     expect(html).toContain('href="/today"');
     expect(html).toMatch(/<a aria-label="Next day" href="\/today\?day=2026-10-14"/);
     expect(navigationOf(html)).not.toContain('aria-current="page"');
-    expect(viewLinksOf(html)).toContain('aria-current="page" href="/today">Today</a>');
+    expect(viewLinksOf(html)).toContain(
+      'aria-current="page" href="/today?day=2026-10-13">Today</a>'
+    );
+    expect(viewLinksOf(html)).toContain('href="/today?week=2026-10-12">Week</a>');
   });
 
   it.each([
@@ -153,7 +156,9 @@ describe('date navigation in WeekOverview', () => {
     const html = render(['2026-10-13'], '2026-10-13', ['ben']);
     expect(html).toContain('<h1>Tuesday</h1>');
     expect(html).toContain('Tuesday, 13 October 2026');
-    expect(viewLinksOf(html)).toContain('aria-current="page" href="/today">Today</a>');
+    expect(viewLinksOf(html)).toContain(
+      'aria-current="page" href="/today?day=2026-10-13">Today</a>'
+    );
     expect(html).not.toContain('<em>Today</em>');
     expect(html).toContain('<strong>1</strong> out of office');
     expect(html).toContain('<strong>1</strong> of 2 in the office');
@@ -185,5 +190,20 @@ describe('date navigation in WeekOverview', () => {
     expect(html).toContain('<h1>Today</h1>');
     expect(navigationOf(html)).toContain('aria-current="page"');
     expect(html).toContain('<em>Today</em>');
+  });
+
+  it('keeps the viewed week or date when switching between Today and Week views', () => {
+    const otherDayHtml = render(['2026-10-21']);
+    expect(viewLinksOf(otherDayHtml)).toContain(
+      'aria-current="page" href="/today?day=2026-10-21">Today</a>'
+    );
+    expect(viewLinksOf(otherDayHtml)).toContain('href="/today?week=2026-10-19">Week</a>');
+
+    const otherWeekHtml = render(workWeekDays('2026-10-19'));
+    expect(viewLinksOf(otherWeekHtml)).toContain('href="/today?day=2026-10-19">Today</a>');
+    expect(viewLinksOf(otherWeekHtml)).toContain(
+      'aria-current="page" href="/today?week=2026-10-19">Week</a>'
+    );
+    expect(navigationOf(otherWeekHtml)).toContain('href="/today"');
   });
 });

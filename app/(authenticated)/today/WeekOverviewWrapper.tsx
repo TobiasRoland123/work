@@ -268,7 +268,6 @@ export const WeekOverviewWrapper = ({
   // Remember whether a day or a week was last on screen, so the next plain visit opens it again.
   useEffect(() => rememberWeekScope(view.week ? 'week' : 'day'), [view.week]);
 
-  const todayOnly = !view.week;
   const viewDays = view.week ? workWeekDays(view.week) : [view.day ?? today];
   const loading = loadedKey !== viewKey(view, today);
 
@@ -280,13 +279,14 @@ export const WeekOverviewWrapper = ({
       ? [
           { week: shiftWorkWeek(view.week, 1) },
           { week: shiftWorkWeek(view.week, -1) },
+          ...(viewDays.includes(todayRef.current) ? [] : [{ day: view.week }]),
           {},
           { week: workWeekStart(todayRef.current) },
         ]
       : [
           { day: adjacentWeekday(viewDays[0], 1) },
           { day: adjacentWeekday(viewDays[0], -1) },
-          { week: workWeekStart(todayRef.current) },
+          { week: workWeekStart(viewDays[0]) },
           {},
         ];
     let cancelled = false;
@@ -309,7 +309,7 @@ export const WeekOverviewWrapper = ({
   }, [loading, view, today, prefetchView]);
   return (
     <WeekOverview
-      key={todayOnly ? viewDays[0] : view.week}
+      key={viewKey(view, today)}
       profiles={profiles}
       userId={userId}
       days={viewDays}
