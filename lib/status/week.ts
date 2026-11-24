@@ -40,6 +40,12 @@ export function workWeekDays(monday: string): string[] {
   return Array.from({ length: 5 }, (_, index) => addDays(monday, index));
 }
 
+/** 0-based Monday–Friday index for a weekday, or null for Saturday and Sunday. */
+export function workWeekDayIndex(day: string): number | null {
+  const weekday = new Date(`${day}T00:00:00Z`).getUTCDay();
+  return weekday >= 1 && weekday <= 5 ? weekday - 1 : null;
+}
+
 export function shiftWorkWeek(monday: string, weeks: number): string {
   return addDays(monday, weeks * 7);
 }
