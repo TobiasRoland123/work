@@ -438,6 +438,7 @@ export function WeekOverview({
   onPanelChange,
   initialLayout = 'grouped',
   onLayoutChange,
+  initialSelectedDay,
   onNavigate,
   onPrefetch,
   seenSince = null,
@@ -466,6 +467,8 @@ export function WeekOverview({
   /** Whether the board starts grouped by status or as one newest-first list; read on the server. */
   initialLayout?: WeekLayout;
   onLayoutChange?: (layout: WeekLayout) => void;
+  /** Preferred day to highlight initially in week view, e.g. the weekday last viewed in Day mode. */
+  initialSelectedDay?: string;
   /** Handles a plain click on a day or week link without waiting for a server round trip. */
   onNavigate?: (href: string) => void;
   /** Warms the data behind a link when it is hovered, focused, or touched. */
@@ -483,7 +486,13 @@ export function WeekOverview({
   // Phones hide the search field behind an icon; it stays open while it holds a query.
   const [searchOpen, setSearchOpen] = useState(false);
   const searchInput = useRef<HTMLInputElement>(null);
-  const [selectedDay, setSelectedDay] = useState(days.includes(today) ? today : days[0]);
+  const [selectedDay, setSelectedDay] = useState(
+    initialSelectedDay && days.includes(initialSelectedDay)
+      ? initialSelectedDay
+      : days.includes(today)
+        ? today
+        : days[0]
+  );
   const [openId, setOpenId] = useState<string | null>(null);
   const [planDays, setPlanDays] = useState<string[] | null>(null);
   const [planFor, setPlanFor] = useState(userId);

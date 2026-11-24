@@ -3,7 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { DayPresence, Status, UserWithExtras } from '@/db/types';
 import { WeekOverview } from '@/components/week/WeekOverview';
-import { workWeekDays, workWeekStart } from '@/lib/status/week';
+import { workWeekDayIndex, workWeekDays, workWeekStart } from '@/lib/status/week';
 
 vi.mock('@/components/layout/PageHeader', () => ({
   PageHeader: ({
@@ -69,7 +69,12 @@ function person(
   };
 }
 
-function render(days: string[], selectedDate = days[0], pinnedIds: string[] = []) {
+function render(
+  days: string[],
+  selectedDate = days[0],
+  pinnedIds: string[] = [],
+  initialSelectedDay?: string
+) {
   const allDates = [...new Set([...days, today])];
   const profiles = [
     person('anna', 'Anna', allDates, [today]),
@@ -87,6 +92,7 @@ function render(days: string[], selectedDate = days[0], pinnedIds: string[] = []
       syncError: false,
       plans: [],
       pinnedIds,
+      initialSelectedDay,
       onPinChange: vi.fn(),
       onStatusSaved: vi.fn(),
     })
@@ -205,5 +211,25 @@ describe('date navigation in WeekOverview', () => {
       'aria-current="page" href="/today?week=2026-10-19">Week</a>'
     );
     expect(navigationOf(otherWeekHtml)).toContain('href="/today"');
+  });
+
+  it('remembers the last viewed weekday when switching from Day to Week and back', () => {
+    expect(workWeekDayIndex('2026-10-19')).toBe(0); // Monday
+    expect(workWeekDayIndex('2026-10-23')).toBe(4); // Friday
+    expect(workWeekDayIndex('2026-10-24')).toBeNull(); // Saturday
+    expect(workWeekDayIndex('2026-10-25')).toBeNull(); // Sunday
+
+    const fridayInOtherWeek = workWeekDays('2026-10-19')[workWeekDayIndex('2026-10-23')!];
+    const otherWeekHtml = render(workWeekDays('2026-10-19'), '2026-10-19', [], fridayInOtherWeek);
+    expect(viewLinksOf(otherWeekHtml)).toContain('href="/today?day=2026-10-23">Day</a>');
+
+    const fridayInCurrentWeek = workWeekDays('2026-10-12')[workWeekDayIndex('2026-10-16')!];
+    const currentWeekHtml = render(
+      workWeekDays('2026-10-12'),
+      '2026-10-12',
+      [],
+      fridayInCurrentWeek
+    );
+    expect(viewLinksOf(currentWeekHtml)).toContain('href="/today?day=2026-10-16">Day</a>');
   });
 });

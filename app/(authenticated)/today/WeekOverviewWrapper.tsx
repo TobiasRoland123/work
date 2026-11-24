@@ -11,6 +11,7 @@ import {
   adjacentWeekday,
   resolveWeekView,
   shiftWorkWeek,
+  workWeekDayIndex,
   workWeekDays,
   workWeekStart,
 } from '@/lib/status/week';
@@ -75,6 +76,9 @@ export const WeekOverviewWrapper = ({
   const [loadedKey, setLoadedKey] = useState(() => viewKey(initialView, initialToday));
   const [panelOpen, setPanelOpen] = useState(initialPanelOpen);
   const [layout, setLayout] = useState(initialLayout);
+  const [rememberedWeekday, setRememberedWeekday] = useState<number | null>(() =>
+    initialView.week ? null : workWeekDayIndex(initialView.day ?? initialToday)
+  );
   const [profiles, setProfiles] = useState(initialProfiles);
   const [plans, setPlans] = useState(initialPlans);
   const [pinnedIds, setPinnedIds] = useState(initialPinnedIds);
@@ -155,6 +159,9 @@ export const WeekOverviewWrapper = ({
     (next: View, fallbackHref: string) => {
       viewRef.current = next;
       setView(next);
+      if (!next.week) {
+        setRememberedWeekday(workWeekDayIndex(next.day ?? todayRef.current));
+      }
       const key = viewKey(next, todayRef.current);
       const apply = (users: UserWithExtras[]) => {
         if (!mounted.current || !sameView(viewRef.current, next)) return;
@@ -269,17 +276,23 @@ export const WeekOverviewWrapper = ({
   useEffect(() => rememberWeekScope(view.week ? 'week' : 'day'), [view.week]);
 
   const viewDays = view.week ? workWeekDays(view.week) : [view.day ?? today];
+  const initialSelectedDay =
+    view.week && rememberedWeekday !== null ? viewDays[rememberedWeekday] : undefined;
   const loading = loadedKey !== viewKey(view, today);
 
   // Once the current view is on screen, quietly fetch every view its buttons lead to, one at a
   // time and only when the browser is idle, so the next click is usually answered from the cache.
   useEffect(() => {
     if (loading) return;
+    const defaultWeekDay =
+      initialSelectedDay ?? (viewDays.includes(todayRef.current) ? todayRef.current : view.week);
     const targets: View[] = view.week
       ? [
           { week: shiftWorkWeek(view.week, 1) },
           { week: shiftWorkWeek(view.week, -1) },
-          ...(viewDays.includes(todayRef.current) ? [] : [{ day: view.week }]),
+          ...(defaultWeekDay && defaultWeekDay !== todayRef.current
+            ? [{ day: defaultWeekDay }]
+            : []),
           {},
           { week: workWeekStart(todayRef.current) },
         ]
@@ -306,7 +319,7 @@ export const WeekOverviewWrapper = ({
     };
     // viewDays follows the view and today, both already covered by these dependencies.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [loading, view, today, prefetchView]);
+  }, [loading, view, today, initialSelectedDay, prefetchView]);
   return (
     <WeekOverview
       key={viewKey(view, today)}
@@ -325,6 +338,7 @@ export const WeekOverviewWrapper = ({
       onPanelChange={setPanelOpen}
       initialLayout={layout}
       onLayoutChange={setLayout}
+      initialSelectedDay={initialSelectedDay}
       onNavigate={navigate}
       onPrefetch={prefetch}
       onPinChange={(id, pinned) => void changePin(id, pinned)}
