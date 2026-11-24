@@ -283,19 +283,19 @@ describe('status labels in the week grid and the sidebar', () => {
 });
 
 describe('attendance view links', () => {
-  it('offers only Today and Week and marks the current mode', () => {
+  it('offers only Day and Week and marks the current mode', () => {
     const { html: weekHtml } = renderWeek(status({ status: 'VACATION' }));
     const weekLinks = weekHtml.match(/<div class="week-filters"[\s\S]*?<\/div>/)?.[0] ?? '';
     expect(weekLinks).toContain('aria-label="Attendance view"');
     expect(weekLinks.match(/<a /g)).toHaveLength(2);
-    expect(weekLinks).toContain('href="/today">Today</a>');
+    expect(weekLinks).toContain('href="/today">Day</a>');
     expect(weekLinks).toContain(`aria-current="page" href="/today?week=${days[0]}">Week</a>`);
     expect(weekLinks).not.toMatch(/Everyone|In office|Exceptions/);
 
     const { html: todayHtml } = renderToday(status({ status: 'VACATION' }));
     const todayLinks = todayHtml.match(/<div class="week-filters"[\s\S]*?<\/div>/)?.[0] ?? '';
     expect(todayLinks.match(/<a /g)).toHaveLength(2);
-    expect(todayLinks).toContain('aria-current="page" href="/today">Today</a>');
+    expect(todayLinks).toContain('aria-current="page" href="/today">Day</a>');
     expect(todayLinks).toContain(`href="/today?week=${days[0]}"`);
   });
 

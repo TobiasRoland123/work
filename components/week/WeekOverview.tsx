@@ -725,7 +725,7 @@ export function WeekOverview({
                   aria-current={todayOnly ? 'page' : undefined}
                   {...viewLinkProps(dayHref)}
                 >
-                  Today
+                  Day
                 </Link>
                 <Link
                   href={weekHref}

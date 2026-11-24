@@ -115,7 +115,7 @@ describe('date navigation in WeekOverview', () => {
     expect(html).toMatch(/<a aria-label="Next day" href="\/today\?day=2026-10-14"/);
     expect(navigationOf(html)).not.toContain('aria-current="page"');
     expect(viewLinksOf(html)).toContain(
-      'aria-current="page" href="/today?day=2026-10-13">Today</a>'
+      'aria-current="page" href="/today?day=2026-10-13">Day</a>'
     );
     expect(viewLinksOf(html)).toContain('href="/today?week=2026-10-12">Week</a>');
   });
@@ -157,7 +157,7 @@ describe('date navigation in WeekOverview', () => {
     expect(html).toContain('<h1>Tuesday</h1>');
     expect(html).toContain('Tuesday, 13 October 2026');
     expect(viewLinksOf(html)).toContain(
-      'aria-current="page" href="/today?day=2026-10-13">Today</a>'
+      'aria-current="page" href="/today?day=2026-10-13">Day</a>'
     );
     expect(html).not.toContain('<em>Today</em>');
     expect(html).toContain('<strong>1</strong> out of office');
@@ -192,15 +192,15 @@ describe('date navigation in WeekOverview', () => {
     expect(html).toContain('<em>Today</em>');
   });
 
-  it('keeps the viewed week or date when switching between Today and Week views', () => {
+  it('keeps the viewed week or date when switching between Day and Week views', () => {
     const otherDayHtml = render(['2026-10-21']);
     expect(viewLinksOf(otherDayHtml)).toContain(
-      'aria-current="page" href="/today?day=2026-10-21">Today</a>'
+      'aria-current="page" href="/today?day=2026-10-21">Day</a>'
     );
     expect(viewLinksOf(otherDayHtml)).toContain('href="/today?week=2026-10-19">Week</a>');
 
     const otherWeekHtml = render(workWeekDays('2026-10-19'));
-    expect(viewLinksOf(otherWeekHtml)).toContain('href="/today?day=2026-10-19">Today</a>');
+    expect(viewLinksOf(otherWeekHtml)).toContain('href="/today?day=2026-10-19">Day</a>');
     expect(viewLinksOf(otherWeekHtml)).toContain(
       'aria-current="page" href="/today?week=2026-10-19">Week</a>'
     );
