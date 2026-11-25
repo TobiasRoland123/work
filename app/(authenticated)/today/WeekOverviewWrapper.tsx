@@ -21,6 +21,7 @@ import { isInOffice, personName } from '@/components/week/presence';
 import { useLastSeen } from '@/components/week/lastSeen';
 import type { WeekLayout } from '@/components/week/layoutPreference';
 import { rememberWeekScope } from '@/components/week/scopePreference';
+import { setTodayReturn } from '@/components/week/todayReturn';
 
 /** `week` is a work week's Monday; without it the view is one day, and no day means today. */
 type View = { week?: string; day?: string };
@@ -157,10 +158,18 @@ export const WeekOverviewWrapper = ({
   // refreshed; otherwise placeholders stand in until the server answers.
   const show = useCallback(
     (next: View, fallbackHref: string) => {
+      const previousView = viewRef.current;
       viewRef.current = next;
       setView(next);
       if (!next.week) {
         setRememberedWeekday(workWeekDayIndex(next.day ?? todayRef.current));
+      } else if (
+        previousView.week &&
+        previousView.week !== next.week &&
+        next.week === workWeekStart(todayRef.current)
+      ) {
+        // Jumping back to the current week from another week should highlight today.
+        setRememberedWeekday(null);
       }
       const key = viewKey(next, todayRef.current);
       const apply = (users: UserWithExtras[]) => {
@@ -274,6 +283,35 @@ export const WeekOverviewWrapper = ({
 
   // Remember whether a day or a week was last on screen, so the next plain visit opens it again.
   useEffect(() => rememberWeekScope(view.week ? 'week' : 'day'), [view.week]);
+
+  // Publish off-today navigation state so the mobile bottom tab can offer a 1-tap return to today.
+  useEffect(() => {
+    const currentWeekStart = workWeekStart(today);
+    if (view.week) {
+      if (view.week === currentWeekStart) {
+        setTodayReturn(null);
+      } else {
+        const href = `/today?week=${currentWeekStart}`;
+        setTodayReturn({
+          direction: view.week > currentWeekStart ? 'earlier' : 'later',
+          href,
+          jump: () => navigate(href),
+        });
+      }
+    } else {
+      const shownDay = view.day ?? today;
+      if (shownDay === today) {
+        setTodayReturn(null);
+      } else {
+        setTodayReturn({
+          direction: shownDay > today ? 'earlier' : 'later',
+          href: '/today',
+          jump: () => navigate('/today'),
+        });
+      }
+    }
+    return () => setTodayReturn(null);
+  }, [view.week, view.day, today, navigate]);
 
   const viewDays = view.week ? workWeekDays(view.week) : [view.day ?? today];
   const initialSelectedDay =
