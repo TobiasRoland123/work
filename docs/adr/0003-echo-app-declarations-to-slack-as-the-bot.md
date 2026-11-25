@@ -35,8 +35,9 @@ must approve before anything can be posted. Slack import already ignores bot mes
 an Echo does not become a Declaration, but deleting or editing an Echo in Slack must not
 change the Declaration it announces.
 
-An Echo is posted at 08:00 Europe/Copenhagen on the weekday its Declaration applies,
-before the 09:00 Workday Default, or at once when the Declaration is made later that day.
+An Echo is posted from 07:00 Europe/Copenhagen on the weekday its Declaration applies,
+so Vercel Hobby's hourly cron window lands before 08:00 (and before the 09:00 Workday Default),
+or at once when the Declaration is made later that day.
 This needs a second scheduled job next to the nightly directory sync. A Declaration
 covering several days gets one Echo on its first day naming the whole range, so a
 two-week holiday does not post ten near-identical messages. A Declaration removed before

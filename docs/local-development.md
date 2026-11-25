@@ -108,8 +108,8 @@ ticked, its Echo is scheduled exactly as in production, but it is never sent to 
 and photo (initials, since fixture profiles have no avatars), and shows how many are waiting
 and for which day. Posted Echoes change in place: a newer status crosses out the days it
 replaces, and removing the status crosses out the whole Echo and marks it cancelled. A status
-saved for today after 08:00 appears at once. **Post today's Echoes now** runs the 08:00 job on
-demand, so today's Echoes post before 08:00; it never posts an Echo ahead of its day. The
+saved for today after 07:00 appears at once. **Post today's Echoes now** runs the 07:00 job on
+demand, so today's Echoes post before 07:00; it never posts an Echo ahead of its day. The
 button is a sandbox action and does not exist in production builds. Existing local databases
 get the new `status_echoes` table from `pnpm local:db` or `pnpm db:push`.
 

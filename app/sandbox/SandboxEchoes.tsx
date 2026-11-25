@@ -72,8 +72,8 @@ export function SandboxEchoes({
       <h2 id="echoes-heading">Sandbox Echoes · {ECHO_CHANNEL_LABEL}</h2>
       <p>
         What the WORK 2.0 bot would post for statuses people set about themselves in the app.
-        Nothing here contacts Slack. Echoes post at 08:00 on their day, or at once when saved later
-        that day.
+        Nothing here contacts Slack. Echoes post from 07:00 on their day, or at once when saved
+        later that day.
       </p>
       <div className="sandbox-row" style={{ marginBottom: 10 }}>
         <button className="sandbox-button" type="button" onClick={onPostNow} disabled={pending}>

@@ -111,7 +111,7 @@ export type EchoJobCounts = {
 };
 
 /**
- * The 08:00 job. Settles Echoes whose day ended unposted, posts today's due Echoes once each,
+ * The 07:00 job. Settles Echoes whose day ended unposted, posts today's due Echoes once each,
  * and edits posted Echoes whose days were replaced or whose Declaration was removed. Safe to run
  * repeatedly and concurrently: a posted Echo is never posted again.
  */
@@ -122,7 +122,7 @@ export async function runEchoJob({
   transport = defaultEchoTransport(),
 }: {
   now?: Date;
-  /** Post today's Echoes before 08:00. Only the Local Sandbox uses this. */
+  /** Post today's Echoes before 07:00. Only the Local Sandbox uses this. */
   force?: boolean;
   /** Limit the run to one person, after they changed their attendance. */
   userId?: string;

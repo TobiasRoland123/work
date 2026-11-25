@@ -5,8 +5,8 @@ import { runEchoJob } from '@/lib/services/echoService';
 export const runtime = 'nodejs';
 export const maxDuration = 60;
 
-// Weekday cron (vercel.json). Vercel crons run in UTC, so the job runs at both 06:00 and 07:00 UTC
-// and posts only from 08:00 Copenhagen; later runs retry failed posts until the day ends.
+// Weekday cron (vercel.json). Vercel crons run in UTC, so the job runs at both 05:00 and 06:00 UTC
+// and posts only from 07:00 Copenhagen; later runs retry failed posts until the day ends.
 export async function GET(request: Request) {
   if (!hasExactCronAuthorization(request))
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
