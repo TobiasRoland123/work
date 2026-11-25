@@ -56,7 +56,7 @@ export async function getSandboxOverview() {
   };
 }
 
-/** Run the 08:00 Echo job now, as if it were 08:00. Sandbox Echoes never leave the database. */
+/** Run the 07:00 Echo job now, as if it were 07:00. Sandbox Echoes never leave the database. */
 export async function postSandboxEchoesNowAction() {
   assertSandbox();
   try {

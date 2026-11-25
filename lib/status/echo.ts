@@ -5,8 +5,8 @@ import { statusEmoji } from './emoji';
 import { declarationDays } from './plan';
 import { addDays, formatDay } from './week';
 
-/** Echoes are posted at this Copenhagen hour on their day, before the 09:00 Workday Default. */
-export const ECHO_HOUR = 8;
+/** Echoes are posted from this Copenhagen hour on their day, so Hobby crons land before 08:00. */
+export const ECHO_HOUR = 7;
 /** How the status form and the person's announcements name the attendance channel. */
 export const ECHO_CHANNEL_LABEL = '#wørk';
 
@@ -71,14 +71,14 @@ export function echoContent(
   };
 }
 
-/** The instant an Echo for `day` becomes due: 08:00 Copenhagen, in summer and winter time. */
+/** The instant an Echo for `day` becomes due: 07:00 Copenhagen, in summer and winter time. */
 export function echoDueAt(day: string): Date {
   return copenhagenWallClock(day, ECHO_HOUR, 0);
 }
 
 /**
- * Whether an Echo should be posted now: only on its own day, from 08:00. `force` lets the
- * Local Sandbox post the day's Echoes before 08:00. Nothing is ever posted ahead of its day.
+ * Whether an Echo should be posted now: only on its own day, from 07:00. `force` lets the
+ * Local Sandbox post the day's Echoes before 07:00. Nothing is ever posted ahead of its day.
  */
 export function isEchoDue(postOn: string, now: Date, force = false): boolean {
   return postOn === copenhagenDate(now) && (force || now >= echoDueAt(postOn));

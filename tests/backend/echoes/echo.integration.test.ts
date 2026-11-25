@@ -16,7 +16,7 @@ const anna = randomUUID();
 const people = [anna];
 const photo = 'https://avatars.slack-edge.com/anna_512.png';
 
-// Monday 2 November 2026 is in winter time, so 08:00 Copenhagen is 07:00 UTC.
+// Monday 2 November 2026 is in winter time, so 07:00 Copenhagen is 06:00 UTC.
 const at = (iso: string) => new Date(iso);
 const monday = '2026-11-02';
 
@@ -90,17 +90,17 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')('Echoes on isolated Post
     expect(await echoOf(office.id)).toBeUndefined();
   });
 
-  it('posts nothing before 08:00 and each Echo exactly once from 08:00, even in parallel runs', async () => {
+  it('posts nothing before 07:00 and each Echo exactly once from 07:00, even in parallel runs', async () => {
     const slack = fakeSlack();
     const home = await save(
       { fromDate: monday, toDate: monday, details: 'Plumber & co' },
       at('2026-10-30T10:00:00Z')
     );
 
-    await run(at('2026-11-02T06:59:00Z'), slack.transport);
+    await run(at('2026-11-02T05:59:00Z'), slack.transport);
     expect(slack.posts).toHaveLength(0);
 
-    const now = at('2026-11-02T07:05:00Z');
+    const now = at('2026-11-02T06:05:00Z');
     await Promise.all([1, 2, 3].map(() => run(now, slack.transport)));
     await run(at('2026-11-02T09:00:00Z'), slack.transport);
     expect(slack.posts).toEqual([
@@ -118,7 +118,7 @@ describe.runIf(process.env.SLACK_TEST_DATABASE === '1')('Echoes on isolated Post
     });
   });
 
-  it('posts at once when saved for today after 08:00', async () => {
+  it('posts at once when saved for today after 07:00', async () => {
     const slack = fakeSlack();
     const savedAt = at('2026-11-02T12:30:00Z');
     await save(

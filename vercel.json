@@ -8,15 +8,15 @@
     },
     {
       "path": "/api/echoes",
+      "schedule": "0 5 * * 1-5"
+    },
+    {
+      "path": "/api/echoes",
       "schedule": "0 6 * * 1-5"
     },
     {
       "path": "/api/echoes",
-      "schedule": "0 7 * * 1-5"
-    },
-    {
-      "path": "/api/echoes",
-      "schedule": "0 9 * * 1-5"
+      "schedule": "0 8 * * 1-5"
     },
     {
       "path": "/api/echoes",

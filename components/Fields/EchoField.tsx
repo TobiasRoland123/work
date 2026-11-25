@@ -24,7 +24,7 @@ export function EchoField({ form }: { form: UseFormReturn<StatusFormValues> }) {
               />
             </FormControl>
             <FormLabel>Post in {ECHO_CHANNEL_LABEL}</FormLabel>
-            <small>At 08:00 on the first day, with your note.</small>
+            <small>Between 07:00 and 08:00 on the first day, with your note.</small>
           </div>
         </FormItem>
       )}

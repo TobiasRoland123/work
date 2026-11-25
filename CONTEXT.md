@@ -41,7 +41,7 @@ an admin sets for a colleague is never echoed, and neither is a Correction. An E
 never itself a Declaration and is never read back as one.
 The person chooses for each Declaration whether it is echoed; it is, unless they opt out.
 
-An Echo is posted at 08:00 Europe/Copenhagen on the weekday its Declaration applies,
+An Echo is posted from 07:00 Europe/Copenhagen on the weekday its Declaration applies,
 or at once when the Declaration is made later that same day. It is never posted ahead of
 its day, so a Declaration removed before then is never echoed. A Declaration covering
 several days gets one Echo, on its first day, naming the whole range. The Echo shows the
@@ -93,7 +93,7 @@ _Avoid_: Fake message, test message, mock event
 **Sandbox Echo**:
 An Echo shown on the Local Sandbox page instead of in Slack, looking and changing as it
 would in the attendance channel. The day's Sandbox Echoes can be posted on demand instead
-of waiting for 08:00.
+of waiting for 07:00.
 _Avoid_: Fake echo, preview, mock post
 
 ### Appearance

@@ -67,15 +67,15 @@ describe('the day an Echo is posted', () => {
 });
 
 describe('when an Echo is due', () => {
-  it('waits for 08:00 Copenhagen in winter time', () => {
-    expect(isEchoDue('2026-11-02', at('2026-11-02T06:59:00Z'))).toBe(false);
-    expect(isEchoDue('2026-11-02', at('2026-11-02T07:00:00Z'))).toBe(true);
+  it('waits for 07:00 Copenhagen in winter time', () => {
+    expect(isEchoDue('2026-11-02', at('2026-11-02T05:59:00Z'))).toBe(false);
+    expect(isEchoDue('2026-11-02', at('2026-11-02T06:00:00Z'))).toBe(true);
   });
-  it('waits for 08:00 Copenhagen in summer time', () => {
-    expect(isEchoDue('2026-06-15', at('2026-06-15T05:59:00Z'))).toBe(false);
-    expect(isEchoDue('2026-06-15', at('2026-06-15T06:00:00Z'))).toBe(true);
+  it('waits for 07:00 Copenhagen in summer time', () => {
+    expect(isEchoDue('2026-06-15', at('2026-06-15T04:59:00Z'))).toBe(false);
+    expect(isEchoDue('2026-06-15', at('2026-06-15T05:00:00Z'))).toBe(true);
   });
-  it('is due at once when saved for today after 08:00', () => {
+  it('is due at once when saved for today after 07:00', () => {
     const saved = at('2026-11-02T13:15:00Z');
     expect(
       isEchoDue(
@@ -84,7 +84,7 @@ describe('when an Echo is due', () => {
       )
     ).toBe(true);
   });
-  it('is never due ahead of its day, even when the sandbox forces the 08:00 run', () => {
+  it('is never due ahead of its day, even when the sandbox forces the 07:00 run', () => {
     expect(isEchoDue('2026-11-03', at('2026-11-02T22:00:00Z'), true)).toBe(false);
     expect(isEchoDue('2026-11-03', at('2026-11-02T23:30:00Z'), true)).toBe(true);
     expect(isEchoDue('2026-11-03', at('2026-11-02T23:30:00Z'))).toBe(false);
@@ -104,11 +104,11 @@ describe('the Echo cron schedule', () => {
     expect(schedules.length).toBeGreaterThan(0);
     for (const schedule of schedules) expect(schedule).toMatch(/^0 \d{1,2} \* \* 1-5$/);
   });
-  it('has a run in the 08:00 Copenhagen hour in both winter and summer time', () => {
+  it('has a run in the 07:00 Copenhagen hour in both winter and summer time', () => {
     const hours = schedules.map((schedule) => Number(schedule.split(' ')[1]));
     for (const day of ['2026-11-02', '2026-06-15']) {
-      const eight = copenhagenWallClock(day, 8, 0).getUTCHours();
-      expect(hours).toContain(eight);
+      const seven = copenhagenWallClock(day, 7, 0).getUTCHours();
+      expect(hours).toContain(seven);
     }
   });
 });

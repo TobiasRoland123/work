@@ -329,7 +329,7 @@ export const statusEchoes = pgTable(
     userId: varchar('user_id', { length: 36 })
       .notNull()
       .references(() => users.userId, { onDelete: 'cascade' }),
-    // The Copenhagen weekday the Echo is posted on, from 08:00.
+    // The Copenhagen weekday the Echo is posted on, from 07:00.
     postOn: date('post_on').notNull(),
     status: userStatus('status').notNull(),
     emoji: text('emoji'),
