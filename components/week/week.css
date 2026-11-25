@@ -61,10 +61,14 @@
 }
 .week-main {
   min-width: 0;
-  padding: 20px 28px 40px;
+  padding: 0 28px 40px;
   display: flex;
   flex-direction: column;
   gap: 14px;
+}
+/* Keep top spacing off the scroll container so sticky .week-head pins flush to the top edge. */
+.week-main > :first-child {
+  margin-top: 20px;
 }
 
 .week-nav {
@@ -1041,7 +1045,10 @@
 
 @media (max-width: 1100px) {
   .week-main {
-    padding: 18px 20px 32px;
+    padding: 0 20px 32px;
+  }
+  .week-main > :first-child {
+    margin-top: 18px;
   }
   .week-row {
     grid-template-columns: minmax(150px, 200px) minmax(0, 1fr);
@@ -1061,7 +1068,10 @@
 }
 @media (max-width: 640px) {
   .week-main {
-    padding: 14px 12px 24px;
+    padding: 0 12px 24px;
+  }
+  .week-main > :first-child {
+    margin-top: 14px;
   }
   .week-row {
     grid-template-columns: minmax(0, 1fr);
