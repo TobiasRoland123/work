@@ -167,16 +167,20 @@ describe('chronological layout', () => {
   it('lists everyone newest first, with what is new since the last look on top', () => {
     const { html, labels, group } = render(profiles, lastLook, 'chronological');
     expect(labels).toEqual(['New since you last looked', 'Earlier']);
+    expect(group('New since you last looked')).toContain('week-status-heading');
     expect(order(group('New since you last looked'))).toEqual(['Dan Person', 'Ben Person']);
     // The signed-in person's own announcement is never news, but still sorts by time.
+    expect(group('Earlier')).toContain('week-status-heading');
     expect(order(group('Earlier'))).toEqual(['Anna Person', 'Cara Person', 'Eve Person']);
     expect(group('Earlier')).toContain('Announced Mon 21 Sept, 17:00');
     expect(html).toMatch(/aria-pressed="true"[^>]*>.*?By time/);
   });
 
-  it('is one newest-first list when nothing is new', () => {
+  it('omits the group heading when nothing is new', () => {
     const { labels, group } = render(profiles, null, 'chronological');
     expect(labels).toEqual(['Newest first']);
+    expect(group('Newest first')).not.toContain('week-status-heading');
+    expect(group('Newest first')).not.toContain('Newest first');
     expect(order(group('Newest first'))).toEqual([
       'Anna Person',
       'Dan Person',
@@ -184,6 +188,10 @@ describe('chronological layout', () => {
       'Cara Person',
       'Eve Person',
     ]);
+
+    const allSeen = render(profiles, Date.parse('2026-09-22T12:00:00Z'), 'chronological');
+    expect(allSeen.labels).toEqual(['Newest first']);
+    expect(allSeen.group('Newest first')).not.toContain('week-status-heading');
   });
 
   it('defaults to grouped and remembers the choice in a cookie', () => {
