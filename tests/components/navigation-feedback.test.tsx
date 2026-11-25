@@ -76,6 +76,7 @@ vi.mock('next/link', () => {
 
 import { AppShell } from '@/components/layout/AppShell';
 import { AppLink, LOADING_UI_DELAY_MS } from '@/components/layout/NavigationFeedback';
+import { setTodayReturn } from '@/components/week/todayReturn';
 
 let root: Root;
 let container: HTMLDivElement;
@@ -89,6 +90,7 @@ beforeEach(() => {
 });
 
 afterEach(() => {
+  setTodayReturn(null);
   act(() => {
     root.unmount();
   });
@@ -274,4 +276,39 @@ it('shows progress bar and link pending cue for same-page query links without hi
   });
   expect(filterLink.getAttribute('data-pending')).toBeNull();
   expect(container.querySelector('.app-shell-progress')).toBeNull();
+});
+
+it('switches the Week tab into a return-to-today action when viewing another date or week', async () => {
+  navState.pathname = '/today';
+  const jump = vi.fn();
+
+  await act(async () => {
+    root.render(
+      <AppShell>
+        <main id="dashboard-main">Week</main>
+      </AppShell>
+    );
+  });
+
+  const nav = container.querySelector('nav[aria-label="App navigation"]')!;
+  const weekLink = nav.querySelector('.office-nav-links > a') as HTMLAnchorElement;
+  expect(weekLink.getAttribute('data-return-today')).toBeNull();
+
+  await act(async () => {
+    setTodayReturn({ direction: 'earlier', href: '/today?week=2026-11-23', jump });
+  });
+
+  expect(weekLink.getAttribute('data-return-today')).toBe('earlier');
+  expect(weekLink.getAttribute('href')).toBe('/today?week=2026-11-23');
+  expect(weekLink.querySelector('.office-nav-return-today')?.textContent).toContain('Today');
+
+  await act(async () => {
+    weekLink.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, button: 0 }));
+  });
+  expect(jump).toHaveBeenCalledTimes(1);
+
+  await act(async () => {
+    setTodayReturn(null);
+  });
+  expect(weekLink.getAttribute('data-return-today')).toBeNull();
 });

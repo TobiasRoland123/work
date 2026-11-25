@@ -1,8 +1,10 @@
 'use client';
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useSyncExternalStore, type MouseEvent } from 'react';
 import { usePathname } from 'next/navigation';
 import {
+  ArrowLeft,
+  ArrowRight,
   CalendarDays,
   ChartColumn,
   ChartNoAxesCombined,
@@ -22,6 +24,7 @@ import {
   subscribeWeekScope,
   weekEntryHref,
 } from '@/components/week/scopePreference';
+import { getTodayReturn, subscribeTodayReturn } from '@/components/week/todayReturn';
 import {
   AppLink,
   NavigationFeedbackProvider,
@@ -98,6 +101,9 @@ function AppShellFrame({
   const moreMenuRef = useRef<HTMLDivElement>(null);
   const [weekHref, setWeekHref] = useState(initialWeekHref);
   const { showLoadingUi, pendingRoutePathname } = useNavigationFeedback();
+  const todayReturn = useSyncExternalStore(subscribeTodayReturn, getTodayReturn, () => null);
+  const activeTodayReturn =
+    isCurrentPath(pathname, '/today') && pendingRoutePathname === null ? todayReturn : null;
 
   useEffect(() => {
     const sync = () => setWeekHref(weekEntryHref(readWeekScope()));
@@ -129,18 +135,54 @@ function AppShellFrame({
     const pendingTarget =
       pendingRoutePathname !== null && isCurrentPath(pendingRoutePathname, href);
     const leaving = pendingRoutePathname !== null && current && !pendingTarget;
+    const returnToday = label === 'Week' ? activeTodayReturn : null;
+    const resolvedHref = returnToday ? returnToday.href : href;
+    const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
+      onClick?.();
+      if (
+        returnToday &&
+        event.button === 0 &&
+        !event.metaKey &&
+        !event.ctrlKey &&
+        !event.shiftKey &&
+        !event.altKey
+      ) {
+        event.preventDefault();
+        returnToday.jump();
+      }
+    };
     return (
       <AppLink
         key={label}
-        href={href}
+        href={resolvedHref}
         prefetch={prefetch}
         aria-current={current ? 'page' : undefined}
         data-pending={pendingTarget ? 'true' : undefined}
         data-nav-leaving={leaving ? 'true' : undefined}
-        onClick={onClick}
+        data-return-today={returnToday ? returnToday.direction : undefined}
+        onClick={handleClick}
       >
-        <Icon size={21} aria-hidden="true" />
-        {label}
+        {returnToday ? (
+          <>
+            <span className="office-nav-default">
+              <Icon size={21} aria-hidden="true" />
+              {label}
+            </span>
+            <span className="office-nav-return-today">
+              {returnToday.direction === 'earlier' ? (
+                <ArrowLeft size={21} aria-hidden="true" />
+              ) : (
+                <ArrowRight size={21} aria-hidden="true" />
+              )}
+              Today
+            </span>
+          </>
+        ) : (
+          <>
+            <Icon size={21} aria-hidden="true" />
+            {label}
+          </>
+        )}
       </AppLink>
     );
   };

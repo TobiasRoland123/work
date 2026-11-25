@@ -138,6 +138,12 @@
   background: var(--office-rail-hover);
   color: white;
 }
+.office-nav-default {
+  display: contents;
+}
+.office-nav-return-today {
+  display: none;
+}
 .office-install-app {
   width: 100%;
   color: inherit;
@@ -513,6 +519,15 @@
   .office-nav-links svg {
     width: 20px;
     height: 20px;
+  }
+  .office-nav-links > a[data-return-today] {
+    font-weight: 600;
+  }
+  .office-nav-links > a[data-return-today] .office-nav-default {
+    display: none;
+  }
+  .office-nav-links > a[data-return-today] .office-nav-return-today {
+    display: contents;
   }
   .office-nav-more:hover {
     background: var(--office-rail-hover);
