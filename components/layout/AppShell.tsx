@@ -19,17 +19,14 @@ import {
 import type { ReactNode } from 'react';
 import { isSandbox } from '@/lib/sandbox/enabled';
 import { PhoneInvite } from '@/components/pwa/PhoneInvite';
+import { LogoMark } from '@/components/ui/Logo/Logo';
 import {
   readWeekScope,
   subscribeWeekScope,
   weekEntryHref,
 } from '@/components/week/scopePreference';
 import { getTodayReturn, subscribeTodayReturn } from '@/components/week/todayReturn';
-import {
-  AppLink,
-  NavigationFeedbackProvider,
-  useNavigationFeedback,
-} from './NavigationFeedback';
+import { AppLink, NavigationFeedbackProvider, useNavigationFeedback } from './NavigationFeedback';
 import { RouteLoadingFallback } from './RouteLoadingFallback';
 import './shell.css';
 
@@ -198,8 +195,13 @@ function AppShellFrame({
         Skip to content
       </a>
       <nav className="office-rail" aria-label="App navigation">
-        <AppLink href={weekHref} prefetch={null} className="office-wordmark" aria-label="WØRK home">
-          WØRK
+        <AppLink
+          href={weekHref}
+          prefetch={null}
+          className="office-wordmark"
+          aria-label="WØRK home (beta)"
+        >
+          <LogoMark size={50} className="office-wordmark-mark" />
         </AppLink>
         <div className="office-nav-links">
           {links.map((link) => renderLink(link))}

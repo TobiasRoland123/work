@@ -107,9 +107,21 @@
   gap: 35px;
 }
 .office-wordmark {
-  font-size: 18px;
-  letter-spacing: 2px;
-  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+}
+.office-wordmark-mark {
+  display: block;
+  width: 50px;
+  height: 50px;
+  border-radius: 10px;
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 14%);
+  transition: box-shadow 140ms ease;
+}
+.office-wordmark:hover .office-wordmark-mark {
+  box-shadow: 0 0 0 1px rgb(255 255 255 / 32%);
 }
 .office-nav-links {
   display: flex;
