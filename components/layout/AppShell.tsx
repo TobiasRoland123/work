@@ -25,11 +25,7 @@ import {
   weekEntryHref,
 } from '@/components/week/scopePreference';
 import { getTodayReturn, subscribeTodayReturn } from '@/components/week/todayReturn';
-import {
-  AppLink,
-  NavigationFeedbackProvider,
-  useNavigationFeedback,
-} from './NavigationFeedback';
+import { AppLink, NavigationFeedbackProvider, useNavigationFeedback } from './NavigationFeedback';
 import { RouteLoadingFallback } from './RouteLoadingFallback';
 import './shell.css';
 
@@ -198,7 +194,15 @@ function AppShellFrame({
         Skip to content
       </a>
       <nav className="office-rail" aria-label="App navigation">
-        <AppLink href={weekHref} prefetch={null} className="office-wordmark" aria-label="WØRK home">
+        <AppLink
+          href={weekHref}
+          prefetch={null}
+          className="office-wordmark"
+          aria-label="WØRK home (beta)"
+        >
+          <span className="office-wordmark-beta" aria-hidden="true">
+            BETA
+          </span>
           WØRK
         </AppLink>
         <div className="office-nav-links">
