@@ -107,21 +107,37 @@
   gap: 35px;
 }
 .office-wordmark {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 10px;
+  width: calc(100% + 16px);
+  margin: -25px -8px -6px;
+  padding: 36px 8px 6px;
+  overflow: hidden;
+  font-size: 18px;
+  letter-spacing: 2px;
+  font-weight: 600;
 }
-.office-wordmark-mark {
-  display: block;
-  width: 50px;
-  height: 50px;
-  border-radius: 10px;
-  box-shadow: 0 0 0 1px rgb(255 255 255 / 14%);
-  transition: box-shadow 140ms ease;
+.office-wordmark:focus-visible {
+  outline-offset: -3px;
 }
-.office-wordmark:hover .office-wordmark-mark {
-  box-shadow: 0 0 0 1px rgb(255 255 255 / 32%);
+.office-wordmark-beta {
+  position: absolute;
+  top: 9px;
+  right: -22px;
+  width: 72px;
+  padding: 3px 0;
+  background: #f59e0b;
+  color: #090b0c;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  line-height: 1;
+  text-align: center;
+  text-transform: uppercase;
+  transform: rotate(45deg);
+  pointer-events: none;
 }
 .office-nav-links {
   display: flex;

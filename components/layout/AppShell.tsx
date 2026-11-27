@@ -19,7 +19,6 @@ import {
 import type { ReactNode } from 'react';
 import { isSandbox } from '@/lib/sandbox/enabled';
 import { PhoneInvite } from '@/components/pwa/PhoneInvite';
-import { LogoMark } from '@/components/ui/Logo/Logo';
 import {
   readWeekScope,
   subscribeWeekScope,
@@ -201,7 +200,10 @@ function AppShellFrame({
           className="office-wordmark"
           aria-label="WØRK home (beta)"
         >
-          <LogoMark size={50} className="office-wordmark-mark" />
+          <span className="office-wordmark-beta" aria-hidden="true">
+            BETA
+          </span>
+          WØRK
         </AppLink>
         <div className="office-nav-links">
           {links.map((link) => renderLink(link))}
